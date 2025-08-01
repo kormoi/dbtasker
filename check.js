@@ -12,9 +12,7 @@ const DBInfo = {
 };
 
 async function check() {
-  const dropTable = await fncs.dropTables(DBInfo, "test", ["cart"]);
-  const tableNames = await fncs.getTableNames(DBInfo, "test");
+  const dropTable = fncs.perseTableNameWithLoop("hellos(year)")
   console.log(dropTable);
-  console.log(tableNames);
 }
 check();

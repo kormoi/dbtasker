@@ -34,7 +34,7 @@ function JSONchecker(table_json) {
         for (const databaseName of Object.keys(table_json)) {
             if (fncs.isJsonObject(table_json[databaseName])) {
                 for (const tableName of Object.keys(table_json[databaseName])) {
-                    if (!fncs.parseColumnWithOptionalLoopStrict(tableName.toLocaleLowerCase())) {
+                    if (!fncs.perseTableNameWithLoop(tableName.toLocaleLowerCase())) {
                         badTableNames.push(
                             `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
                             `${cstyler.purpal('of table:')} ${cstyler.blue(tableName)} ` +

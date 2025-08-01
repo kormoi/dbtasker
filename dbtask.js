@@ -8,6 +8,7 @@ let x = [
 
 async function dbTask(config, table_config, availabledatabase) {
     try {
+        let insertedjson = {};
         for (const databaseName of Object.keys(availabledatabase)) {
             config.database = databaseName.toLocaleLowerCase();
             const dbTableNames = await fncs.getTableNames(config, databaseName.toLocaleLowerCase());
@@ -15,6 +16,12 @@ async function dbTask(config, table_config, availabledatabase) {
             const JSONTableNames = Object.keys(availabledatabase[databaseName]).map(name => name.toLocaleLowerCase());
             let foreignKeyForLater = [];
             for (const JSONTableName of JSONTableNames) {
+                const isValidTableName = fncs.perseTableNameWithLoop(JSONTableName);
+                let tableName = "";
+                if(fncs.isJsonObject(isValidTableName)){
+                    tableName = isValidTableName.
+                } else {
+                }
                 if (dbTableNames.includes(JSONTableName)) {
                     // alter table
                     // Drop Column

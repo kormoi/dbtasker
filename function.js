@@ -225,7 +225,7 @@ function isValidColumnName(name) {
 
   return true;
 }
-function parseColumnWithOptionalLoopStrict(text) {
+function perseTableNameWithLoop(text) {
   if (typeof text !== 'string') return false;
 
   text = text.trim();
@@ -236,7 +236,7 @@ function parseColumnWithOptionalLoopStrict(text) {
     const name = match[1];
     const loop = match[2];
     if (isValidColumnName(name) && isValidColumnName(loop)) {
-      return { name, loop };
+      return { name: name, loop: loop };
     }
     return false;
   }
@@ -247,7 +247,7 @@ function parseColumnWithOptionalLoopStrict(text) {
     const loop = match[1];
     const name = match[2];
     if (isValidColumnName(name) && isValidColumnName(loop)) {
-      return { name, loop };
+      return { name: name, loop: loop };
     }
     return false;
   }
@@ -681,7 +681,7 @@ module.exports = {
   isValidDatabaseName,
   isValidTableName,
   isValidColumnName,
-  parseColumnWithOptionalLoopStrict,
+  perseTableNameWithLoop,
   isJsonString,
   isJsonObject,
   isJsonSame,
