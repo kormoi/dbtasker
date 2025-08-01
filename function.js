@@ -52,6 +52,18 @@ function getDateTime(seperator) {
     datetime: formattedDateTime,
   };
 }
+function isValidMySQLConfig(config) {
+  if (typeof config !== 'object' || config === null) return false;
+
+  const requiredKeys = ['host', 'user', 'password'];
+  
+  for (const key of requiredKeys) {
+    if (!(key in config)) return false;
+    if (typeof config[key] !== 'string' || config[key].trim() === '') return false;
+  }
+
+  return true;
+}
 async function isMySQLDatabase(config) {
   let connection;
   try {
@@ -642,56 +654,18 @@ async function dropColumns(config, databaseName, tableName, columnNames) {
     await pool.end();
   }
 }
-async function createOrModifyTable(queryText, databaseName) {
+async function runQueryReturnTrueOrNull(config, databaseName, queryText) {
+  let connection;
+
   try {
-    if (databaseName && typeof databaseName === "string" && databaseName.trim()) {
-      // Add databaseName prefix to the table name(s) inside queryText
-
-      // This is a naive regex that finds first table name after CREATE TABLE or ALTER TABLE
-      // and prefixes it with databaseName.
-      queryText = queryText.replace(
-        /(CREATE TABLE IF NOT EXISTS|CREATE TABLE|ALTER TABLE)\s+(`?)(\w+)(`?)/i,
-        (match, p1, p2, p3, p4) => {
-          const dbNameEscaped = `\`${databaseName.replace(/`/g, "``")}\``;
-          const tableNameEscaped = `${p2}${p3}${p4}`;
-          return `${p1} ${dbNameEscaped}.${tableNameEscaped}`;
-        }
-      );
-    }
-
-    await pool.query(queryText);
-
-    function getTableName(input) {
-      if (typeof input !== "string") {
-        throw new Error("Query text must be a string");
-      }
-      const words = input.trim().split(/\s+/);
-      if (words.length < 5) {
-        return "";
-      }
-      if (input.startsWith("CREATE TABLE IF NOT EXISTS") && words.length > 5) {
-        return [words[5]];
-      } else {
-        return [words[2], words[5]];
-      }
-    }
-
-    let table_name = getTableName(queryText);
-    if (table_name.length > 1) {
-      return {
-        success: true,
-        message: `${table_name[1]} column of ${table_name[0]} table created or modified successfully.`,
-        querytext: queryText,
-      };
-    } else {
-      return {
-        success: true,
-        message: `${table_name[0]} table created or modified successfully.`,
-        querytext: queryText,
-      };
-    }
+    connection = await mysql.createConnection({ ...config, database: databaseName });
+    await connection.query(queryText);
+    return true;
   } catch (err) {
-    return { success: false, message: err.message };
+    console.error("Query error:", err.message);
+    return null;
+  } finally {
+    if (connection) await connection.end();
   }
 }
 
@@ -699,6 +673,7 @@ async function createOrModifyTable(queryText, databaseName) {
 module.exports = {
   isNumber,
   getDateTime,
+  isValidMySQLConfig,
   isMySQLDatabase,
   checkDatabaseExists,
   createDatabase,

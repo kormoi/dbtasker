@@ -13,6 +13,7 @@ async function dbTask(config, table_config, availabledatabase) {
             const dbTableNames = await fncs.getTableNames(config, databaseName.toLocaleLowerCase());
             if (dbTableNames === null) return null;
             const JSONTableNames = Object.keys(availabledatabase[databaseName]).map(name => name.toLocaleLowerCase());
+            let foreignKeyForLater = [];
             for (const JSONTableName of JSONTableNames) {
                 if (dbTableNames.includes(JSONTableName)) {
                     // alter table

@@ -22,6 +22,7 @@ function JSONchecker(table_json) {
     // lets check all table name and column name
     let badTableNames = [];
     let badColumnNames = [];
+    let badtype = [];
     let badautoincrement = [];
     let badindex = [];
     let badnulls = [];
@@ -53,163 +54,6 @@ function JSONchecker(table_json) {
                                     `${cstyler.red('- column name is not valid.')}`
                                 );
 
-                            }
-                            // Let's check properties
-                            if (!deepColumn.hasOwnProperty("type")) {
-                                badColumnNames.push(
-                                    `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                    `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                    `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                    `${cstyler.red('- must have type.')}`
-                                );
-                                continue;
-                            } else {
-                                if (!deepColumn.type.hasOwnProperty("name")) {
-                                    badColumnNames.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('> type - must have name.')}`
-                                    );
-                                    continue;
-                                }
-                            }
-                            // check auto increment
-                            const autoIncrementIntegerTypesWithUnsigned = [
-                                "TINYINT",
-                                "SMALLINT",
-                                "MEDIUMINT",
-                                "INT",
-                                "INTEGER",
-                                "BIGINT",
-                                "TINYINT UNSIGNED",
-                                "SMALLINT UNSIGNED",
-                                "MEDIUMINT UNSIGNED",
-                                "INT UNSIGNED",
-                                "INTEGER UNSIGNED",
-                                "BIGINT UNSIGNED"
-                            ];
-                            if (deepColumn.hasOwnProperty("AUTO_INCREMENT")) {
-                                if (
-                                    !autoIncrementIntegerTypesWithUnsigned.includes(deepColumn.type?.name) ||
-                                    !['PRIMARY KEY', 'UNIQUE', true].includes(deepColumn.index) ||
-                                    deepColumn.NULL === true ||
-                                    deepColumn.hasOwnProperty("DEFAULT")
-                                ) {
-                                    badautoincrement.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('column must be')} ${cstyler.yellow('integer')} ${cstyler.red('type, should be')} ${cstyler.yellow('primary key')} ${cstyler.red('or')} ${cstyler.yellow('unique indexed')}, ` +
-                                        `${cstyler.red('should be')} ${cstyler.yellow('NOT NULL')}, ` +
-                                        `${cstyler.red('can not have a')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value.')}`
-                                    );
-                                }
-                                let autoincrementcolumnlist = [];
-                                for (const column of Object.keys(table_json[databaseName][tableName])) {
-                                    if (table_json[databaseName][tableName][column].hasOwnProperty("AUTO_INCREMENT")) {
-                                        if (table_json[databaseName][tableName][column].AUTO_INCREMENT === true) {
-                                            autoincrementcolumnlist.push(column);
-                                        }
-                                    }
-                                }
-                                if (autoincrementcolumnlist.length > 1) {
-                                    badautoincrement.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('- This table has another')} ${cstyler.yellow('auto_increment')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('auto_increment')} ${cstyler.red('column.')}`
-                                    );
-
-                                }
-                            }
-                            // check index
-                            if (deepColumn.hasOwnProperty("index")) {
-                                if (deepColumn.type?.name === "JSON") {
-                                    badindex.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('- is a JSON column which can not have an ')}${cstyler.yellow('index')} ${cstyler.red('property')}`
-                                    );
-
-                                }
-                                const validIndexValues = [
-                                    true,       // normal index
-                                    "INDEX",
-                                    "UNIQUE",
-                                    "PRIMARY",
-                                    "PRIMARY KEY",
-                                    "FULLTEXT",
-                                    "SPATIAL"
-                                ];
-                                const indexValue = typeof deepColumn.index === "string" ? deepColumn.index.toUpperCase() : deepColumn.index;
-                                if (!validIndexValues.includes(indexValue)) {
-                                    badindex.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('- has unsupported index value.')} ` +
-                                        `${cstyler.red('Value must be')} ${cstyler.yellow(validIndexValues.join(', '))}`
-                                    );
-
-                                }
-                            }
-                            // check ENUM
-                            if (deepColumn.type?.name === "ENUM") {
-                                const enumoptions = parseQuotedListSafely(deepColumn.type?.LengthValues);
-                                if (enumoptions.length < 1) {
-                                    badlength.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.yellow('LengthValues')} ${cstyler.red('for')} ${cstyler.yellow('ENUM')} ` +
-                                        `${cstyler.red('must be a non-empty list with single-quoted items or an array:')} ` +
-                                        `${cstyler.yellow(`"'red', 'blue',..."`)} ${cstyler.red('or')} ${cstyler.yellow("['red', 'blue',...]")}`
-                                    );
-
-                                }
-                            }
-                            // check SET
-                            if (deepColumn.type?.name === "SET") {
-                                const setOptions = parseQuotedListSafely(deepColumn.type.LengthValues);
-                                if (setOptions.length < 1) {
-                                    badlength.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.yellow('LengthValues')} ${cstyler.red('for')} ${cstyler.yellow('SET')} ` +
-                                        `${cstyler.red('must be a non-empty list with single-quoted items or an array:')} ` +
-                                        `${cstyler.yellow(`"'red', 'blue',..."`)} ${cstyler.red('or')} ${cstyler.yellow("['red', 'blue',...]")}`
-                                    );
-
-                                }
-                            }
-                            // check VARCHAR or CHAR
-                            if (["VARCHAR", "CHAR"].includes(deepColumn.type?.name)) {
-                                if (!Number.isInteger(deepColumn.type.LengthValues) || deepColumn.type.LengthValues < 1) {
-                                    badlength.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red("'s must define a positive integer Length for type")} ${cstyler.yellow(deepColumn.type?.name)}`
-                                    );
-
-                                }
-                            }
-                            // check DECIMAL
-                            if (deepColumn.type?.name === "DECIMAL") {
-                                const [precision, scale] = deepColumn.type.LengthValues || [];
-                                if (!Number.isInteger(precision) || precision <= 0 || precision > 65) {
-                                    badlength.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red(" has invalid")} ${cstyler.yellow('DECIMAL')} ${cstyler.red('precision')}`
-                                    );
-
-                                }
-                                if (!Number.isInteger(scale) || scale < 0 || scale > precision) {
-                                    badlength.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purpal('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purpal('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid')} ${cstyler.yellow('DECIMAL')} ${cstyler.red('scale')}`
-                                    );
-
-
-                                }
                             }
                             // lets check bad null
                             if (deepColumn.hasOwnProperty("NULL")) {
@@ -309,6 +153,163 @@ function JSONchecker(table_json) {
                                     );
                                 }
                             }
+                            // check auto increment
+                            const autoIncrementIntegerTypesWithUnsigned = [
+                                "TINYINT",
+                                "SMALLINT",
+                                "MEDIUMINT",
+                                "INT",
+                                "INTEGER",
+                                "BIGINT",
+                                "TINYINT UNSIGNED",
+                                "SMALLINT UNSIGNED",
+                                "MEDIUMINT UNSIGNED",
+                                "INT UNSIGNED",
+                                "INTEGER UNSIGNED",
+                                "BIGINT UNSIGNED"
+                            ];
+                            if (deepColumn.hasOwnProperty("AUTO_INCREMENT")) {
+                                if (
+                                    !autoIncrementIntegerTypesWithUnsigned.includes(deepColumn.type?.name) ||
+                                    !['PRIMARY KEY', 'UNIQUE', true].includes(deepColumn.index) ||
+                                    deepColumn.NULL === true ||
+                                    deepColumn.hasOwnProperty("DEFAULT")
+                                ) {
+                                    badautoincrement.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red('column must be')} ${cstyler.yellow('integer')} ${cstyler.red('type, should be')} ${cstyler.yellow('primary key')} ${cstyler.red('or')} ${cstyler.yellow('unique indexed')}, ` +
+                                        `${cstyler.red('should be')} ${cstyler.yellow('NOT NULL')}, ` +
+                                        `${cstyler.red('can not have a')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value.')}`
+                                    );
+                                }
+                                let autoincrementcolumnlist = [];
+                                for (const column of Object.keys(table_json[databaseName][tableName])) {
+                                    if (table_json[databaseName][tableName][column].hasOwnProperty("AUTO_INCREMENT")) {
+                                        if (table_json[databaseName][tableName][column].AUTO_INCREMENT === true) {
+                                            autoincrementcolumnlist.push(column);
+                                        }
+                                    }
+                                }
+                                if (autoincrementcolumnlist.length > 1) {
+                                    badautoincrement.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red('- This table has another')} ${cstyler.yellow('auto_increment')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('auto_increment')} ${cstyler.red('column.')}`
+                                    );
+
+                                }
+                            }
+                            // check index
+                            if (deepColumn.hasOwnProperty("index")) {
+                                if (deepColumn.type?.name === "JSON") {
+                                    badindex.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red('- is a JSON column which can not have an ')}${cstyler.yellow('index')} ${cstyler.red('property')}`
+                                    );
+
+                                }
+                                const validIndexValues = [
+                                    true,       // normal index
+                                    "INDEX",
+                                    "UNIQUE",
+                                    "PRIMARY",
+                                    "PRIMARY KEY",
+                                    "FULLTEXT",
+                                    "SPATIAL"
+                                ];
+                                const indexValue = typeof deepColumn.index === "string" ? deepColumn.index.toUpperCase() : deepColumn.index;
+                                if (!validIndexValues.includes(indexValue)) {
+                                    badindex.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red('- has unsupported index value.')} ` +
+                                        `${cstyler.red('Value must be')} ${cstyler.yellow(validIndexValues.join(', '))}`
+                                    );
+
+                                }
+                            }
+                            // Let's check properties
+                            if (!deepColumn.hasOwnProperty("type")) {
+                                badtype.push(
+                                    `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                    `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                    `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                    `${cstyler.red('- must have type.')}`
+                                );
+                                continue;
+                            } else {
+                                if (!deepColumn.type.hasOwnProperty("name")) {
+                                    badtype.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red('> type - must have name.')}`
+                                    );
+                                    continue;
+                                }
+                            }
+                            // check ENUM
+                            if (deepColumn.type?.name === "ENUM") {
+                                const enumoptions = parseQuotedListSafely(deepColumn.type?.LengthValues);
+                                if (enumoptions.length < 1) {
+                                    badlength.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.yellow('LengthValues')} ${cstyler.red('for')} ${cstyler.yellow('ENUM')} ` +
+                                        `${cstyler.red('must be a non-empty list with single-quoted items or an array:')} ` +
+                                        `${cstyler.yellow(`"'red', 'blue',..."`)} ${cstyler.red('or')} ${cstyler.yellow("['red', 'blue',...]")}`
+                                    );
+
+                                }
+                            }
+                            // check SET
+                            if (deepColumn.type?.name === "SET") {
+                                const setOptions = parseQuotedListSafely(deepColumn.type.LengthValues);
+                                if (setOptions.length < 1) {
+                                    badlength.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.yellow('LengthValues')} ${cstyler.red('for')} ${cstyler.yellow('SET')} ` +
+                                        `${cstyler.red('must be a non-empty list with single-quoted items or an array:')} ` +
+                                        `${cstyler.yellow(`"'red', 'blue',..."`)} ${cstyler.red('or')} ${cstyler.yellow("['red', 'blue',...]")}`
+                                    );
+
+                                }
+                            }
+                            // check VARCHAR or CHAR
+                            if (["VARCHAR", "CHAR"].includes(deepColumn.type?.name)) {
+                                if (!Number.isInteger(deepColumn.type.LengthValues) || deepColumn.type.LengthValues < 1) {
+                                    badlength.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red("'s must define a positive integer Length for type")} ${cstyler.yellow(deepColumn.type?.name)}`
+                                    );
+
+                                }
+                            }
+                            // check DECIMAL
+                            if (deepColumn.type?.name === "DECIMAL") {
+                                const [precision, scale] = deepColumn.type.LengthValues || [];
+                                if (!Number.isInteger(precision) || precision <= 0 || precision > 65) {
+                                    badlength.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red(" has invalid")} ${cstyler.yellow('DECIMAL')} ${cstyler.red('precision')}`
+                                    );
+
+                                }
+                                if (!Number.isInteger(scale) || scale < 0 || scale > precision) {
+                                    badlength.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purpal('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purpal('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid')} ${cstyler.yellow('DECIMAL')} ${cstyler.red('scale')}`
+                                    );
+
+
+                                }
+                            }
                         }
                     } else {
                         console.error("Column of table: ", tableName, " must be in json format.");
@@ -329,6 +330,9 @@ function JSONchecker(table_json) {
         }
         if (badColumnNames.length > 0) {
             console.error(`Column names are not correct: \n${badColumnNames.join("\n")}`);
+        }
+        if (badtype.length > 0) {
+            console.error(`Column type are not correct: \n${badtype.join("\n")}`);
         }
         if (badlength.length > 0) {
             console.error(`ENUM values that are not correct: \n${badlength.join("\n")}`);

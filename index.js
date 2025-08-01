@@ -13,7 +13,7 @@ async function runit(config, table_json) {
     try {
         console.log(cstyler.blue("Initializing DBTASKER..."))
         // Check config
-        if(config.hasOwnProperty("port") && config.hasOwnProperty("host") && config.hasOwnProperty("user") && config.hasOwnProperty("password") && fncs.isNumber(config.port)){
+        if (config.hasOwnProperty("port") && config.hasOwnProperty("host") && config.hasOwnProperty("user") && config.hasOwnProperty("password") && fncs.isNumber(config.port)) {
             console.log("Database config is good...");
         } else {
             console.error("Database config have some problem. Please check and try again.")
@@ -83,7 +83,7 @@ async function runit(config, table_json) {
                 console.error("There is no available database to work on tables.");
                 return;
             }
-            if(unavailabledbnames.length > 0){
+            if (unavailabledbnames.length > 0) {
                 console.error("Check these databases that are not available.\n", cstyler.blue(unavailabledbnames.join(", ")));
             }
             // lets check all table name and column name
@@ -95,7 +95,7 @@ async function runit(config, table_json) {
             // table json file checking done
             // lets work on tables
             const tableAdded = await dbtask.dbTask(config, availabledatabases);
-            
+
         }
     } catch (err) {
         console.error(err.message);
