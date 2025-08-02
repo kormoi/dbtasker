@@ -1,6 +1,8 @@
 const mysql = require("mysql2/promise");
 const mdatabase = require("./index");
 
+// keept it for the config but not usefull for this package 
+
 
 const DBInfo = {
   port: 3301,
