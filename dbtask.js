@@ -46,8 +46,10 @@ async function dbTask(config, table_config, availabledatabase) {
                     // add column name
                     for (const columnName of Object.keys(availabledatabase[databaseName][JSONTableName])) {
                         queryText += columnName.toLocaleLowerCase() + " ";
-                        queryText += availabledatabase[databaseName][JSONTableName].type.name.toUpperCase();
-                        
+                        queryText += availabledatabase[databaseName][JSONTableName].type.name.toUpperCase() + " ";
+                        if(availabledatabase[databaseName][JSONTableName].type.hasOwnProperty("LengthValues")){
+                            
+                        }
 
                     }
                     queryText += ") CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"

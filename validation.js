@@ -34,7 +34,7 @@ function JSONchecker(table_json) {
         for (const databaseName of Object.keys(table_json)) {
             if (fncs.isJsonObject(table_json[databaseName])) {
                 for (const tableName of Object.keys(table_json[databaseName])) {
-                    if (!fncs.perseTableNameWithLoop(tableName.toLocaleLowerCase())) {
+                    if (!fncs.perseTableNameWithLoop(tableName.toLowerCase())) {
                         badTableNames.push(
                             `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
                             `${cstyler.purpal('of table:')} ${cstyler.blue(tableName)} ` +
@@ -46,7 +46,7 @@ function JSONchecker(table_json) {
                         for (const columnName of Object.keys(table_json[databaseName][tableName])) {
                             const deepColumn = table_json[databaseName][tableName][columnName];
                             // lets check column names
-                            if (!fncs.isValidColumnName(columnName.toLocaleLowerCase())) {
+                            if (!fncs.isValidColumnName(columnName.toLowerCase())) {
                                 badColumnNames.push(
                                     `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
                                     `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
@@ -272,7 +272,7 @@ function JSONchecker(table_json) {
                                     );
                                     continue;
                                 } else {
-                                    if (!allMySQLColumnTypes.includes(deepColumn.type.name.toLocaleLowerCase())) {
+                                    if (!allMySQLColumnTypes.includes(deepColumn.type.name.toLowerCase())) {
                                         badtype.push(
                                             `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
                                             `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
@@ -295,7 +295,7 @@ function JSONchecker(table_json) {
                                 "enum",
                                 "set"
                             ];
-                            if (requireLength.includes(deepColumn.type.name)) {
+                            if (requireLength.includes(deepColumn.type.name.toLowerCase())) {
                                 if (!deepColumn.type.hasOwnProperty(LengthValues)) {
                                     badlength.push(
                                         `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
@@ -304,10 +304,44 @@ function JSONchecker(table_json) {
                                         `${cstyler.red('must be have a ')} ${cstyler.yellow("LengthValues")}`
                                     )
                                     continue;
+                                } else {
+                                    if (parseQuotedListSafely(deepColumn.type.LengthValues).length === 0 && !fncs.isNumber(deepColumn.type.LengthValues)) {
+                                        badlength.push(
+                                            `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.red(' LengthValue must be a ')} ${cstyler.yellow("number or an array")}`
+                                        )
+                                        continue;
+                                    }
+                                }
+                            }
+                            const typesWithNumericLengthValue = [
+                                "char",        // CHAR(n)
+                                "varchar",     // VARCHAR(n)
+                                "binary",      // BINARY(n)
+                                "varbinary",   // VARBINARY(n)
+                                "bit",         // BIT(n)
+                                "tinyint",     // TINYINT(n)
+                                "smallint",    // SMALLINT(n)
+                                "mediumint",   // MEDIUMINT(n)
+                                "int",         // INT(n)
+                                "integer",     // INTEGER(n)
+                                "bigint"       // BIGINT(n)
+                            ];
+                            if (typesWithNumericLengthValue.includes(deepColumn.type.name) && deepColumn.type.hasOwnProperty("LengthValues")) {
+                                if (!fncs.isNumber(deepColumn.type.LengthValues)) {
+                                    badlength.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red(' LengthValue must be an ')} ${cstyler.yellow("integer")}`
+                                    )
+                                    continue;
                                 }
                             }
                             // check ENUM
-                            if (deepColumn.type?.name === "ENUM") {
+                            if (["ENUM", "SET"].includes(deepColumn.type.name.toUpperCase())) {
                                 const enumoptions = parseQuotedListSafely(deepColumn.type?.LengthValues);
                                 if (enumoptions.length < 1) {
                                     badlength.push(
@@ -321,24 +355,16 @@ function JSONchecker(table_json) {
 
                                 }
                             }
-                            // check SET
-                            if (deepColumn.type?.name === "SET") {
-                                const setOptions = parseQuotedListSafely(deepColumn.type.LengthValues);
-                                if (setOptions.length < 1) {
-                                    badlength.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.yellow('LengthValues')} ${cstyler.red('for')} ${cstyler.yellow('SET')} ` +
-                                        `${cstyler.red('must be a non-empty list with single-quoted items or an array:')} ` +
-                                        `${cstyler.yellow(`"'red', 'blue',..."`)} ${cstyler.red('or')} ${cstyler.yellow("['red', 'blue',...]")}`
-                                    );
-
-                                }
-                            }
                             // check VARCHAR or CHAR
-                            if (["VARCHAR", "CHAR"].includes(deepColumn.type?.name)) {
-                                if (!Number.isInteger(deepColumn.type.LengthValues) || deepColumn.type.LengthValues < 1) {
+                            const columnTypesRequiringLengthValue = [
+                                "char",       // CHAR(n) – required
+                                "varchar",    // VARCHAR(n) – required
+                                "binary",     // BINARY(n) – required
+                                "varbinary",  // VARBINARY(n) – required
+                                "bit"         // BIT(n) – required
+                            ];
+                            if (columnTypesRequiringLengthValue.includes(deepColumn.type.name.toLowerCase())) {
+                                if (!fncs.isNumber(deepColumn.type.LengthValues)) {
                                     badlength.push(
                                         `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red("'s must define a positive integer Length for type")} ${cstyler.yellow(deepColumn.type?.name)}`
                                     );
@@ -347,7 +373,7 @@ function JSONchecker(table_json) {
                             }
                             // check DECIMAL
                             if (deepColumn.type?.name === "DECIMAL") {
-                                const [precision, scale] = deepColumn.type.LengthValues || [];
+                                const [precision, scale] = parseQuotedListSafely(deepColumn.type.LengthValues) || [];
                                 if (!Number.isInteger(precision) || precision <= 0 || precision > 65) {
                                     badlength.push(
                                         `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red(" has invalid")} ${cstyler.yellow('DECIMAL')} ${cstyler.red('precision')}`
