@@ -201,7 +201,7 @@ function isValidTableName(name) {
 }
 function isValidColumnName(name) {
   if (typeof name !== 'string') return false;
-
+  if (name.length === 0) return false;
   const maxLength = 64;
 
   const reservedKeywords = new Set([

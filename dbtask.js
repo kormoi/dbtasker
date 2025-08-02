@@ -42,10 +42,14 @@ async function dbTask(config, table_config, availabledatabase) {
                     // Drop Column
                 } else {
                     // insert table
-                    let queryText = `CREATE TABLE IF NOT EXISTS ${JSONTableName.toLocaleLowerCase()} (`;
+                    let queryText = `CREATE TABLE IF NOT EXISTS ${tableName.toLocaleLowerCase()} (`;
                     // add column name
+                    for (const columnName of Object.keys(availabledatabase[databaseName][JSONTableName])) {
+                        queryText += columnName.toLocaleLowerCase() + " ";
+                        queryText += availabledatabase[databaseName][JSONTableName].type.name.toUpperCase();
+                        
 
-
+                    }
                     queryText += ") CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
                 }
             }

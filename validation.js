@@ -235,6 +235,25 @@ function JSONchecker(table_json) {
                                 }
                             }
                             // Let's check properties
+                            // check type
+                            const allMySQLColumnTypes = [
+                                // Numeric Types
+                                "tinyint", "smallint", "mediumint", "int", "integer", "bigint",
+                                "decimal", "dec", "numeric", "fixed", "float", "double",
+                                "double precision", "real", "bit", "boolean", "bool", "serial",
+
+                                // Date and Time Types
+                                "date", "datetime", "timestamp", "time", "year",
+
+                                // String Types
+                                "char", "varchar", "binary", "varbinary", "tinyblob", "blob",
+                                "mediumblob", "longblob", "tinytext", "text", "mediumtext", "longtext",
+                                "enum", "set",
+
+                                // JSON and Spatial Types
+                                "json", "geometry", "point", "linestring", "polygon", "multipoint",
+                                "multilinestring", "multipolygon", "geometrycollection"
+                            ];
                             if (!deepColumn.hasOwnProperty("type")) {
                                 badtype.push(
                                     `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
@@ -251,6 +270,39 @@ function JSONchecker(table_json) {
                                         `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
                                         `${cstyler.red('> type - must have name.')}`
                                     );
+                                    continue;
+                                } else {
+                                    if (!allMySQLColumnTypes.includes(deepColumn.type.name.toLocaleLowerCase())) {
+                                        badtype.push(
+                                            `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.red('> type - must have valid column type.')}`
+                                        );
+                                        continue;
+                                    }
+                                }
+                            }
+                            // Bad length value
+                            const requireLength = [
+                                "char",
+                                "varchar",
+                                "binary",
+                                "varbinary",
+                                "bit",
+                                "decimal",
+                                "numeric",
+                                "enum",
+                                "set"
+                            ];
+                            if (requireLength.includes(deepColumn.type.name)) {
+                                if (!deepColumn.type.hasOwnProperty(LengthValues)) {
+                                    badlength.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red('must be have a ')} ${cstyler.yellow("LengthValues")}`
+                                    )
                                     continue;
                                 }
                             }
