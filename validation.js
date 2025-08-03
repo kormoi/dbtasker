@@ -18,6 +18,57 @@ function parseQuotedListSafely(text) {
         .map(item => item.trim().replace(/^'(.*)'$/, "$1"))
         .filter(item => item.length > 0);
 }
+
+const mysqlTypeMetadata = {
+    CHAR: { lengthType: "int", required: true, query: "CHAR(10)", supportsUnsigned: false },
+    VARCHAR: { lengthType: "int", required: true, query: "VARCHAR(255)", supportsUnsigned: false },
+    BINARY: { lengthType: "int", required: true, query: "BINARY(16)", supportsUnsigned: false },
+    VARBINARY: { lengthType: "int", required: true, query: "VARBINARY(255)", supportsUnsigned: false },
+    BIT: { lengthType: "int", required: true, query: "BIT(8)", supportsUnsigned: false },
+
+    DECIMAL: { lengthType: "two-int", required: true, query: "DECIMAL(10,2)", supportsUnsigned: true },
+    NUMERIC: { lengthType: "two-int", required: true, query: "NUMERIC(8,3)", supportsUnsigned: true },
+
+    FLOAT: { lengthType: "two-int", required: false, query: "FLOAT(10,2)", supportsUnsigned: true },
+    DOUBLE: { lengthType: "two-int", required: false, query: "DOUBLE(12,4)", supportsUnsigned: true },
+
+    ENUM: { lengthType: "list", required: true, query: "ENUM('a','b')", supportsUnsigned: false },
+    SET: { lengthType: "list", required: true, query: "SET('x','y')", supportsUnsigned: false },
+
+    TINYINT: { lengthType: "int", required: false, query: "TINYINT(3)", supportsUnsigned: true },
+    SMALLINT: { lengthType: "int", required: false, query: "SMALLINT(5)", supportsUnsigned: true },
+    MEDIUMINT: { lengthType: "int", required: false, query: "MEDIUMINT(8)", supportsUnsigned: true },
+    INT: { lengthType: "int", required: false, query: "INT(11)", supportsUnsigned: true },
+    BIGINT: { lengthType: "int", required: false, query: "BIGINT(20)", supportsUnsigned: true },
+
+    DATE: { lengthType: "none", required: false, query: "DATE", supportsUnsigned: false },
+    DATETIME: { lengthType: "none", required: false, query: "DATETIME", supportsUnsigned: false },
+    TIMESTAMP: { lengthType: "none", required: false, query: "TIMESTAMP", supportsUnsigned: false },
+    TIME: { lengthType: "none", required: false, query: "TIME", supportsUnsigned: false },
+    YEAR: { lengthType: "none", required: false, query: "YEAR", supportsUnsigned: false },
+
+    TINYTEXT: { lengthType: "none", required: false, query: "TINYTEXT", supportsUnsigned: false },
+    TEXT: { lengthType: "none", required: false, query: "TEXT", supportsUnsigned: false },
+    MEDIUMTEXT: { lengthType: "none", required: false, query: "MEDIUMTEXT", supportsUnsigned: false },
+    LONGTEXT: { lengthType: "none", required: false, query: "LONGTEXT", supportsUnsigned: false },
+
+    TINYBLOB: { lengthType: "none", required: false, query: "TINYBLOB", supportsUnsigned: false },
+    BLOB: { lengthType: "none", required: false, query: "BLOB", supportsUnsigned: false },
+    MEDIUMBLOB: { lengthType: "none", required: false, query: "MEDIUMBLOB", supportsUnsigned: false },
+    LONGBLOB: { lengthType: "none", required: false, query: "LONGBLOB", supportsUnsigned: false },
+
+    GEOMETRY: { lengthType: "none", required: false, query: "GEOMETRY", supportsUnsigned: false },
+    POINT: { lengthType: "none", required: false, query: "POINT", supportsUnsigned: false },
+    LINESTRING: { lengthType: "none", required: false, query: "LINESTRING", supportsUnsigned: false },
+    POLYGON: { lengthType: "none", required: false, query: "POLYGON", supportsUnsigned: false },
+    MULTIPOINT: { lengthType: "none", required: false, query: "MULTIPOINT", supportsUnsigned: false },
+    MULTILINESTRING: { lengthType: "none", required: false, query: "MULTILINESTRING", supportsUnsigned: false },
+    MULTIPOLYGON: { lengthType: "none", required: false, query: "MULTIPOLYGON", supportsUnsigned: false },
+    GEOMETRYCOLLECTION: { lengthType: "none", required: false, query: "GEOMETRYCOLLECTION", supportsUnsigned: false }
+};
+
+
+
 function JSONchecker(table_json) {
     // lets check all table name and column name
     let badTableNames = [];
@@ -170,7 +221,7 @@ function JSONchecker(table_json) {
                             ];
                             if (deepColumn.hasOwnProperty("AUTO_INCREMENT")) {
                                 if (
-                                    !autoIncrementIntegerTypesWithUnsigned.includes(deepColumn.type?.name) ||
+                                    !autoIncrementIntegerTypesWithUnsigned.includes(deepColumn.type?.name.toUpperCase()) ||
                                     !['PRIMARY KEY', 'UNIQUE', true].includes(deepColumn.index) ||
                                     deepColumn.NULL === true ||
                                     deepColumn.hasOwnProperty("DEFAULT")
@@ -223,7 +274,7 @@ function JSONchecker(table_json) {
                                     "SPATIAL"
                                 ];
                                 const indexValue = typeof deepColumn.index === "string" ? deepColumn.index.toUpperCase() : deepColumn.index;
-                                if (!validIndexValues.includes(indexValue)) {
+                                if (!validIndexValues.includes(indexValue.toUpperCase())) {
                                     badindex.push(
                                         `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
                                         `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
@@ -236,24 +287,7 @@ function JSONchecker(table_json) {
                             }
                             // Let's check properties
                             // check type
-                            const allMySQLColumnTypes = [
-                                // Numeric Types
-                                "tinyint", "smallint", "mediumint", "int", "integer", "bigint",
-                                "decimal", "dec", "numeric", "fixed", "float", "double",
-                                "double precision", "real", "bit", "boolean", "bool", "serial",
-
-                                // Date and Time Types
-                                "date", "datetime", "timestamp", "time", "year",
-
-                                // String Types
-                                "char", "varchar", "binary", "varbinary", "tinyblob", "blob",
-                                "mediumblob", "longblob", "tinytext", "text", "mediumtext", "longtext",
-                                "enum", "set",
-
-                                // JSON and Spatial Types
-                                "json", "geometry", "point", "linestring", "polygon", "multipoint",
-                                "multilinestring", "multipolygon", "geometrycollection"
-                            ];
+                            const allMySQLColumnTypes = Object.keys(mysqlTypeMetadata);
                             if (!deepColumn.hasOwnProperty("type")) {
                                 badtype.push(
                                     `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
@@ -272,7 +306,7 @@ function JSONchecker(table_json) {
                                     );
                                     continue;
                                 } else {
-                                    if (!allMySQLColumnTypes.includes(deepColumn.type.name.toLowerCase())) {
+                                    if (!allMySQLColumnTypes.includes(deepColumn.type.name.toUpperCase())) {
                                         badtype.push(
                                             `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
                                             `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
@@ -303,7 +337,6 @@ function JSONchecker(table_json) {
                                         `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
                                         `${cstyler.red('must be have a ')} ${cstyler.yellow("LengthValues")}`
                                     )
-                                    continue;
                                 } else {
                                     if (parseQuotedListSafely(deepColumn.type.LengthValues).length === 0 && !fncs.isNumber(deepColumn.type.LengthValues)) {
                                         badlength.push(
@@ -312,7 +345,6 @@ function JSONchecker(table_json) {
                                             `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
                                             `${cstyler.red(' LengthValue must be a ')} ${cstyler.yellow("number or an array")}`
                                         )
-                                        continue;
                                     }
                                 }
                             }
@@ -329,7 +361,7 @@ function JSONchecker(table_json) {
                                 "integer",     // INTEGER(n)
                                 "bigint"       // BIGINT(n)
                             ];
-                            if (typesWithNumericLengthValue.includes(deepColumn.type.name) && deepColumn.type.hasOwnProperty("LengthValues")) {
+                            if (typesWithNumericLengthValue.includes(deepColumn.type.name.toLowerCase()) && deepColumn.type.hasOwnProperty("LengthValues")) {
                                 if (!fncs.isNumber(deepColumn.type.LengthValues)) {
                                     badlength.push(
                                         `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
@@ -340,7 +372,7 @@ function JSONchecker(table_json) {
                                     continue;
                                 }
                             }
-                            // check ENUM
+                            // check ENUM and SET
                             if (["ENUM", "SET"].includes(deepColumn.type.name.toUpperCase())) {
                                 const enumoptions = parseQuotedListSafely(deepColumn.type?.LengthValues);
                                 if (enumoptions.length < 1) {
@@ -372,20 +404,47 @@ function JSONchecker(table_json) {
                                 }
                             }
                             // check DECIMAL
-                            if (deepColumn.type?.name === "DECIMAL") {
-                                const [precision, scale] = parseQuotedListSafely(deepColumn.type.LengthValues) || [];
+                            const typeName = deepColumn.type.name.toUpperCase();
+                            const [precision, scale] = parseQuotedListSafely(deepColumn.type.LengthValues) || [];
+                            if (fncs.isNumber(precision)) precision = Number(precision);
+                            if (fncs.isNumber(scale)) scale = Number(scale);
+                            // DECIMAL and NUMERIC — Length values are required
+                            if (typeName === "DECIMAL" || typeName === "NUMERIC") {
                                 if (!Number.isInteger(precision) || precision <= 0 || precision > 65) {
                                     badlength.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red(" has invalid")} ${cstyler.yellow('DECIMAL')} ${cstyler.red('precision')}`
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red(" has invalid")} ${cstyler.yellow(typeName)} ${cstyler.red('precision')}`
                                     );
-
                                 }
+
                                 if (!Number.isInteger(scale) || scale < 0 || scale > precision) {
                                     badlength.push(
-                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purpal('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purpal('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid')} ${cstyler.yellow('DECIMAL')} ${cstyler.red('scale')}`
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purpal('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purpal('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid')} ${cstyler.yellow(typeName)} ${cstyler.red('scale')}`
                                     );
+                                }
+                            }
+                            if ((typeName === "FLOAT" || typeName === "DOUBLE") && deepColumn.type.LengthValues) {
+                                // Check if LengthValues is not a valid string or array
+                                if (parseQuotedListSafely(deepColumn.type.LengthValues).length !== 2) {
+                                    badlength.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid')} ${cstyler.yellow(typeName)} ${cstyler.red('length value format')}`
+                                    );
+                                } else {
+                                    // Safe to parse
+                                    const [precision, scale] = parseQuotedListSafely(deepColumn.type.LengthValues) || [];
+                                    if (fncs.isNumber(precision)) precision = Number(precision);
+                                    if (fncs.isNumber(scale)) scale = Number(scale);
 
+                                    if (!Number.isInteger(precision) || precision <= 0 || precision > 255) {
+                                        badlength.push(
+                                            `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)}${cstyler.red(" has invalid")} ${cstyler.yellow(typeName)} ${cstyler.red('precision')}`
+                                        );
+                                    }
 
+                                    if (!Number.isInteger(scale) || scale < 0 || scale > precision) {
+                                        badlength.push(
+                                            `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purpal('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purpal('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid')} ${cstyler.yellow(typeName)} ${cstyler.red('scale')}`
+                                        );
+                                    }
                                 }
                             }
                         }
