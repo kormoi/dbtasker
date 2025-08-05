@@ -20,43 +20,49 @@ function parseQuotedListSafely(text) {
 }
 
 const mysqlTypeMetadata = {
-    CHAR: { lengthType: "int", required: true, query: "CHAR(10)", supportsUnsigned: false },
-    VARCHAR: { lengthType: "int", required: true, query: "VARCHAR(255)", supportsUnsigned: false },
-    BINARY: { lengthType: "int", required: true, query: "BINARY(16)", supportsUnsigned: false },
-    VARBINARY: { lengthType: "int", required: true, query: "VARBINARY(255)", supportsUnsigned: false },
-    BIT: { lengthType: "int", required: true, query: "BIT(8)", supportsUnsigned: false },
-
-    DECIMAL: { lengthType: "two-int", required: true, query: "DECIMAL(10,2)", supportsUnsigned: true },
-    NUMERIC: { lengthType: "two-int", required: true, query: "NUMERIC(8,3)", supportsUnsigned: true },
-
-    FLOAT: { lengthType: "two-int", required: false, query: "FLOAT(10,2)", supportsUnsigned: true },
-    DOUBLE: { lengthType: "two-int", required: false, query: "DOUBLE(12,4)", supportsUnsigned: true },
-
-    ENUM: { lengthType: "list", required: true, query: "ENUM('a','b')", supportsUnsigned: false },
-    SET: { lengthType: "list", required: true, query: "SET('x','y')", supportsUnsigned: false },
-
+    // Numeric types
     TINYINT: { lengthType: "int", required: false, query: "TINYINT(3)", supportsUnsigned: true },
     SMALLINT: { lengthType: "int", required: false, query: "SMALLINT(5)", supportsUnsigned: true },
     MEDIUMINT: { lengthType: "int", required: false, query: "MEDIUMINT(8)", supportsUnsigned: true },
     INT: { lengthType: "int", required: false, query: "INT(11)", supportsUnsigned: true },
+    INTEGER: { lengthType: "int", required: false, query: "INTEGER(11)", supportsUnsigned: true },
     BIGINT: { lengthType: "int", required: false, query: "BIGINT(20)", supportsUnsigned: true },
+    FLOAT: { lengthType: "two-int", required: false, query: "FLOAT(10,2)", supportsUnsigned: true },
+    DOUBLE: { lengthType: "two-int", required: false, query: "DOUBLE(16,4)", supportsUnsigned: true },
+    REAL: { lengthType: "two-int", required: false, query: "REAL(16,4)", supportsUnsigned: true },
+    DECIMAL: { lengthType: "two-int", required: true, query: "DECIMAL(10,2)", supportsUnsigned: true },
+    NUMERIC: { lengthType: "two-int", required: true, query: "NUMERIC(10,2)", supportsUnsigned: true },
 
+    // Boolean types
+    BOOLEAN: { lengthType: "none", required: false, query: "BOOLEAN", supportsUnsigned: false },
+    BOOL: { lengthType: "none", required: false, query: "BOOL", supportsUnsigned: false },
+
+    // Date & Time types
     DATE: { lengthType: "none", required: false, query: "DATE", supportsUnsigned: false },
-    DATETIME: { lengthType: "none", required: false, query: "DATETIME", supportsUnsigned: false },
-    TIMESTAMP: { lengthType: "none", required: false, query: "TIMESTAMP", supportsUnsigned: false },
-    TIME: { lengthType: "none", required: false, query: "TIME", supportsUnsigned: false },
+    TIME: { lengthType: "fsp", required: false, query: "TIME(6)", supportsUnsigned: false },
     YEAR: { lengthType: "none", required: false, query: "YEAR", supportsUnsigned: false },
+    DATETIME: { lengthType: "fsp", required: false, query: "DATETIME(6)", supportsUnsigned: false },
+    TIMESTAMP: { lengthType: "fsp", required: false, query: "TIMESTAMP(6)", supportsUnsigned: false },
 
+    // String types
+    CHAR: { lengthType: "int", required: true, query: "CHAR(1)", supportsUnsigned: false },
+    VARCHAR: { lengthType: "int", required: true, query: "VARCHAR(255)", supportsUnsigned: false },
     TINYTEXT: { lengthType: "none", required: false, query: "TINYTEXT", supportsUnsigned: false },
     TEXT: { lengthType: "none", required: false, query: "TEXT", supportsUnsigned: false },
     MEDIUMTEXT: { lengthType: "none", required: false, query: "MEDIUMTEXT", supportsUnsigned: false },
     LONGTEXT: { lengthType: "none", required: false, query: "LONGTEXT", supportsUnsigned: false },
+    ENUM: { lengthType: "list", required: true, query: "ENUM('option1', 'option2')", supportsUnsigned: false },
+    SET: { lengthType: "list", required: true, query: "SET('a','b','c')", supportsUnsigned: false },
 
+    // Binary types
+    BINARY: { lengthType: "int", required: true, query: "BINARY(1)", supportsUnsigned: false },
+    VARBINARY: { lengthType: "int", required: true, query: "VARBINARY(255)", supportsUnsigned: false },
     TINYBLOB: { lengthType: "none", required: false, query: "TINYBLOB", supportsUnsigned: false },
     BLOB: { lengthType: "none", required: false, query: "BLOB", supportsUnsigned: false },
     MEDIUMBLOB: { lengthType: "none", required: false, query: "MEDIUMBLOB", supportsUnsigned: false },
     LONGBLOB: { lengthType: "none", required: false, query: "LONGBLOB", supportsUnsigned: false },
 
+    // Spatial types
     GEOMETRY: { lengthType: "none", required: false, query: "GEOMETRY", supportsUnsigned: false },
     POINT: { lengthType: "none", required: false, query: "POINT", supportsUnsigned: false },
     LINESTRING: { lengthType: "none", required: false, query: "LINESTRING", supportsUnsigned: false },
@@ -64,8 +70,12 @@ const mysqlTypeMetadata = {
     MULTIPOINT: { lengthType: "none", required: false, query: "MULTIPOINT", supportsUnsigned: false },
     MULTILINESTRING: { lengthType: "none", required: false, query: "MULTILINESTRING", supportsUnsigned: false },
     MULTIPOLYGON: { lengthType: "none", required: false, query: "MULTIPOLYGON", supportsUnsigned: false },
-    GEOMETRYCOLLECTION: { lengthType: "none", required: false, query: "GEOMETRYCOLLECTION", supportsUnsigned: false }
+    GEOMETRYCOLLECTION: { lengthType: "none", required: false, query: "GEOMETRYCOLLECTION", supportsUnsigned: false },
+
+    // JSON
+    JSON: { lengthType: "none", required: false, query: "JSON", supportsUnsigned: false }
 };
+
 
 
 
@@ -317,8 +327,9 @@ function JSONchecker(table_json) {
                                     }
                                 }
                             }
-                            if (Object.keys(mysqlTypeMetadata).includes(deepColumn.type.name)) {
-                                const typeInfo = mysqlTypeMetadata[deepColumn.type.name];
+                            // check LengthValue
+                            if (Object.keys(mysqlTypeMetadata).includes(deepColumn.type.name.toUpperCase())) {
+                                const typeInfo = mysqlTypeMetadata[deepColumn.type.name.toUpperCase()];
 
                                 // Check if length is required but missing
                                 if (
@@ -330,7 +341,7 @@ function JSONchecker(table_json) {
                                     );
                                 }
 
-                                // Validate provided LengthValues if available
+                                // Validate LengthValues if provided (even if not required)
                                 if (deepColumn.type.hasOwnProperty("LengthValues")) {
                                     const lenVals = deepColumn.type.LengthValues;
 
@@ -341,19 +352,16 @@ function JSONchecker(table_json) {
                                             );
                                         }
                                     } else if (typeInfo.lengthType === "two-int") {
-                                        if (!Array.isArray(lenVals) || lenVals.length !== 2) {
+                                        const parsed = parseQuotedListSafely(lenVals);
+                                        if (parsed.length !== 2) {
                                             badlength.push(
                                                 `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have two integer values [precision, scale]')}`
                                             );
                                         } else {
-                                            const [precision, scale] = lenVals;
+                                            const [precision, scale] = parsed;
                                             if (
-                                                !Number.isInteger(precision) ||
-                                                precision <= 0 ||
-                                                precision > 65 ||
-                                                !Number.isInteger(scale) ||
-                                                scale < 0 ||
-                                                scale > precision
+                                                !Number.isInteger(precision) || precision <= 0 || precision > 65 ||
+                                                !Number.isInteger(scale) || scale < 0 || scale > precision
                                             ) {
                                                 badlength.push(
                                                     `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid precision or scale')}`
@@ -361,14 +369,16 @@ function JSONchecker(table_json) {
                                             }
                                         }
                                     } else if (typeInfo.lengthType === "list") {
-                                        if (!Array.isArray(lenVals) || lenVals.length === 0) {
+                                        const parsed = parseQuotedListSafely(lenVals);
+                                        if (!Array.isArray(parsed) || parsed.length === 0) {
                                             badlength.push(
                                                 `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have a valid list of options')}`
                                             );
                                         }
                                     }
                                 }
-                            } else {
+                            }
+                            else {
                                 badtype.push(
                                     `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
                                     `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
