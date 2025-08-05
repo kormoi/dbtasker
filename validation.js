@@ -90,6 +90,7 @@ function JSONchecker(table_json) {
     let baddefaults = [];
     let badlength = [];
     let badforeighkey = [];
+    console.log(cstyler.green("Initializing JSON checking..."))
 
     if (fncs.isJsonObject(table_json)) {
         for (const databaseName of Object.keys(table_json)) {
@@ -399,7 +400,8 @@ function JSONchecker(table_json) {
             }
         }
         // Lets return result
-        if (badTableNames.length === 0 && badColumnNames.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0) {
+        if (badTableNames.length === 0 && badColumnNames.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0) {
+            console.log(cstyler.green("<<<All JSON checking is done>>>"));
             return true;
         }
         if (badTableNames.length > 0) {
@@ -408,6 +410,8 @@ function JSONchecker(table_json) {
         if (badColumnNames.length > 0) {
             console.error(`Column names are not correct: \n${badColumnNames.join("\n")}`);
         }
+        console.log(cstyler.yellow("Valid column types:"));
+        console.log(cstyler.dark.yellow(Object.keys(mysqlTypeMetadata).join(", ")));
         if (badtype.length > 0) {
             console.error(`Column type are not correct: \n${badtype.join("\n")}`);
         }
@@ -429,6 +433,7 @@ function JSONchecker(table_json) {
         if (badforeighkey.length > 0) {
             console.error(`Foreign keys and values that are not correct: \n${badforeighkey.join("\n")}`);
         }
+        console.log(cstyler.red("<<<All JSON checking is done. JSON need correction.>>>"));
         return false;
     } else {
         console.error("Plese provide a valid json file");

@@ -55,7 +55,7 @@ module.exports = {
         },
         "profile_title": {
           "type": {
-            "name": "JSON"
+            "name": "jso"
           },
           "NULL": false
         },

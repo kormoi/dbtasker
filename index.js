@@ -94,7 +94,7 @@ async function runit(config, table_json) {
             }
             // table json file checking done
             // lets work on tables
-            const tableAdded = await dbtask.dbTask(config, availabledatabases);
+            //const tableAdded = await dbtask.dbTask(config, availabledatabases);
 
         }
     } catch (err) {

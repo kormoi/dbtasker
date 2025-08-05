@@ -20,7 +20,15 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "cstyler": "^1.0.0",
+    "cstyler": "^2.0.1",
     "mysql2": "^3.14.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kormoi/dbtasker"
+  },
+  "bugs": {
+    "url": "https://github.com/kormoi/dbtasker/issues"
+  },
+  "homepage": "https://github.com/kormoi/dbtasker#readme"
 }
