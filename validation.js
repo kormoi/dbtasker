@@ -90,6 +90,9 @@ function JSONchecker(table_json) {
     let baddefaults = [];
     let badlength = [];
     let badforeighkey = [];
+    let badcomment = [];
+    let badunsigned = [];
+    let badzerofill = [];
     console.log(cstyler.green("Initializing JSON checking..."))
 
     if (fncs.isJsonObject(table_json)) {
@@ -107,6 +110,79 @@ function JSONchecker(table_json) {
                     if (fncs.isJsonObject(table_json[databaseName][tableName])) {
                         for (const columnName of Object.keys(table_json[databaseName][tableName])) {
                             const deepColumn = table_json[databaseName][tableName][columnName];
+                            let autoIncrement = undefined;
+                            let indexes = undefined;
+                            let nulls = undefined;
+                            let defaults = undefined;
+                            let comment = undefined;
+                            let unsigned = undefined;
+                            let zerofill = undefined;
+                            if (deepColumn.hasOwnProperty("autoIncrement")) {
+                                autoIncrement = deepColumn.autoIncrement;
+                            } else if (deepColumn.hasOwnProperty("autoincrement")) {
+                                autoIncrement = deepColumn.autoincrement;
+                            } else if (deepColumn.hasOwnProperty("auto_increment")) {
+                                autoIncrement = deepColumn.auto_increment;
+                            } else if (deepColumn.hasOwnProperty("AUTO_INCREMENT")) {
+                                autoIncrement = deepColumn.AUTO_INCREMENT;
+                            } else if (deepColumn.hasOwnProperty("AUTOINCREMENT")) {
+                                autoIncrement = deepColumn.AUTOINCREMENT;
+                            }
+                            /**
+                             * autoIncrement
+                             * autoincrement
+                             * auto_increment
+                             * AUTO_INCREMENT
+                             * AUTOINCREMENT
+                             */
+                            if (deepColumn.hasOwnProperty("index")) {
+                                indexes = deepColumn.index;
+                            } else if (deepColumn.hasOwnProperty("INDEX")) {
+                                indexes = deepColumn.INDEX;
+                            } else if (deepColumn.hasOwnProperty("Index")) {
+                                indexes = deepColumn.Index;
+                            }
+                            /**
+                             * index
+                             * INDEX
+                             * Index
+                             */
+                            if (deepColumn.hasOwnProperty("null")) {
+                                nulls = deepColumn.null;
+                            } else if (deepColumn.hasOwnProperty("NULL")) {
+                                nulls = deepColumn.NULL;
+                            } else if (deepColumn.hasOwnProperty("Null")) {
+                                nulls = deepColumn.Null;
+                            }
+                            /**
+                             * null
+                             * NULL
+                             * Null
+                             */
+                            if (deepColumn.hasOwnProperty("default")) {
+                                defaults = deepColumn.default;
+                            } else if (deepColumn.hasOwnProperty("DEFAULT")) {
+                                defaults = deepColumn.DEFAULT;
+                            } else if (deepColumn.hasOwnProperty("Default")) {
+                                defaults = deepColumn.Default;
+                            }
+                            /**
+                             * default
+                             * DEFAULT
+                             * Default
+                             */
+                            if (deepColumn.hasOwnProperty("comment")) {
+                                comment = deepColumn.comment;
+                            } else if (deepColumn.hasOwnProperty("COMMENT")) {
+                                comment = deepColumn.COMMENT;
+                            } else if (deepColumn.hasOwnProperty("Comment")) {
+                                comment = deepColumn.Comment;
+                            }
+                            /**
+                             * comment
+                             * COMMENT
+                             * Comment
+                             */
                             // lets check column names
                             if (!fncs.isValidColumnName(columnName.toLowerCase())) {
                                 badColumnNames.push(
@@ -115,7 +191,6 @@ function JSONchecker(table_json) {
                                     `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
                                     `${cstyler.red('- column name is not valid.')}`
                                 );
-
                             }
                             // lets check bad null
                             if (deepColumn.hasOwnProperty("NULL")) {
@@ -127,13 +202,19 @@ function JSONchecker(table_json) {
                                 }
                             }
                             // check DEFAULT
-                            if (deepColumn.hasOwnProperty("DEFAULT")) {
-                                if (deepColumn.type?.name === "JSON" && deepColumn.DEFAULT !== null) {
+                            if (deepColumn.hasOwnProperty("DEFAULT") || deepColumn.hasOwnProperty("default")) {
+                                let def = undefined;
+                                if (deepColumn.hasOwnProperty("DEFAULT")) {
+                                    def = deepColumn.DEFAULT;
+                                } else {
+                                    def = deepColumn.default;
+                                }
+                                if (deepColumn.type?.name === "JSON" && def !== null) {
                                     baddefaults.push(
                                         `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purpal('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purpal('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('column can not have')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('or must be null')}`
                                     );
 
-                                } else if (typeof deepColumn.DEFAULT !== "string" && typeof deepColumn.DEFAULT !== "number") {
+                                } else if (typeof def !== "string" && typeof def !== "number") {
                                     baddefaults.push(
                                         `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} > ` +
                                         `${cstyler.purpal('Table:')} ${cstyler.blue(tableName)} > ` +
@@ -230,12 +311,13 @@ function JSONchecker(table_json) {
                                 "INTEGER UNSIGNED",
                                 "BIGINT UNSIGNED"
                             ];
+                            // check auto increment
                             if (deepColumn.hasOwnProperty("AUTO_INCREMENT")) {
                                 if (
                                     !autoIncrementIntegerTypesWithUnsigned.includes(deepColumn.type?.name.toUpperCase()) ||
                                     !['PRIMARY KEY', 'UNIQUE', true].includes(deepColumn.index) ||
                                     deepColumn.NULL === true ||
-                                    deepColumn.hasOwnProperty("DEFAULT")
+                                    (deepColumn.hasOwnProperty("DEFAULT") || deepColumn.hasOwnProperty("default"))
                                 ) {
                                     badautoincrement.push(
                                         `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
@@ -262,6 +344,73 @@ function JSONchecker(table_json) {
                                         `${cstyler.red('- This table has another')} ${cstyler.yellow('auto_increment')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('auto_increment')} ${cstyler.red('column.')}`
                                     );
 
+                                }
+                            }
+                            // check unsigned
+                            if (deepColumn.unsigned === true || deepColumn.UNSIGNED === true) {
+                                const validNumericTypes = [
+                                    "tinyint", "smallint", "mediumint", "int", "integer",
+                                    "bigint", "float", "double", "decimal", "numeric"
+                                ];
+
+                                const columnType = deepColumn.type?.name?.toLowerCase?.();
+
+                                // ❌ Invalid use of unsigned on a non-numeric type
+                                if (!validNumericTypes.includes(columnType)) {
+                                    badunsigned.push(
+                                        cstyler`{purpal Database:} {blue ${databaseName}} ` +
+                                        cstyler`{purpal > Table:} {blue ${tableName}} ` +
+                                        cstyler`{purpal > Column:} {blue ${columnName}} ` +
+                                        cstyler.red(" - has `unsigned` but type is not numeric")
+                                    );
+                                }
+                            }
+                            // check zerofill
+                            if (deepColumn.zerofill === true &&
+                                !["int", "integer", "bigint", "smallint", "mediumint", "tinyint", "decimal", "numeric", "float", "double"].includes(deepColumn.type?.name.toLowerCase?.())
+                            ) {
+                                badzerofill.push(
+                                    cstyler`{purpal Database:} {blue ${databaseName}} ` +
+                                    cstyler`{purpal > Table:} {blue ${tableName}} ` +
+                                    cstyler`{purpal > Column:} {blue ${columnName}} ` +
+                                    cstyler.red(" - has `zerofill` but column type is not numeric")
+                                );
+                            }
+
+                            // check comment
+                            if (deepColumn.hasOwnProperty("comment") || deepColumn.hasOwnProperty("Comment")) {
+                                const comment = deepColumn.comment ?? deepColumn.Comment;
+
+                                // Invalid comment flags
+                                const invalids = [];
+
+                                if (typeof comment !== "string") {
+                                    invalids.push(cstyler.red("Not a string"));
+                                } else {
+                                    if (comment.includes('"')) {
+                                        invalids.push(cstyler.red('Contains double quote (") '));
+                                    }
+
+                                    if (comment.includes("'")) {
+                                        invalids.push(cstyler.red("Contains single quote (') "));
+                                    }
+
+                                    if (/[\x00]/.test(comment)) {
+                                        invalids.push(cstyler.red("Contains null byte "));
+                                    }
+
+                                    if (comment.length > 1024) {
+                                        invalids.push(cstyler.red("Comment too long (exceeds 1024 characters)"));
+                                    }
+                                }
+
+                                if (invalids.length) {
+                                    badcomment.push(
+                                        `${cstyler.purpal('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purpal('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purpal('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red('- Invalid comment:')} ${invalids.join(cstyler.red(' | '))}`
+                                    );
                                 }
                             }
                             // check index
@@ -400,10 +549,12 @@ function JSONchecker(table_json) {
             }
         }
         // Lets return result
-        if (badTableNames.length === 0 && badColumnNames.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0) {
+        if (badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0) {
             console.log(cstyler.green("<<<All JSON checking is done>>>"));
             return true;
         }
+
+        // lets print on the console
         if (badTableNames.length > 0) {
             console.error(`Table names are not correct: \n${badTableNames.join("\n")}`);
         }
@@ -424,11 +575,17 @@ function JSONchecker(table_json) {
         if (badindex.length > 0) {
             console.error(`Index values that are not correct: \n${badindex.join("\n")}`);
         }
+        if (badunsigned.length > 0) {
+            console.error(`UNSIGNED values that are not correct: \n${badnulls.join("\n")}`);
+        }
         if (badnulls.length > 0) {
             console.error(`NULL values that are not correct: \n${badnulls.join("\n")}`);
         }
         if (baddefaults.length > 0) {
             console.error(`DEFAULT values that are not correct: \n${baddefaults.join("\n")}`);
+        }
+        if (badcomment.length > 0) {
+            console.error(`Comment values that are not correct: \n${baddefaults.join("\n")}`);
         }
         if (badforeighkey.length > 0) {
             console.error(`Foreign keys and values that are not correct: \n${badforeighkey.join("\n")}`);
