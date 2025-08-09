@@ -1,4 +1,7 @@
 const mysql = require('mysql2/promise');
+const fs = require("fs/promises");  // Importing fs.promises for async operations
+const path = require("path");  // Importing Node's path module
+
 
 
 function isNumber(str) {
@@ -400,6 +403,7 @@ const writeJsFile = async (filePath, content) => {
     return true;
   } catch (error) {
     console.error(`Error writing file at ${filePath}:`, error);
+    return false;
   }
 };
 function removefromarray(arr, text) {
@@ -691,4 +695,5 @@ module.exports = {
   getForeignKeyDetails,
   dropTables,
   dropColumns,
+  writeJsFile,
 }

@@ -93,7 +93,7 @@ function JSONchecker(table_json) {
     let badcomment = [];
     let badunsigned = [];
     let badzerofill = [];
-    console.log(cstyler.green("Initializing JSON checking..."))
+    console.log(cstyler.green("Initializing JSON checking..."));
 
     if (fncs.isJsonObject(table_json)) {
         for (const databaseName of Object.keys(table_json)) {
@@ -110,7 +110,7 @@ function JSONchecker(table_json) {
                     if (fncs.isJsonObject(table_json[databaseName][tableName])) {
                         for (const columnName of Object.keys(table_json[databaseName][tableName])) {
                             const deepColumn = table_json[databaseName][tableName][columnName];
-                            let autoIncrement = undefined;
+                            let autoincrement = undefined;
                             let indexes = undefined;
                             let nulls = undefined;
                             let defaults = undefined;
@@ -118,15 +118,15 @@ function JSONchecker(table_json) {
                             let unsigned = undefined;
                             let zerofill = undefined;
                             if (deepColumn.hasOwnProperty("autoIncrement")) {
-                                autoIncrement = deepColumn.autoIncrement;
+                                autoincrement = deepColumn.autoIncrement;
                             } else if (deepColumn.hasOwnProperty("autoincrement")) {
-                                autoIncrement = deepColumn.autoincrement;
+                                autoincrement = deepColumn.autoincrement;
                             } else if (deepColumn.hasOwnProperty("auto_increment")) {
-                                autoIncrement = deepColumn.auto_increment;
+                                autoincrement = deepColumn.auto_increment;
                             } else if (deepColumn.hasOwnProperty("AUTO_INCREMENT")) {
-                                autoIncrement = deepColumn.AUTO_INCREMENT;
+                                autoincrement = deepColumn.AUTO_INCREMENT;
                             } else if (deepColumn.hasOwnProperty("AUTOINCREMENT")) {
-                                autoIncrement = deepColumn.AUTOINCREMENT;
+                                autoincrement = deepColumn.AUTOINCREMENT;
                             }
                             /**
                              * autoIncrement
@@ -182,6 +182,19 @@ function JSONchecker(table_json) {
                              * comment
                              * COMMENT
                              * Comment
+                             */
+                            if (deepColumn.hasOwnProperty("comment")) {
+                                unsigned = deepColumn.comment;
+                            } else if (deepColumn.hasOwnProperty("COMMENT")) {
+                                unsigned = deepColumn.COMMENT;
+                            } else if (deepColumn.hasOwnProperty("Comment")) {
+                                unsigned = deepColumn.Comment;
+                            }
+                            /**
+                             * unsigned
+                             * UNSIGNED
+                             * Unsigned
+                             * 
                              */
                             // lets check column names
                             if (!fncs.isValidColumnName(columnName.toLowerCase())) {
