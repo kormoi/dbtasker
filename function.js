@@ -55,6 +55,29 @@ function getDateTime(seperator) {
     datetime: formattedDateTime,
   };
 }
+async function getMySQLVersion(config) {
+    const connection = await mysql.createConnection(config);
+    try {
+        const [rows] = await connection.execute('SELECT VERSION() AS version');
+        return rows[0].version;
+    } finally {
+        await connection.end();
+    }
+}
+async function isMySQL578OrAbove(config) {
+    const versionStr = await getMySQLVersion(config); // e.g., '5.7.9-log' or '8.0.34'
+    // Extract numeric version
+    const match = versionStr.match(/^(\d+)\.(\d+)\.(\d+)/);
+    if (!match) return false;
+    const [major, minor, patch] = match.slice(1).map(Number);
+
+    if (major > 5) return true;
+    if (major < 5) return false;
+    if (minor > 7) return true;
+    if (minor < 7) return false;
+    // major==5, minor==7
+    return patch >= 8;
+}
 function isValidMySQLConfig(config) {
   if (typeof config !== 'object' || config === null) return false;
 
@@ -677,6 +700,8 @@ async function runQueryReturnTrueOrNull(config, databaseName, queryText) {
 module.exports = {
   isNumber,
   getDateTime,
+  getMySQLVersion,
+  isMySQL578OrAbove,
   isValidMySQLConfig,
   isMySQLDatabase,
   checkDatabaseExists,
