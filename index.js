@@ -49,19 +49,19 @@ async function runit(config, table_json) {
                     if (ifexist === false) {
                         const createDB = await fncs.createDatabase(config, dbName);
                         if (createDB === true) {
-                            console.log(`${cstyler.purpal('Database name:')} ${cstyler.blue(dbName)} ${cstyler.green('has created successfully.')}`)
+                            console.log(`${cstyler.purple('Database name:')} ${cstyler.blue(dbName)} ${cstyler.green('has created successfully.')}`)
                         } else if (createDB === false) {
-                            console.log(`${cstyler.purpal('Database name:')} ${cstyler.blue(dbName)} ${cstyler.yellow("is already created.")}`)
+                            console.log(`${cstyler.purple('Database name:')} ${cstyler.blue(dbName)} ${cstyler.yellow("is already created.")}`)
                         } else {
                             throw new Error("Can not perform. There is a database connection problem.");
                         }
                     } else if (ifexist === true) {
-                        console.log(`${cstyler.purpal('Database name:')} ${cstyler.blue(dbName)} ${cstyler.green('is available')}`);
+                        console.log(`${cstyler.purple('Database name:')} ${cstyler.blue(dbName)} ${cstyler.green('is available')}`);
                     } else {
                         throw new Error("Can not perform. There is a database connection problem.");
                     }
                 } else {
-                    errorLog.push(`${cstyler.purpal('Database name:')} "${cstyler.yellow(dbName)}" ${cstyler.red("is not valid")}`);
+                    errorLog.push(`${cstyler.purple('Database name:')} "${cstyler.yellow(dbName)}" ${cstyler.red("is not valid")}`);
                 }
             }
             // Lets check how many database added
@@ -73,7 +73,7 @@ async function runit(config, table_json) {
                 for (const items of databaseNames) {
                     if (!getalldbnames.includes(items.toLocaleLowerCase())) {
                         unavailabledbnames.push(items.toLocaleLowerCase());
-                        console.error(`${cstyler.purpal('Database name:')} ${items} is not available. Please try again.`);
+                        console.error(`${cstyler.purple('Database name:')} ${items} is not available. Please try again.`);
                     } else {
                         availabledatabases[items] = table_json[items];
                     }
@@ -92,6 +92,7 @@ async function runit(config, table_json) {
                 console.log(cstyler.bold.underline.red("Please correct those information and try again."))
                 return;
             }
+            console.log(checkeing)
             // table json file checking done
             // lets work on tables
             //const tableAdded = await dbtask.dbTask(config, availabledatabases);
