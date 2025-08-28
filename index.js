@@ -12,13 +12,6 @@ const moduleName = "databaser";
 async function runit(config, table_json) {
     try {
         console.log(cstyler.blue("Initializing DBTASKER..."))
-        // Check config
-        if (config.hasOwnProperty("port") && config.hasOwnProperty("host") && config.hasOwnProperty("user") && config.hasOwnProperty("password") && fncs.isNumber(config.port)) {
-            console.log("Database config is good...");
-        } else {
-            console.error("Database config have some problem. Please check and try again.")
-            return;
-        }
         let errorLog = [];
         let availabledatabases = {};
         let unavailabledbnames = [];
@@ -26,6 +19,11 @@ async function runit(config, table_json) {
         const ifmysqldatabase = await fncs.isMySQLDatabase(config);
         if (ifmysqldatabase === false) {
             console.error("My SQL database is required to run ", moduleName, " module. Please install mysql2 to use this module. To install run this code on the terminal > npm install mysql2");
+            return;
+        }
+        const isvalidmysqlversion = await fncs.isMySQL578OrAbove(config);
+        if (isvalidmysqlversion === false) {
+            console.error("My SQL version 5.7.8 or above is required. Please check if you have installed mysql2. To install: npm install mysql2");
             return;
         }
         // Lets check both json file is same or not
@@ -92,7 +90,7 @@ async function runit(config, table_json) {
                 console.log(cstyler.bold.underline.red("Please correct those information and try again."))
                 return;
             }
-            console.log(checkeing)
+            console.log(JSON.stringify(checkeing, null, 2))
             // table json file checking done
             // lets work on tables
             //const tableAdded = await dbtask.dbTask(config, availabledatabases);

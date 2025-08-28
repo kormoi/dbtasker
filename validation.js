@@ -37,6 +37,9 @@ const mysqlTypeMetadata = {
     BOOLEAN: { lengthType: "none", required: false, query: "BOOLEAN", supportsUnsigned: false, dataType: "boolean" },
     BOOL: { lengthType: "none", required: false, query: "BOOL", supportsUnsigned: false, dataType: "boolean" },
 
+    // Bit type // you can specify how many bits (1–64)
+    BIT: { lengthType: "int", required: true, query: "BIT(1)", supportsUnsigned: false, dataType: "bit" },
+
     // Date & Time types
     DATE: { lengthType: "none", required: false, query: "DATE", supportsUnsigned: false, dataType: "datetime" },
     TIME: { lengthType: "fsp", required: false, query: "TIME(6)", supportsUnsigned: false, dataType: "datetime" },
@@ -76,8 +79,104 @@ const mysqlTypeMetadata = {
     JSON: { lengthType: "none", required: false, query: "JSON", supportsUnsigned: false, dataType: "json" }
 };
 
+const validIndexValues = [
+    "INDEX",
+    "UNIQUE",
+    "PRIMARY",
+    "PRIMARY KEY",
+    "FULLTEXT",
+    "SPATIAL"
+];
+const truers = [true, 1, "1", "true", "True", "TRUE"];
+const falsers = [false, 0, "0", "false", "False", "FALSE"];
+function isValidDefault(columnType, defaultValue, length_value) {
+    // NULL is always valid if column allows NULL
+    if (defaultValue === null) return null;
+
+    // Normalize type (just in case user passes lowercase)
+    const type = columnType.toUpperCase();
+
+    // Numeric types
+    if (["INT", "BIGINT", "SMALLINT", "TINYINT", "DECIMAL", "NUMERIC", "FLOAT", "DOUBLE"].includes(type)) {
+        if (typeof defaultValue === "number") return true;
+        if (typeof defaultValue === "string" && !isNaN(defaultValue)) return true;
+        return false;
+    }
+
+    // ENUM and SET
+    if(["ENUM", "SET"].includes(type)){
+        if(length_value !== undefined){
+            const options = parseQuotedListSafely(length_value);
+            if(options.length === 0){
+                return false;
+            } else {
+                if(options.includes(defaultValue)){
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+    // Character types
+    if (["CHAR", "VARCHAR", "TEXT"].some(t => type.startsWith(t))) {
+        if (typeof defaultValue === "string") return true;
+        return false;
+    }
+
+    // Binary types
+    if (["BINARY", "VARBINARY", "BLOB"].some(t => type.startsWith(t))) {
+        if (typeof defaultValue === "string") return true; // literal string
+        if (/^x'[0-9A-Fa-f]+'$/.test(defaultValue)) return true; // hex literal
+        return false;
+    }
+
+    // Date/time types
+    if (["DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR"].includes(type)) {
+        if (typeof defaultValue === "string") {
+            // Allow CURRENT_TIMESTAMP / NOW() only for DATETIME & TIMESTAMP
+            if (
+                ["DATETIME", "TIMESTAMP"].includes(type) &&
+                /^(CURRENT_TIMESTAMP|NOW)(\(\d*\))?$/.test(defaultValue)
+            ) {
+                return true;
+            }
+
+            // Validate literal formats
+            switch (type) {
+                case "DATE": // YYYY-MM-DD
+                    return /^\d{4}-\d{2}-\d{2}$/.test(defaultValue);
+
+                case "DATETIME": // YYYY-MM-DD HH:MM:SS
+                case "TIMESTAMP":
+                    return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(defaultValue);
+
+                case "TIME": // HH:MM:SS
+                    return /^\d{2}:\d{2}:\d{2}$/.test(defaultValue);
+
+                case "YEAR": // YYYY (4-digit only)
+                    return /^\d{4}$/.test(defaultValue);
+            }
+        }
+        return false;
+    }
 
 
+    // Boolean (alias of TINYINT(1))
+    if (type === "BOOLEAN") {
+        return defaultValue === 0 || defaultValue === 1 || defaultValue === "0" || defaultValue === "1" || defaultValue === true || defaultValue === false || defaultValue === "true" || defaultValue === "false" || defaultValue === "True" || defaultValue === "False" || defaultValue === "TRUE" || defaultValue === "FALSE";
+    }
+
+    // JSON cannot have default except NULL (in MySQL < 8.0.13)
+    if (type === "JSON") {
+        return defaultValue === null;
+    }
+
+    // If unknown type → reject
+    return false;
+}
 
 
 function JSONchecker(table_json) {
@@ -97,19 +196,25 @@ function JSONchecker(table_json) {
     console.log(cstyler.green("Initializing JSON checking..."));
 
     if (fncs.isJsonObject(table_json)) {
+        let contentObj = {};
+        // lets loop databases
         for (const databaseName of Object.keys(table_json)) {
             if (fncs.isJsonObject(table_json[databaseName])) {
+                if (!contentObj[databaseName]) contentObj[databaseName] = {}
+                // lets loop tables
                 for (const tableName of Object.keys(table_json[databaseName])) {
+                    if (!contentObj[databaseName][tableName]) contentObj[databaseName][tableName] = {}
                     if (!fncs.perseTableNameWithLoop(tableName.toLowerCase())) {
                         badTableNames.push(
                             `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                             `${cstyler.purple('of table:')} ${cstyler.blue(tableName)} ` +
                             `${cstyler.red('- table name is not valid.')}`
                         );
-
                     }
                     if (fncs.isJsonObject(table_json[databaseName][tableName])) {
+                        // lets loop columns
                         for (const columnName of Object.keys(table_json[databaseName][tableName])) {
+                            if (!contentObj[databaseName][tableName][columnName]) contentObj[databaseName][tableName][columnName] = {}
                             const deepColumn = table_json[databaseName][tableName][columnName];
                             let columntype = undefined;
                             let length_value = undefined;
@@ -150,8 +255,8 @@ function JSONchecker(table_json) {
                             } else if (deepColumn.hasOwnProperty("COLUMNTYPE")) {
                                 columntype = deepColumn.COLUMNTYPE;
                             }
-                            if (typeof columntype !== "string") {
-                                columntype = "";
+                            if (typeof columntype !== "string" && columntype !== undefined) {
+                                columntype = null;
                             }
                             /**
                              * LengthValue
@@ -189,9 +294,9 @@ function JSONchecker(table_json) {
                             } else if (deepColumn.hasOwnProperty("AUTOINCREMENT")) {
                                 autoincrement = deepColumn.AUTOINCREMENT;
                             }
-                            if (autoincrement === true || autoincrement === 1 || autoincrement === "1") {
+                            if (truers.includes(autoincrement)) {
                                 autoincrement = true;
-                            } else if (autoincrement === false || autoincrement === 0 || autoincrement === "0") {
+                            } else if (falsers.includes(autoincrement)) {
                                 autoincrement = false;
                             } else if (autoincrement === undefined) {
                                 autoincrement = undefined;
@@ -222,12 +327,12 @@ function JSONchecker(table_json) {
                             } else if (deepColumn.hasOwnProperty("Null")) {
                                 nulls = deepColumn.Null;
                             }
-                            if (nulls === null || nulls === true || nulls === 1 || nulls === "1") {
+                            if (truers.includes(nulls)) {
                                 nulls = true;
-                            } else if (nulls === false || nulls === 0 || nulls === "0") {
+                            } else if (falsers.includes(nulls)) {
                                 nulls = false;
                             } else if (nulls === undefined) {
-                                nulls = undefined;
+                                nulls = true;
                             } else {
                                 // lets check bad null
                                 badnulls.push(
@@ -270,9 +375,9 @@ function JSONchecker(table_json) {
                                 signed = deepColumn.SIGNED;
                             }
                             if (unsigned !== undefined) {
-                                if (unsigned === true || unsigned === 1 || unsigned === "1") {
+                                if (truers.includes(unsigned)) {
                                     unsigned = true;
-                                } else if (unsigned === false || unsigned === 0 || unsigned === "0") {
+                                } else if (falsers.includes(unsigned)) {
                                     unsigned = false;
                                 } else if (unsigned === undefined) {
                                     unsigned = undefined;
@@ -280,9 +385,9 @@ function JSONchecker(table_json) {
                                     unsigned = null;
                                 }
                             } else if (signed !== undefined) {
-                                if (signed === true || signed === 1 || signed === "1") {
+                                if (truers.includes(signed)) {
                                     unsigned = false;
-                                } else if (signed === false || signed === 0 || signed === "0") {
+                                } else if (falsers.includes(signed)) {
                                     unsigned = true;
                                 } else if (signed === undefined) {
                                     unsigned = undefined;
@@ -323,9 +428,9 @@ function JSONchecker(table_json) {
                             } else if (deepColumn.hasOwnProperty("Zero_Fill")) {
                                 zerofill = deepColumn.Zero_Fill;
                             }
-                            if (zerofill === true || zerofill === 1 || zerofill === "1") {
+                            if (truers.includes(zerofill)) {
                                 zerofill = true;
-                            } else if (zerofill === false || zerofill === 0 || zerofill === "0") {
+                            } else if (falsers.includes(zerofill)) {
                                 zerofill = false;
                             } else if (zerofill === undefined) {
                                 zerofill = undefined;
@@ -336,6 +441,7 @@ function JSONchecker(table_json) {
                              * Getting variable is ended
                              */
                             const typeInfo = mysqlTypeMetadata[columntype.toUpperCase()];
+
                             // lets check column names
                             if (!fncs.isValidColumnName(columnName.toLowerCase())) {
                                 badColumnNames.push(
@@ -345,19 +451,71 @@ function JSONchecker(table_json) {
                                     `${cstyler.red('- column name is not valid.')}`
                                 );
                             }
-                            // check DEFAULT
-                            if (typeof columntype === "string") {
-                                if (columntype.toUpperCase() === "JSON" && ![null, undefined].includes(defaults)) {
-                                    baddefaults.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('column can not have')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('or must be null')}`
+                            // check type
+                            const allMySQLColumnTypes = Object.keys(mysqlTypeMetadata);
+                            if (typeof columntype !== "string") {
+                                badtype.push(
+                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                    `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                    `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                    `${cstyler.red('- must have type.')}`
+                                );
+                                columntype = null;
+                            } else {
+                                if (!allMySQLColumnTypes.includes(columntype.toUpperCase())) {
+                                    badtype.push(
+                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                        `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                        `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.red('> type - must have valid column type.')}`
                                     );
-                                } else if (typeof defaults !== "string" && typeof defaults !== "number" && defaults !== undefined) {
-                                    baddefaults.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ` +
-                                        `${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ` +
-                                        `${cstyler.purple('Column:')} ${cstyler.blue(columnName)}'s ` +
-                                        `${cstyler.yellow('DEFAULT')} ${cstyler.red('must be string')}`
+                                    columntype = null;
+                                }
+                            }
+                            // check LengthValue
+                            if (typeInfo !== undefined) {
+
+                                // Check if length is required but missing
+                                if (typeInfo.required && length_value === undefined) {
+                                    badlength.push(
+                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('requires length but none provided.')}`
                                     );
+                                } else if (length_value !== undefined) {
+                                    let lenVals = length_value;
+                                    if (fncs.isNumber(lenVals)) {
+                                        lenVals = Number(lenVals);
+                                    }
+                                    if (typeInfo.lengthType === "int") {
+                                        if (!Number.isInteger(lenVals)) {
+                                            badlength.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have a valid integer length')}`
+                                            );
+                                        }
+                                    } else if (typeInfo.lengthType === "two-int") {
+                                        const parsed = parseQuotedListSafely(lenVals);
+                                        if (parsed.length !== 2) {
+                                            badlength.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have two integer values [precision, scale]')}`
+                                            );
+                                        } else {
+                                            const [precision, scale] = parsed;
+                                            if (
+                                                !Number.isInteger(precision) || precision <= 0 || precision > 65 ||
+                                                !Number.isInteger(scale) || scale < 0 || scale > precision
+                                            ) {
+                                                badlength.push(
+                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid precision or scale')}`
+                                                );
+                                            }
+                                        }
+                                    } else if (typeInfo.lengthType === "list") {
+                                        const parsed = parseQuotedListSafely(lenVals);
+                                        if (parsed.length === 0) {
+                                            badlength.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have a valid list of options')}`
+                                            );
+                                        }
+                                    }
                                 }
                             }
                             // check auto increment
@@ -378,7 +536,8 @@ function JSONchecker(table_json) {
                                         `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                         `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
                                         `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('a valid')} ${cstyler.yellow('index')} ${cstyler.red('value is required for autoincrement.')}`
+                                        `${cstyler.red('a valid')} ${cstyler.yellow('index')} ${cstyler.red('value must be ')}` +
+                                        `${cstyler.yellow('PRIMARY KEY, UNIQUE')} ${cstyler.red('for autoincrement.')}`
                                     );
                                 }
                                 // check multi autoincrement
@@ -397,7 +556,7 @@ function JSONchecker(table_json) {
                                     } else if (doubleDeepColumn.hasOwnProperty("AUTOINCREMENT")) {
                                         allautoincrement = doubleDeepColumn.AUTOINCREMENT;
                                     }
-                                    if (allautoincrement === true || allautoincrement === 1 || allautoincrement === "1") {
+                                    if (truers.includes(allautoincrement)) {
                                         autoincrementcolumnlist.push(column);
                                     }
                                 }
@@ -406,7 +565,7 @@ function JSONchecker(table_json) {
                                         `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                         `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
                                         `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('- This table has another')} ${cstyler.yellow('auto_increment')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('auto_increment')} ${cstyler.red('column.')}`
+                                        `${cstyler.red('- This table has more than one')} ${cstyler.yellow('auto increment')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('auto increment')} ${cstyler.red('column.')}`
                                     );
                                 }
                             } else if (autoincrement === null) {
@@ -414,19 +573,19 @@ function JSONchecker(table_json) {
                                     `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                     `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
                                     `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                    `${cstyler.red('- must have a valid autoincrement value')}`
+                                    `${cstyler.red('- must true or false as valid autoincrement value')}`
                                 );
                             }
                             // check unsigned
-                            if (unsigned === true) {
+                            if (typeof unsigned === "boolean") {
                                 // ❌ Invalid use of unsigned on a non-numeric type
                                 if (typeInfo !== undefined) {
-                                    if (!typeInfo.dataType !== "numeric") {
+                                    if (typeInfo.supportsUnsigned === false) {
                                         badunsigned.push(
                                             cstyler`{purple Database:} {blue ${databaseName}} ` +
                                             cstyler`{purple > Table:} {blue ${tableName}} ` +
                                             cstyler`{purple > Column:} {blue ${columnName}} ` +
-                                            cstyler.red(" - has `unsigned` but type is not numeric")
+                                            `${cstyler.red(" - has `unsigned` but type ")} ${cstyler.yellow(columntype)} ${cstyler.red(" do not support signed or unsigned modifiers.")}`
                                         );
                                     }
                                 } else {
@@ -434,7 +593,7 @@ function JSONchecker(table_json) {
                                         cstyler`{purple Database:} {blue ${databaseName}} ` +
                                         cstyler`{purple > Table:} {blue ${tableName}} ` +
                                         cstyler`{purple > Column:} {blue ${columnName}} ` +
-                                        cstyler.red(" - can not validate unsigned with invalid column type information")
+                                        cstyler.red(" - can not validate signed or unsigned modifier with invalid column type")
                                     );
                                 }
                             } else if (unsigned === null) {
@@ -442,7 +601,7 @@ function JSONchecker(table_json) {
                                     cstyler`{purple Database:} {blue ${databaseName}} ` +
                                     cstyler`{purple > Table:} {blue ${tableName}} ` +
                                     cstyler`{purple > Column:} {blue ${columnName}} ` +
-                                    cstyler.red(" - has invalid `unsigned` value")
+                                    cstyler.red(" - has invalid signed or unsigned value")
                                 );
                             }
                             // check comment
@@ -486,50 +645,66 @@ function JSONchecker(table_json) {
                                         cstyler`{purple Database:} {blue ${databaseName}} ` +
                                         cstyler`{purple > Table:} {blue ${tableName}} ` +
                                         cstyler`{purple > Column:} {blue ${columnName}} ` +
-                                        cstyler.red(" - has `zerofill` but column type is not numeric")
+                                        cstyler.red(" - for `zerofill` column type has to be numeric")
                                     );
                                 } else if (zerofill === null) {
                                     badzerofill.push(
                                         cstyler`{purple Database:} {blue ${databaseName}} ` +
                                         cstyler`{purple > Table:} {blue ${tableName}} ` +
                                         cstyler`{purple > Column:} {blue ${columnName}} ` +
-                                        cstyler.red(" - has invalid `zerofill` value")
+                                        cstyler.red(" - has invalid `zerofill` value and must be boolean and simillar")
                                     );
                                 }
                             }
-
                             // check index
                             if (indexes !== undefined) {
-                                if (columntype === "JSON") {
+                                if (typeof indexes === "string") {
+                                    if (columntype === "JSON") {
+                                        badindex.push(
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.red('- is a JSON column which can not have an ')}${cstyler.yellow('index')} ${cstyler.red('property')}`
+                                        );
+                                    }
+                                    if (!validIndexValues.includes(indexes.toUpperCase())) {
+                                        badindex.push(
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.red('- has unsupported index value.')} ` +
+                                            `${cstyler.red('Value must be')} ${cstyler.yellow(validIndexValues.join(', '))}`
+                                        );
+                                    }
+                                } else {
                                     badindex.push(
                                         `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                         `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
                                         `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('- is a JSON column which can not have an ')}${cstyler.yellow('index')} ${cstyler.red('property')}`
+                                        `${cstyler.red('- ')}${cstyler.yellow('index')} ${cstyler.red('value must be text or string.')}`
                                     );
-                                }
-                                const validIndexValues = [
-                                    "INDEX",
-                                    "UNIQUE",
-                                    "PRIMARY",
-                                    "PRIMARY KEY",
-                                    "FULLTEXT",
-                                    "SPATIAL"
-                                ];
-                                if (!validIndexValues.includes(indexes.toUpperCase())) {
-                                    badindex.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('- has unsupported index value.')} ` +
-                                        `${cstyler.red('Value must be')} ${cstyler.yellow(validIndexValues.join(', '))}`
-                                    );
-
                                 }
                             }
-                            // lets check bad foreign_key
+                            // lets check default fsp list none
+                            if ((fncs.isNumber(defaults) || typeof defaults === "string") && columntype) {
+                                const isvaliddefaultvalue = isValidDefault(columntype, defaults, length_value);
+                                if (isvaliddefaultvalue === null || isvaliddefaultvalue === false) {
+                                    baddefaults.push(
+                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('valid')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value required')}`
+                                    );
+                                }
+                            } else if (defaults === null) {
+                                baddefaults.push(
+                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('-')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value can not be null')}`
+                                );
+                            } else {
+                                defaults = undefined;
+                            }
+                            // lets check bad foreign_key delete and update options
+                            let deleteOption = undefined;
+                            let updateOption = undefined;
                             if (deepColumn.hasOwnProperty("foreign_key")) {
-                                const validFKSetOption = new Set([null, true, "DEFAULT", "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"]);
+                                const validFKSetOption = new Set([null, true, "NULL", "DELETE", "DEFAULT", "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"]);
                                 /**
                                  * CASCADE:         Child value is updated to match the new parent value.
                                  * SET NULL:	    Child value becomes NULL. Column must allow NULL.
@@ -537,8 +712,6 @@ function JSONchecker(table_json) {
                                  * RESTRICT:	    Prevents update if any matching child exists.
                                  * NO ACTION:	    Like RESTRICT (timing differences in some DB engines).
                                  */
-                                let deleteOption = undefined;
-                                let updateOption = undefined;
                                 if (deepColumn.foreign_key.hasOwnProperty("delete")) {
                                     deleteOption = deepColumn.foreign_key.delete;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("Delete")) {
@@ -549,6 +722,8 @@ function JSONchecker(table_json) {
                                     deleteOption = deepColumn.foreign_key.ondelete;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("OnDelete")) {
                                     deleteOption = deepColumn.foreign_key.OnDelete;
+                                } else if (deepColumn.foreign_key.hasOwnProperty("onDelete")) {
+                                    deleteOption = deepColumn.foreign_key.onDelete;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("ONDELETE")) {
                                     deleteOption = deepColumn.foreign_key.ONDELETE;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("on_delete")) {
@@ -557,6 +732,8 @@ function JSONchecker(table_json) {
                                     deleteOption = deepColumn.foreign_key.ON_DELETE;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("On_Delete")) {
                                     deleteOption = deepColumn.foreign_key.On_Delete;
+                                } else if (deepColumn.foreign_key.hasOwnProperty("on_Delete")) {
+                                    deleteOption = deepColumn.foreign_key.on_Delete;
                                 }
                                 if (typeof deleteOption === "string") {
                                     deleteOption = deleteOption.toUpperCase();
@@ -571,6 +748,8 @@ function JSONchecker(table_json) {
                                     updateOption = deepColumn.foreign_key.onupdate;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("OnUpdate")) {
                                     updateOption = deepColumn.foreign_key.OnUpdate;
+                                } else if (deepColumn.foreign_key.hasOwnProperty("onUpdate")) {
+                                    updateOption = deepColumn.foreign_key.onUpdate;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("ONUPDATE")) {
                                     updateOption = deepColumn.foreign_key.ONUPDATE;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("on_update")) {
@@ -579,6 +758,8 @@ function JSONchecker(table_json) {
                                     updateOption = deepColumn.foreign_key.ON_UPDATE;
                                 } else if (deepColumn.foreign_key.hasOwnProperty("On_Update")) {
                                     updateOption = deepColumn.foreign_key.On_Update;
+                                } else if (deepColumn.foreign_key.hasOwnProperty("on_Update")) {
+                                    updateOption = deepColumn.foreign_key.on_Update;
                                 }
                                 if (typeof updateOption === "string") {
                                     updateOption = updateOption.toUpperCase();
@@ -590,10 +771,9 @@ function JSONchecker(table_json) {
                                         `${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ` +
                                         `${cstyler.blue('foreign_key > delete')} ` +
                                         `${cstyler.red('must be one of:')} ` +
-                                        `${cstyler.yellow('null, true - work as CASCADE, "CASCADE", "SET NULL", "DEFAULT", "SET DEFAULT", "RESTRICT", "NO ACTION"')}, ` +
+                                        `${cstyler.yellow('[true, "DELETE"] > work as > CASCADE, "CASCADE", [null, "NULL"] > work as > "SET NULL", "DEFAULT" > work as > "SET DEFAULT", "RESTRICT", "NO ACTION"')}, ` +
                                         `${cstyler.red(". You can use lowercase too.")}`
                                     );
-
                                 } else {
                                     // If DELETE is null (SET NULL), column must allow NULLs
                                     if ([null, "SET NULL", "NULL"].includes(deleteOption) && nulls !== true) {
@@ -605,7 +785,6 @@ function JSONchecker(table_json) {
                                             `${cstyler.yellow('delete')} === ${cstyler.yellow('null')} - then column ${cstyler.red('NULL must be true')}`
                                         );
                                     }
-
                                     // If DELETE is 'set default', column must have a DEFAULT value
                                     else if (["DEFAULT", "SET DEFAULT"].includes(deleteOption) && defaults === undefined) {
                                         badforeighkey.push(
@@ -614,7 +793,6 @@ function JSONchecker(table_json) {
                                             `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
                                             `${cstyler.blue('foreign_key >')} ${cstyler.red("delete === 'set default'")} - then column ${cstyler.red('DEFAULT must be defined')}`
                                         );
-
                                     }
                                 }
                                 // check on update
@@ -627,12 +805,12 @@ function JSONchecker(table_json) {
                                             `${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ` +
                                             `${cstyler.blue('foreign_key > ONUPDATE')} ` +
                                             `${cstyler.red('must be one of:')} ` +
-                                            `${cstyler.yellow('null, true - work as CASCADE, "CASCADE", "SET NULL", "DEFAULT", "SET DEFAULT", "RESTRICT", "NO ACTION"')}, ` +
+                                            `${cstyler.yellow('[true, "DELETE"] > work as > CASCADE, "CASCADE", [null, "NULL"] > work as > "SET NULL", "DEFAULT" > work as > "SET DEFAULT", "RESTRICT", "NO ACTION"')}, ` +
                                             `${cstyler.red(". You can use lowercase too.")}`
                                         );
 
                                     } else {
-                                        // If DELETE is null (SET NULL), column must allow NULLs
+                                        // If ONUPDATE is null (SET NULL), column must allow NULLs
                                         if ([null, "SET NULL", "NULL"].includes(updateOption) && nulls !== true) {
                                             badforeighkey.push(
                                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ` +
@@ -674,83 +852,48 @@ function JSONchecker(table_json) {
                                         `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                         `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
                                         `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.blue('foreign_key > references -')} ${cstyler.red('must have a table and column property')}`
+                                        `${cstyler.blue('foreign_key > references -')} ${cstyler.red('must have a table and column property referancing to referance table column')}`
                                     );
                                 }
 
                             }
-                            // Let's check properties
-                            // check type
-                            const allMySQLColumnTypes = Object.keys(mysqlTypeMetadata);
-                            if (typeof columntype !== "string") {
-                                badtype.push(
-                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                    `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                    `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                    `${cstyler.red('- must have type.')}`
-                                );
-                                continue;
-                            } else {
-                                if (!allMySQLColumnTypes.includes(columntype.toUpperCase())) {
-                                    badtype.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                        `${cstyler.red('> type - must have valid column type.')}`
-                                    );
-                                    continue;
-                                }
+                            // Lets add values to a passing object to use it
+                            if (typeof columntype === "string") {
+                                contentObj[databaseName][tableName][columnName].columntype = columntype.toUpperCase();
                             }
-                            // check LengthValue
-                            if (Object.keys(mysqlTypeMetadata).includes(columntype.toUpperCase())) {
-
-                                // Check if length is required but missing
-                                if (typeInfo.required && length_value === undefined) {
-                                    badlength.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('requires length but none provided.')}`
-                                    );
-                                } else if (length_value !== undefined) {
-                                    const lenVals = length_value;
-
-                                    if (typeInfo.lengthType === "int") {
-                                        if (!Number.isInteger(lenVals)) {
-                                            badlength.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have a valid integer length')}`
-                                            );
-                                        }
-                                    } else if (typeInfo.lengthType === "two-int") {
-                                        const parsed = parseQuotedListSafely(lenVals);
-                                        if (parsed.length !== 2) {
-                                            badlength.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have two integer values [precision, scale]')}`
-                                            );
-                                        } else {
-                                            const [precision, scale] = parsed;
-                                            if (
-                                                !Number.isInteger(precision) || precision <= 0 || precision > 65 ||
-                                                !Number.isInteger(scale) || scale < 0 || scale > precision
-                                            ) {
-                                                badlength.push(
-                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid precision or scale')}`
-                                                );
-                                            }
-                                        }
-                                    } else if (typeInfo.lengthType === "list") {
-                                        const parsed = parseQuotedListSafely(lenVals);
-                                        if (parsed.length === 0) {
-                                            badlength.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have a valid list of options')}`
-                                            );
-                                        }
-                                    }
+                            if (length_value) {
+                                if(["ENUM", "SET"].includes(fncs.stringifyAny(columntype).toUpperCase())){
+                                    length_value = parseQuotedListSafely(length_value);
                                 }
-                            } else {
-                                badtype.push(
-                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                    `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                    `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                    `${cstyler.red('- must have a valid column type like INT, DATE.')}`
-                                );
+                                contentObj[databaseName][tableName][columnName].length_value = length_value;
+                            }
+                            if (autoincrement === true) {
+                                contentObj[databaseName][tableName][columnName].autoincrement = true;
+                            }
+                            if (typeof indexes === "string" && validIndexValues.includes(fncs.stringifyAny(indexes).toUpperCase())) {
+                                contentObj[databaseName][tableName][columnName].index = fncs.stringifyAny(indexes).toUpperCase();
+                            }
+                            if (typeof nulls === "boolean") {
+                                contentObj[databaseName][tableName][columnName].nulls = nulls;
+                            }
+                            if (typeof defaults === "string" || typeof defaults === "number") {
+                                contentObj[databaseName][tableName][columnName].defaults = defaults;
+                            }
+                            if (comment !== undefined) {
+                                contentObj[databaseName][tableName][columnName].comment = comment;
+                            }
+                            if (typeof unsigned === "boolean") {
+                                contentObj[databaseName][tableName][columnName].unsigned = unsigned;
+                            }
+                            if (typeof zerofill === "boolean") {
+                                contentObj[databaseName][tableName][columnName].zerofill = zerofill;
+                            }
+                            if (deepColumn.hasOwnProperty("foreign_key")) {
+                                contentObj[databaseName][tableName][columnName].foreign_key = {};
+                                contentObj[databaseName][tableName][columnName].foreign_key.table = deepColumn?.foreign_key?.table;
+                                contentObj[databaseName][tableName][columnName].foreign_key.column = deepColumn?.foreign_key?.column;
+                                contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
+                                contentObj[databaseName][tableName][columnName].foreign_key.updateOption = updateOption;
                             }
 
                         }
@@ -767,7 +910,7 @@ function JSONchecker(table_json) {
         // Lets return result
         if (badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0) {
             console.log(cstyler.green("<<<All JSON checking is done | Clear to continue>>>"));
-            return true;
+            return { status: true, data: contentObj };
         }
 
         // lets print on the console
@@ -777,9 +920,9 @@ function JSONchecker(table_json) {
         if (badColumnNames.length > 0) {
             console.error(`Column names are not correct: \n${badColumnNames.join("\n")}`);
         }
-        console.log(cstyler.yellow("Valid column types:"));
-        console.log(cstyler.dark.yellow(Object.keys(mysqlTypeMetadata).join(", ")));
         if (badtype.length > 0) {
+            console.log(cstyler.yellow("Valid column types:"));
+            console.log(cstyler.dark.yellow(Object.keys(mysqlTypeMetadata).join(", ")));
             console.error(`Column type are not correct: \n${badtype.join("\n")}`);
         }
         if (badlength.length > 0) {

@@ -1,6 +1,7 @@
 const mysql = require('mysql2/promise');
 const fs = require("fs/promises");  // Importing fs.promises for async operations
 const path = require("path");  // Importing Node's path module
+const cstyler = require("cstyler");
 
 
 
@@ -56,33 +57,35 @@ function getDateTime(seperator) {
   };
 }
 async function getMySQLVersion(config) {
-    const connection = await mysql.createConnection(config);
-    try {
-        const [rows] = await connection.execute('SELECT VERSION() AS version');
-        return rows[0].version;
-    } finally {
-        await connection.end();
-    }
+  const connection = await mysql.createConnection(config);
+  try {
+    const [rows] = await connection.execute('SELECT VERSION() AS version');
+    const version = rows[0].version;
+    console.log("Mysql database version is: ", cstyler.green(version));
+    return version;
+  } finally {
+    await connection.end();
+  }
 }
 async function isMySQL578OrAbove(config) {
-    const versionStr = await getMySQLVersion(config); // e.g., '5.7.9-log' or '8.0.34'
-    // Extract numeric version
-    const match = versionStr.match(/^(\d+)\.(\d+)\.(\d+)/);
-    if (!match) return false;
-    const [major, minor, patch] = match.slice(1).map(Number);
+  const versionStr = await getMySQLVersion(config); // e.g., '5.7.9-log' or '8.0.34'
+  // Extract numeric version
+  const match = versionStr.match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!match) return false;
+  const [major, minor, patch] = match.slice(1).map(Number);
 
-    if (major > 5) return true;
-    if (major < 5) return false;
-    if (minor > 7) return true;
-    if (minor < 7) return false;
-    // major==5, minor==7
-    return patch >= 8;
+  if (major > 5) return true;
+  if (major < 5) return false;
+  if (minor > 7) return true;
+  if (minor < 7) return false;
+  // major==5, minor==7
+  return patch >= 8;
 }
 function isValidMySQLConfig(config) {
   if (typeof config !== 'object' || config === null) return false;
 
   const requiredKeys = ['host', 'user', 'password'];
-  
+
   for (const key of requiredKeys) {
     if (!(key in config)) return false;
     if (typeof config[key] !== 'string' || config[key].trim() === '') return false;
@@ -91,6 +94,11 @@ function isValidMySQLConfig(config) {
   return true;
 }
 async function isMySQLDatabase(config) {
+  const isvalidconfig = isValidMySQLConfig(config);
+  if (isvalidconfig === false) {
+    throw new Error("There is some information missing in config.");
+  }
+  console.log("Config is okay we are good to go.");
   let connection;
   try {
     connection = await mysql.createConnection(config);
@@ -292,7 +300,53 @@ function perseTableNameWithLoop(text) {
 
 
 
-
+function stringifyAny(data) {
+  // If the data is undefined or a symbol, handle it explicitly.
+  if (typeof data === 'undefined') {
+    return 'undefined';
+  } else if (data === null) {
+    return 'null';
+  } else if (data === true) {
+    return "true";
+  } else if (data === false) {
+    return "false";
+  }
+  if (typeof data === 'symbol') {
+    return data.toString();
+  }
+  // For non-objects (primitives) that are not undefined, simply convert them.
+  if (typeof data !== 'object' && typeof data !== 'function') {
+    return String(data);
+  }
+  if (typeof data === "string") {
+    return data;
+  }
+  // Handle objects and functions using JSON.stringify with a custom replacer.
+  const seen = new WeakSet();
+  const replacer = (key, value) => {
+    if (typeof value === 'function') {
+      // Convert functions to their string representation.
+      return value.toString();
+    }
+    if (typeof value === 'undefined') {
+      return 'undefined';
+    }
+    if (typeof value === 'object' && value !== null) {
+      // Check for circular references
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+  try {
+    return JSON.stringify(data, replacer, 2);
+  } catch (error) {
+    // Fallback to a simple string conversion if JSON.stringify fails
+    return String(data);
+  }
+}
 
 
 
@@ -711,6 +765,7 @@ module.exports = {
   isValidTableName,
   isValidColumnName,
   perseTableNameWithLoop,
+  stringifyAny,
   isJsonString,
   isJsonObject,
   isJsonSame,
