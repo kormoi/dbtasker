@@ -719,7 +719,15 @@ function JSONchecker(table_json) {
                             let updateOption = undefined;
                             let fktable = undefined;
                             let fkcolumn = undefined;
-                            if (deepColumn.hasOwnProperty("foreign_key")) {
+                            let foreign_key = {};
+                            const fk_variations = ["fk", "Fk", "FK", "foreign_key", "foreign_Key", "Foreign_Key", "FOREIGN_KEY", "foreignkey", "foreignKey", "ForeignKey", "FOREIGNKEY"];
+                            for (const item of fk_variations) {
+                                if (deepColumn.hasOwnProperty(item)) {
+                                    foreign_key = deepColumn[item];
+                                    break;
+                                }
+                            }
+                            if (fncs.isJsonObject(foreign_key) && Object.keys(foreign_key).length > 0) {
                                 const validFKSetOption = new Set([null, true, "NULL", "DELETE", "DEFAULT", "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"]);
                                 /**
                                  * CASCADE:         Child value is updated to match the new parent value.
@@ -728,54 +736,23 @@ function JSONchecker(table_json) {
                                  * RESTRICT:	    Prevents update if any matching child exists.
                                  * NO ACTION:	    Like RESTRICT (timing differences in some DB engines).
                                  */
-                                if (deepColumn.foreign_key.hasOwnProperty("delete")) {
-                                    deleteOption = deepColumn.foreign_key.delete;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("Delete")) {
-                                    deleteOption = deepColumn.foreign_key.Delete;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("DELETE")) {
-                                    deleteOption = deepColumn.foreign_key.DELETE;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("ondelete")) {
-                                    deleteOption = deepColumn.foreign_key.ondelete;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("OnDelete")) {
-                                    deleteOption = deepColumn.foreign_key.OnDelete;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("onDelete")) {
-                                    deleteOption = deepColumn.foreign_key.onDelete;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("ONDELETE")) {
-                                    deleteOption = deepColumn.foreign_key.ONDELETE;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("on_delete")) {
-                                    deleteOption = deepColumn.foreign_key.on_delete;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("ON_DELETE")) {
-                                    deleteOption = deepColumn.foreign_key.ON_DELETE;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("On_Delete")) {
-                                    deleteOption = deepColumn.foreign_key.On_Delete;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("on_Delete")) {
-                                    deleteOption = deepColumn.foreign_key.on_Delete;
+                                const deleteVariations = ["delete", "Delete", "DELETE", "ondelete", "OnDelete", "onDelete", "ONDELETE", "on_delete", "ON_DELETE", "On_Delete", "on_Delete"]
+                                for (const item of deleteVariations) {
+                                    if (foreign_key.hasOwnProperty(item)) {
+                                        deleteOption = foreign_key[item];
+                                        break;
+                                    }
                                 }
                                 if (typeof deleteOption === "string") {
                                     deleteOption = deleteOption.toUpperCase();
                                 }
-                                if (deepColumn.foreign_key.hasOwnProperty("update")) {
-                                    updateOption = deepColumn.foreign_key.update;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("Update")) {
-                                    updateOption = deepColumn.foreign_key.Update;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("UPDATE")) {
-                                    updateOption = deepColumn.foreign_key.UPDATE;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("onupdate")) {
-                                    updateOption = deepColumn.foreign_key.onupdate;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("OnUpdate")) {
-                                    updateOption = deepColumn.foreign_key.OnUpdate;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("onUpdate")) {
-                                    updateOption = deepColumn.foreign_key.onUpdate;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("ONUPDATE")) {
-                                    updateOption = deepColumn.foreign_key.ONUPDATE;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("on_update")) {
-                                    updateOption = deepColumn.foreign_key.on_update;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("ON_UPDATE")) {
-                                    updateOption = deepColumn.foreign_key.ON_UPDATE;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("On_Update")) {
-                                    updateOption = deepColumn.foreign_key.On_Update;
-                                } else if (deepColumn.foreign_key.hasOwnProperty("on_Update")) {
-                                    updateOption = deepColumn.foreign_key.on_Update;
+                                // Lets get update options
+                                const onupdatevariations = ["update", "Update", "UPDATE", "onupdate", "OnUpdate", "onUpdate", "ONUPDATE", "on_update", "ON_UPDATE", "On_Update", "on_Update"];
+                                for (const item of onupdatevariations) {
+                                    if (foreign_key.hasOwnProperty(item)) {
+                                        updateOption = foreign_key[item];
+                                        break;
+                                    }
                                 }
                                 if (typeof updateOption === "string") {
                                     updateOption = updateOption.toUpperCase();
@@ -851,116 +828,20 @@ function JSONchecker(table_json) {
                                 }
                                 // check reference table and column
                                 // lets add foreign key table to variable
-                                if(deepColumn.foreign_key.hasOwnProperty("table")){
-                                    fktable = deepColumn.foreign_key.table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Table")){
-                                    fktable = deepColumn.foreign_key.Table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("TABLE")){
-                                    fktable = deepColumn.foreign_key.TABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fktable")){
-                                    fktable = deepColumn.foreign_key.fktable;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fkTable")){
-                                    fktable = deepColumn.foreign_key.fkTable;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fkTABLE")){
-                                    fktable = deepColumn.foreign_key.fkTABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Fktable")){
-                                    fktable = deepColumn.foreign_key.Fktable;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FkTable")){
-                                    fktable = deepColumn.foreign_key.FkTable;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FkTABLE")){
-                                    fktable = deepColumn.foreign_key.FkTABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FKTable")){
-                                    fktable = deepColumn.foreign_key.FKTable;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FKTABLE")){
-                                    fktable = deepColumn.foreign_key.FKTABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fk_table")){
-                                    fktable = deepColumn.foreign_key.fk_table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fk_Table")){
-                                    fktable = deepColumn.foreign_key.fk_Table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fk_TABLE")){
-                                    fktable = deepColumn.foreign_key.fk_TABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Fk_table")){
-                                    fktable = deepColumn.foreign_key.Fk_table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Fk_Table")){
-                                    fktable = deepColumn.foreign_key.Fk_Table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Fk_TABLE")){
-                                    fktable = deepColumn.foreign_key.Fk_TABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FK_Table")){
-                                    fktable = deepColumn.foreign_key.FK_Table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FK_TABLE")){
-                                    fktable = deepColumn.foreign_key.FK_TABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("foreignkeytable")){
-                                    fktable = deepColumn.foreign_key.foreignkeytable;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("foreignKeyTable")){
-                                    fktable = deepColumn.foreign_key.foreignKeyTable;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("ForeignKeyTable")){
-                                    fktable = deepColumn.foreign_key.ForeignKeyTable;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FOREIGNKEYTABLE")){
-                                    fktable = deepColumn.foreign_key.FOREIGNKEYTABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("foreign_key_table")){
-                                    fktable = deepColumn.foreign_key.foreign_key_table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("foreign_Key_Table")){
-                                    fktable = deepColumn.foreign_key.foreign_Key_Table;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FOREIGN_KEY_TABLE")){
-                                    fktable = deepColumn.foreign_key.FOREIGN_KEY_TABLE;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Foreign_Key_Table")){
-                                    fktable = deepColumn.foreign_key.Foreign_Key_Table;
+                                const tableKeyVariation = ["table", "Table", "TABLE", "fktable", "fkTable", "fkTABLE", "Fktable", "FkTable", "FkTABLE", "FKTable", "FKTABLE", "fk_table", "fk_Table", "fk_TABLE", "Fk_table", "Fk_Table", "Fk_TABLE", "FK_Table", "FK_TABLE", "foreignkeytable", "foreignKeyTable", "ForeignKeyTable", "FOREIGNKEYTABLE", "foreign_key_table", "foreign_Key_Table", "FOREIGN_KEY_TABLE", "Foreign_Key_Table"]
+                                for (const item of tableKeyVariation){
+                                    if(foreign_key.hasOwnProperty(item)){
+                                        fktable = foreign_key[item];
+                                        break;
+                                    }
                                 }
                                 // lets add foreign key column to variable
-                                if(deepColumn.foreign_key.hasOwnProperty("column")){
-                                    fkcolumn = deepColumn.foreign_key.column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Column")){
-                                    fkcolumn = deepColumn.foreign_key.Column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("COLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.COLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fkcolumn")){
-                                    fkcolumn = deepColumn.foreign_key.fkcolumn;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fkColumn")){
-                                    fkcolumn = deepColumn.foreign_key.fkColumn;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fkCOLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.fkCOLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Fkcolumn")){
-                                    fkcolumn = deepColumn.foreign_key.Fkcolumn;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FkColumn")){
-                                    fkcolumn = deepColumn.foreign_key.FkColumn;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FkCOLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.FkCOLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FKColumn")){
-                                    fkcolumn = deepColumn.foreign_key.FKColumn;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FKCOLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.FKCOLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fk_column")){
-                                    fkcolumn = deepColumn.foreign_key.fk_column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fk_Column")){
-                                    fkcolumn = deepColumn.foreign_key.fk_Column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("fk_COLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.fk_COLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Fk_column")){
-                                    fkcolumn = deepColumn.foreign_key.Fk_column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Fk_Column")){
-                                    fkcolumn = deepColumn.foreign_key.Fk_Column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Fk_COLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.Fk_COLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FK_Column")){
-                                    fkcolumn = deepColumn.foreign_key.FK_Column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FK_COLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.FK_COLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("foreignkeycolumn")){
-                                    fkcolumn = deepColumn.foreign_key.foreignkeycolumn;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("foreignKeyColumn")){
-                                    fkcolumn = deepColumn.foreign_key.foreignKeyColumn;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("ForeignKeyColumn")){
-                                    fkcolumn = deepColumn.foreign_key.ForeignKeyColumn;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FOREIGNKEYCOLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.FOREIGNKEYCOLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("foreign_key_column")){
-                                    fkcolumn = deepColumn.foreign_key.foreign_key_column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("foreign_Key_Column")){
-                                    fkcolumn = deepColumn.foreign_key.foreign_Key_Column;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("FOREIGN_KEY_COLUMN")){
-                                    fkcolumn = deepColumn.foreign_key.FOREIGN_KEY_COLUMN;
-                                } else if(deepColumn.foreign_key.hasOwnProperty("Foreign_Key_Column")){
-                                    fkcolumn = deepColumn.foreign_key.Foreign_Key_Column;
+                                const columnKeyVariation = ["column", "Column", "COLUMN", "fkcolumn", "fkColumn", "fkCOLUMN", "Fkcolumn", "FkColumn", "FkCOLUMN", "FKColumn", "FKCOLUMN", "fk_column", "fk_Column", "fk_COLUMN", "Fk_column", "Fk_Column", "Fk_COLUMN", "FK_Column", "FK_COLUMN", "foreignkeycolumn", "foreignKeyColumn", "ForeignKeyColumn", "FOREIGNKEYCOLUMN", "foreign_key_column", "foreign_Key_Column", "FOREIGN_KEY_COLUMN", "Foreign_Key_Column"]
+                                for (const item of (columnKeyVariation)){
+                                    if(foreign_key.hasOwnProperty(item)){
+                                        fkcolumn = foreign_key[item];
+                                        break;
+                                    }
                                 }
                                 // lets work on that
                                 if (fktable && fkcolumn) {
@@ -1028,7 +909,6 @@ function JSONchecker(table_json) {
                                 contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
                                 contentObj[databaseName][tableName][columnName].foreign_key.updateOption = updateOption;
                             }
-
                         }
                     } else {
                         console.error("Column of table: ", tableName, " must be in json format.");
