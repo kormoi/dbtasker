@@ -906,7 +906,7 @@ function JSONchecker(table_json) {
                                 contentObj[databaseName][tableName][columnName].foreign_key = {};
                                 contentObj[databaseName][tableName][columnName].foreign_key.table = fktable;
                                 contentObj[databaseName][tableName][columnName].foreign_key.column = fkcolumn;
-                                if([true, "DELETE", "DL", "DEL", "CASCADE"].includes(deleteOption)){
+                                if([true, "DL", "DEL", "DELETE", "CASCADE"].includes(deleteOption)){
                                     deleteOption = "CASCADE";
                                 } else if([null, "NULL", "SET NULL"].includes(deleteOption)){
                                     deleteOption = "SET NULL";
@@ -914,7 +914,7 @@ function JSONchecker(table_json) {
                                     deleteOption = "SET DEFAULT";
                                 }
                                 contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
-                                if([true, "DELETE", "CASCADE"].includes(updateOption)){
+                                if([true, "DL", "DEL", "DELETE", "CASCADE"].includes(updateOption)){
                                     updateOption = "CASCADE";
                                 } else if([null, "NULL", "SET NULL"].includes(updateOption)){
                                     updateOption = "SET NULL";
