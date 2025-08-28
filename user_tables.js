@@ -838,7 +838,7 @@ module.exports = {
       balance: { type: "FLOAT", null: false, default: "0" },
       total_earnings: { type: "FLOAT", null: false, default: "0" },
       total_withdraw: { type: "FLOAT", null: false, default: "0" },
-      total_spent: { type: "FLOAT", null: false, default: "0" },
+      total_spent: { type: "FLOAT", null: false, default: "0", signed: true, zerofill: false, index: "primary key" },
       created_at: {
         type: "TIMESTAMP",
         null: false,
