@@ -728,7 +728,7 @@ function JSONchecker(table_json) {
                                 }
                             }
                             if (fncs.isJsonObject(foreign_key) && Object.keys(foreign_key).length > 0) {
-                                const validFKSetOption = new Set([null, true, "NULL", "DELETE", "DEFAULT", "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"]);
+                                const validFKSetOption = new Set([null, "NULL", "SET NULL", true, "DL", "DEL", "DELETE", "CASCADE", "DEFAULT", "SET DEFAULT", "RESTRICT", "NO ACTION"]);
                                 /**
                                  * CASCADE:         Child value is updated to match the new parent value.
                                  * SET NULL:	    Child value becomes NULL. Column must allow NULL.
@@ -740,22 +740,22 @@ function JSONchecker(table_json) {
                                 for (const item of deleteVariations) {
                                     if (foreign_key.hasOwnProperty(item)) {
                                         deleteOption = foreign_key[item];
+                                        if (typeof deleteOption === "string") {
+                                            deleteOption = deleteOption.toUpperCase();
+                                        }
                                         break;
                                     }
-                                }
-                                if (typeof deleteOption === "string") {
-                                    deleteOption = deleteOption.toUpperCase();
                                 }
                                 // Lets get update options
                                 const onupdatevariations = ["update", "Update", "UPDATE", "onupdate", "OnUpdate", "onUpdate", "ONUPDATE", "on_update", "ON_UPDATE", "On_Update", "on_Update"];
                                 for (const item of onupdatevariations) {
                                     if (foreign_key.hasOwnProperty(item)) {
                                         updateOption = foreign_key[item];
+                                        if (typeof updateOption === "string") {
+                                            updateOption = updateOption.toUpperCase();
+                                        }
                                         break;
                                     }
-                                }
-                                if (typeof updateOption === "string") {
-                                    updateOption = updateOption.toUpperCase();
                                 }
                                 if (!validFKSetOption.has(deleteOption)) {
                                     badforeighkey.push(
@@ -829,16 +829,16 @@ function JSONchecker(table_json) {
                                 // check reference table and column
                                 // lets add foreign key table to variable
                                 const tableKeyVariation = ["table", "Table", "TABLE", "fktable", "fkTable", "fkTABLE", "Fktable", "FkTable", "FkTABLE", "FKTable", "FKTABLE", "fk_table", "fk_Table", "fk_TABLE", "Fk_table", "Fk_Table", "Fk_TABLE", "FK_Table", "FK_TABLE", "foreignkeytable", "foreignKeyTable", "ForeignKeyTable", "FOREIGNKEYTABLE", "foreign_key_table", "foreign_Key_Table", "FOREIGN_KEY_TABLE", "Foreign_Key_Table"]
-                                for (const item of tableKeyVariation){
-                                    if(foreign_key.hasOwnProperty(item)){
+                                for (const item of tableKeyVariation) {
+                                    if (foreign_key.hasOwnProperty(item)) {
                                         fktable = foreign_key[item];
                                         break;
                                     }
                                 }
                                 // lets add foreign key column to variable
                                 const columnKeyVariation = ["column", "Column", "COLUMN", "fkcolumn", "fkColumn", "fkCOLUMN", "Fkcolumn", "FkColumn", "FkCOLUMN", "FKColumn", "FKCOLUMN", "fk_column", "fk_Column", "fk_COLUMN", "Fk_column", "Fk_Column", "Fk_COLUMN", "FK_Column", "FK_COLUMN", "foreignkeycolumn", "foreignKeyColumn", "ForeignKeyColumn", "FOREIGNKEYCOLUMN", "foreign_key_column", "foreign_Key_Column", "FOREIGN_KEY_COLUMN", "Foreign_Key_Column"]
-                                for (const item of (columnKeyVariation)){
-                                    if(foreign_key.hasOwnProperty(item)){
+                                for (const item of (columnKeyVariation)) {
+                                    if (foreign_key.hasOwnProperty(item)) {
                                         fkcolumn = foreign_key[item];
                                         break;
                                     }
@@ -906,7 +906,21 @@ function JSONchecker(table_json) {
                                 contentObj[databaseName][tableName][columnName].foreign_key = {};
                                 contentObj[databaseName][tableName][columnName].foreign_key.table = fktable;
                                 contentObj[databaseName][tableName][columnName].foreign_key.column = fkcolumn;
+                                if([true, "DELETE", "DL", "DEL", "CASCADE"].includes(deleteOption)){
+                                    deleteOption = "CASCADE";
+                                } else if([null, "NULL", "SET NULL"].includes(deleteOption)){
+                                    deleteOption = "SET NULL";
+                                } else if(["DEFAULT", "SET DEFAULT"].includes(deleteOption)){
+                                    deleteOption = "SET DEFAULT";
+                                }
                                 contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
+                                if([true, "DELETE", "CASCADE"].includes(updateOption)){
+                                    updateOption = "CASCADE";
+                                } else if([null, "NULL", "SET NULL"].includes(updateOption)){
+                                    updateOption = "SET NULL";
+                                } else if(["DEFAULT", "SET DEFAULT"].includes(updateOption)){
+                                    updateOption = "SET DEFAULT";
+                                }
                                 contentObj[databaseName][tableName][columnName].foreign_key.updateOption = updateOption;
                             }
                         }
