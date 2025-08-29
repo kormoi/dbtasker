@@ -193,7 +193,7 @@ function JSONchecker(table_json) {
     let badcomment = [];
     let badunsigned = [];
     let badzerofill = [];
-    console.log(cstyler.green("Initializing JSON checking..."));
+    console.log("Initializing JSON checking...");
 
     if (fncs.isJsonObject(table_json)) {
         let contentObj = {};
@@ -214,7 +214,7 @@ function JSONchecker(table_json) {
                     if (fncs.isJsonObject(table_json[databaseName][tableName])) {
                         // lets loop columns
                         for (const columnName of Object.keys(table_json[databaseName][tableName])) {
-                            if (!contentObj[databaseName][tableName][columnName]) contentObj[databaseName][tableName][columnName] = {}
+                            if (!contentObj[databaseName][tableName][columnName]) contentObj[databaseName][tableName][columnName.toLowerCase()] = {}
                             const deepColumn = table_json[databaseName][tableName][columnName];
                             let columntype = undefined;
                             let length_value = undefined;
@@ -906,6 +906,7 @@ function JSONchecker(table_json) {
                                 contentObj[databaseName][tableName][columnName].foreign_key = {};
                                 contentObj[databaseName][tableName][columnName].foreign_key.table = fktable;
                                 contentObj[databaseName][tableName][columnName].foreign_key.column = fkcolumn;
+                                // lets refine
                                 if([true, "DL", "DEL", "DELETE", "CASCADE"].includes(deleteOption)){
                                     deleteOption = "CASCADE";
                                 } else if([null, "NULL", "SET NULL"].includes(deleteOption)){
@@ -913,7 +914,6 @@ function JSONchecker(table_json) {
                                 } else if(["DEFAULT", "SET DEFAULT"].includes(deleteOption)){
                                     deleteOption = "SET DEFAULT";
                                 }
-                                contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
                                 if([true, "DL", "DEL", "DELETE", "CASCADE"].includes(updateOption)){
                                     updateOption = "CASCADE";
                                 } else if([null, "NULL", "SET NULL"].includes(updateOption)){
@@ -921,6 +921,7 @@ function JSONchecker(table_json) {
                                 } else if(["DEFAULT", "SET DEFAULT"].includes(updateOption)){
                                     updateOption = "SET DEFAULT";
                                 }
+                                contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
                                 contentObj[databaseName][tableName][columnName].foreign_key.updateOption = updateOption;
                             }
                         }
@@ -936,7 +937,7 @@ function JSONchecker(table_json) {
         }
         // Lets return result
         if (badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0) {
-            console.log(cstyler.green("<<<All JSON checking is done | Clear to continue>>>"));
+            console.log(cstyler.underline.green("All JSON checking is done | Clear to continue"));
             return { status: true, data: contentObj };
         }
 

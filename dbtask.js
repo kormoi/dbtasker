@@ -38,10 +38,10 @@ async function dbTask(config, table_config, availabledatabase) {
         let insertedjson = {};
         let errorLog = [];
         for (const databaseName of Object.keys(availabledatabase)) {
-            config.database = databaseName.toLocaleLowerCase();
-            const dbTableNames = await fncs.getTableNames(config, databaseName.toLocaleLowerCase());
+            config.database = databaseName.toLowerCase();
+            const dbTableNames = await fncs.getTableNames(config, databaseName.toLowerCase());
             if (dbTableNames === null) return null;
-            const JSONTableNames = Object.keys(availabledatabase[databaseName]).map(name => name.toLocaleLowerCase());
+            const JSONTableNames = Object.keys(availabledatabase[databaseName]).map(name => name.toLowerCase());
             let foreignKeyForLater = [];
             for (const JSONTableName of JSONTableNames) {
                 const isValidTableName = fncs.perseTableNameWithLoop(JSONTableName);
@@ -52,9 +52,9 @@ async function dbTask(config, table_config, availabledatabase) {
                 }
                 let tableName = "";
                 if (typeof isValidTableName.loop === "string") {
-                    if (isValidTableName.loop.toLocaleLowerCase() === "year") {
+                    if (isValidTableName.loop.toLowerCase() === "year") {
                         tableName = isValidTableName.name + '_' + new Date().getFullYear();
-                    } else if (isValidTableName.loop.toLocaleLowerCase() === "month") {
+                    } else if (isValidTableName.loop.toLowerCase() === "month") {
                         tableName = isValidTableName.name + '_' + new Date().getFullYear() + '_' + new Date().getMonth();
                     } else {
                         delete availabledatabase[databaseName][JSONTableName];
@@ -69,10 +69,10 @@ async function dbTask(config, table_config, availabledatabase) {
                     // Drop Column
                 } else {
                     // insert table
-                    let queryText = `CREATE TABLE IF NOT EXISTS ${tableName.toLocaleLowerCase()} (`;
+                    let queryText = `CREATE TABLE IF NOT EXISTS ${tableName.toLowerCase()} (`;
                     // add column name
                     for (const columnName of Object.keys(availabledatabase[databaseName][JSONTableName])) {
-                        queryText += columnName.toLocaleLowerCase() + " ";
+                        queryText += columnName.toLowerCase() + " ";
                         queryText += availabledatabase[databaseName][JSONTableName].type.name.toUpperCase() + " ";
                         if (availabledatabase[databaseName][JSONTableName].type.hasOwnProperty("LengthValues")) {
                             /**
@@ -101,7 +101,7 @@ async function dbTask(config, table_config, availabledatabase) {
                         dropTableList.push(dbTableName);
                     }
                 }
-                await fncs.dropTables(config, databaseName.toLocaleLowerCase(), dropTableList);
+                await fncs.dropTables(config, databaseName.toLowerCase(), dropTableList);
             }
         }
     } catch (err) {
