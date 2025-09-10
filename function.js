@@ -262,15 +262,15 @@ function isValidColumnName(name) {
 function perseTableNameWithLoop(text) {
   if (typeof text !== 'string') return false;
 
-  text = text.trim();
+  text = text.toLowerCase().trim();
 
   // Case 1: product(year)
   let match = text.match(/^([a-zA-Z_][\w]*)\(([^()]+)\)$/);
   if (match) {
     const name = match[1];
     const loop = match[2];
-    if (isValidColumnName(name) && isValidColumnName(loop)) {
-      return { name: name, loop: loop };
+    if (isValidColumnName(name) && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
+      return { name: name, loop: loop.toLowerCase() };
     }
     return false;
   }
@@ -280,7 +280,7 @@ function perseTableNameWithLoop(text) {
   if (match) {
     const loop = match[1];
     const name = match[2];
-    if (isValidColumnName(name) && isValidColumnName(loop)) {
+    if (isValidColumnName(name) && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
       return { name: name, loop: loop };
     }
     return false;
@@ -296,7 +296,22 @@ function perseTableNameWithLoop(text) {
 }
 
 
+async function getCharsetAndCollations(config) {
+  try {
+    const conn = await mysql.createConnection(config);
 
+    const [charsetRows] = await conn.query("SHOW CHARACTER SET");
+    const characterSets = charsetRows.map(row => row.Charset);
+
+    const [collationRows] = await conn.query("SHOW COLLATION");
+    const collations = collationRows.map(row => row.Collation);
+
+    await conn.end();
+    return { characterSets, collations };
+  } catch (err) {
+    return null;
+  }
+}
 
 
 
@@ -758,6 +773,7 @@ module.exports = {
   isMySQL578OrAbove,
   isValidMySQLConfig,
   isMySQLDatabase,
+  getCharsetAndCollations,
   checkDatabaseExists,
   createDatabase,
   getAllDatabaseNames,

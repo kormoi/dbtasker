@@ -1,6 +1,7 @@
 const mysql = require("mysql2/promise");
 const fncs = require("./function");
 const cstyler = require("cstyler");
+const { isvalidCountryName } = require("../../kormoi/server/services/functions");
 
 let x = `
     "CREATE TABLE IF NOT EXISTS cart (
@@ -52,10 +53,12 @@ async function dbTask(config, table_config, availabledatabase) {
                 }
                 let tableName = "";
                 if (typeof isValidTableName.loop === "string") {
-                    if (isValidTableName.loop.toLowerCase() === "year") {
+                    if (['year', 'years'].includes(isValidTableName.loop)) {
                         tableName = isValidTableName.name + '_' + new Date().getFullYear();
-                    } else if (isValidTableName.loop.toLowerCase() === "month") {
+                    } else if (['month', 'months'].includes(isValidTableName.loop)) {
                         tableName = isValidTableName.name + '_' + new Date().getFullYear() + '_' + new Date().getMonth();
+                    } else if(['day', 'days'].includes(isValidTableName.loop)){
+                        tableName = isValidTableName.name + '_' + new Date().getFullYear() + '_' + new Date().getMonth() + "_" + new Date().getDate().toString().padStart(2, "0");
                     } else {
                         delete availabledatabase[databaseName][JSONTableName];
                         errorLog.push(`${cstyler.purpal("Database:")} ${cstyler.blue(databaseName)} > ${cstyler.purpal("Table:")} ${cstyler.blue(JSONTableName)} ${cstyler.red("- Table name is not valid.")}`)
@@ -96,6 +99,7 @@ async function dbTask(config, table_config, availabledatabase) {
             // Drop Table
             if (table_config.drop_table === true && dbTableNames.length > 0) {
                 let dropTableList = [];
+                // if drop loop table
                 for (const dbTableName of dbTableNames) {
                     if (!JSONTableNames.includes(dbTableName)) {
                         dropTableList.push(dbTableName);

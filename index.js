@@ -85,7 +85,7 @@ async function runit(config, table_json) {
                 console.error("Check these databases that are not available.\n", cstyler.blue(unavailabledbnames.join(", ")));
             }
             // lets check all table name and column name
-            const checkeing = checker.JSONchecker(table_json);
+            const checkeing = await checker.JSONchecker(table_json, config);
             if (checkeing === false) {
                 console.log(cstyler.bold.underline.red("Please correct those information and try again."))
                 return;

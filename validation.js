@@ -179,7 +179,7 @@ function isValidDefault(columnType, defaultValue, length_value) {
 }
 
 
-function JSONchecker(table_json) {
+async function JSONchecker(table_json, config) {
     // lets check all table name and column name
     let badTableNames = [];
     let badColumnNames = [];
@@ -194,7 +194,16 @@ function JSONchecker(table_json) {
     let badunsigned = [];
     let badzerofill = [];
     console.log("Initializing JSON checking...");
-
+    const getCharsetAndCollations = await fncs.getCharsetAndCollations(config);
+    let characterSets = {};
+    let collations = {};
+    if (fncs.isJsonObject(getCharsetAndCollations)) {
+        characterSets  = getCharsetAndCollations.characterSets;
+        collations = getCharsetAndCollations.collations;
+    } else {
+        console.error(cstyler.bold("We are having server problem"));
+        return null;
+    }
     if (fncs.isJsonObject(table_json)) {
         let contentObj = {};
         // lets loop databases
@@ -204,7 +213,7 @@ function JSONchecker(table_json) {
                 // lets loop tables
                 for (const tableName of Object.keys(table_json[databaseName])) {
                     if (!contentObj[databaseName][tableName]) contentObj[databaseName][tableName] = {}
-                    if (!fncs.perseTableNameWithLoop(tableName.toLowerCase())) {
+                    if (!fncs.perseTableNameWithLoop(tableName)) {
                         badTableNames.push(
                             `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                             `${cstyler.purple('of table:')} ${cstyler.blue(tableName)} ` +
@@ -907,18 +916,18 @@ function JSONchecker(table_json) {
                                 contentObj[databaseName][tableName][columnName].foreign_key.table = fktable;
                                 contentObj[databaseName][tableName][columnName].foreign_key.column = fkcolumn;
                                 // lets refine
-                                if([true, "DL", "DEL", "DELETE", "CASCADE"].includes(deleteOption)){
+                                if ([true, "DL", "DEL", "DELETE", "CASCADE"].includes(deleteOption)) {
                                     deleteOption = "CASCADE";
-                                } else if([null, "NULL", "SET NULL"].includes(deleteOption)){
+                                } else if ([null, "NULL", "SET NULL"].includes(deleteOption)) {
                                     deleteOption = "SET NULL";
-                                } else if(["DEFAULT", "SET DEFAULT"].includes(deleteOption)){
+                                } else if (["DEFAULT", "SET DEFAULT"].includes(deleteOption)) {
                                     deleteOption = "SET DEFAULT";
                                 }
-                                if([true, "DL", "DEL", "DELETE", "CASCADE"].includes(updateOption)){
+                                if ([true, "DL", "DEL", "DELETE", "CASCADE"].includes(updateOption)) {
                                     updateOption = "CASCADE";
-                                } else if([null, "NULL", "SET NULL"].includes(updateOption)){
+                                } else if ([null, "NULL", "SET NULL"].includes(updateOption)) {
                                     updateOption = "SET NULL";
-                                } else if(["DEFAULT", "SET DEFAULT"].includes(updateOption)){
+                                } else if (["DEFAULT", "SET DEFAULT"].includes(updateOption)) {
                                     updateOption = "SET DEFAULT";
                                 }
                                 contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
