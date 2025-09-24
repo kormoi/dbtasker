@@ -632,6 +632,8 @@ module.exports = {
         default: "CURRENT_TIMESTAMP",
       },
     },
+    _charset_: "collate",
+    _collat_: "charset"
   },
   finance: {
     payment_method: {
