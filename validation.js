@@ -1037,7 +1037,7 @@ async function JSONchecker(table_json, config) {
                         if (charactersetkeys.includes(tableName.toLowerCase())) {
                             let charvalue = undefined;
                             if (fncs.isJsonObject(table_json[databaseName][tableName])) {
-                                charvalue = table_json[databaseName][tableName].value ?? table_json[databaseName][tableName][Object.keys(table_json[databaseName][tableName])[0]];
+                                charvalue = table_json[databaseName][tableName].value ?? Object.values(table_json[databaseName][tableName])[0];
                             } else {
                                 charvalue = table_json[databaseName][tableName];
                             }
@@ -1051,7 +1051,7 @@ async function JSONchecker(table_json, config) {
                         } else if (collationkeys.includes(tableName.toLowerCase())) {
                             let colvalue = undefined;
                             if (fncs.isJsonObject(table_json[databaseName][tableName])) {
-                                colvalue = table_json[databaseName][tableName].value ?? table_json[databaseName][tableName][Object.keys(table_json[databaseName][tableName])[0]];
+                                colvalue = table_json[databaseName][tableName].value ?? Object.values(table_json[databaseName][tableName])[0];
                             } else {
                                 colvalue = table_json[databaseName][tableName];
                             }
