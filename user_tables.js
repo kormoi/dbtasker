@@ -601,6 +601,8 @@ module.exports = {
         LengthValue: 255,
         null: false,
         comment: "Name of the category or subcategory.",
+        _charset_: "utf8mb4",
+        _collate_: "utf8mb4_zh_0900_as_cs"
       },
       category_type: {
         type: "ENUM",
@@ -629,11 +631,13 @@ module.exports = {
       updated_at: {
         type: "TIMESTAMP",
         null: false,
-        default: "CURRENT_TIMESTAMP",
+        default: "CURRENT_TIMESTAMP"
       },
+      _charset_: "utf8mb4",
+      _collate_: "ascii_general_ci"
     },
-    _charset_: "collate",
-    _collat_: "charset"
+    _charset_: "utf8mb4",
+    _collate_: "utf8mb4_zh_0900_as_cs"
   },
   finance: {
     payment_method: {

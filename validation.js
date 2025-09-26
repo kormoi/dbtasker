@@ -210,7 +210,7 @@ async function JSONchecker(table_json, config) {
      * 
      */
     const charactersetkeys = ['_characterset_', '_charset_'];
-    const collationkeys = ['_collat_', '_collation_'];
+    const collationkeys = ['_collate_', '_collation_'];
     const charandcoll = [...charactersetkeys, ...collationkeys];
     if (fncs.isJsonObject(table_json)) {
         let contentObj = {};
@@ -224,14 +224,14 @@ async function JSONchecker(table_json, config) {
                 for (const tableName of Object.keys(table_json[databaseName])) {
                     if (!contentObj[databaseName][tableName]) contentObj[databaseName][tableName] = {};
 
-                    if (!fncs.perseTableNameWithLoop(tableName)) {
-                        badTableNames.push(
-                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                            `${cstyler.purple('of table:')} ${cstyler.blue(tableName)} ` +
-                            `${cstyler.red('- table name is not valid.')}`
-                        );
-                    }
                     if (fncs.isJsonObject(table_json[databaseName][tableName]) && !charandcoll.includes(tableName)) {
+                        if (!fncs.perseTableNameWithLoop(tableName)) {
+                            badTableNames.push(
+                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                `${cstyler.purple('of table:')} ${cstyler.blue(tableName)} ` +
+                                `${cstyler.red('- table name is not valid.')}`
+                            );
+                        }
                         // lets loop columns
                         for (const columnName of Object.keys(table_json[databaseName][tableName])) {
                             if (fncs.isJsonObject(table_json[databaseName][tableName][columnName]) && !charandcoll.includes(columnName)) {
@@ -247,7 +247,7 @@ async function JSONchecker(table_json, config) {
                                 let unsigned = undefined;
                                 let zerofill = undefined;
                                 let _charset_ = undefined;
-                                let _collat_ = undefined;
+                                let _collate_ = undefined;
                                 /**
                                  * Lets get variables
                                  */
@@ -467,7 +467,7 @@ async function JSONchecker(table_json, config) {
                                 }
                                 for (const item of collationkeys) {
                                     if (deepColumn.hasOwnProperty(item)) {
-                                        _collat_ = deepColumn[item];
+                                        _collate_ = deepColumn[item];
                                     }
                                 }
 
@@ -734,32 +734,41 @@ async function JSONchecker(table_json, config) {
                                     }
                                 }
                                 // Lets work on character set and collat
-                                if (_charset_ !== undefined) {
+                                if (_charset_ !== undefined && typeInfo !== undefined) {
                                     let charvalue = undefined;
                                     if (fncs.isJsonObject(_charset_)) {
                                         charvalue = _charset_.value ?? _charset_[Object.keys(_charset_)[0]];
                                     } else {
                                         charvalue = _charset_;
                                     }
-                                    if (characterSets.includes(charvalue)) {
+                                    if (characterSets.includes(charvalue) && ['text', 'string'].includes(typeInfo.dataType)) {
                                         contentObj[databaseName][tableName][columnName]._charset_ = charvalue;
+                                    } else if (!['text', 'string'].includes(typeInfo.dataType)) {
+                                        badcharacterset.push(
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.purple("> column type:")} ${cstyler.blue(columntype)} ${cstyler.red('can not accept character set and must be a type that accept TEXT or STRING to set a')} ${cstyler.yellow("character set")}`
+                                        );
                                     } else {
                                         badcharacterset.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> character set key:')} ${cstyler.blue(columnName)} ${cstyler.yellow("character set")} ${cstyler.red('value must have a valid value')}`
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.yellow("character set")} ${cstyler.red('value must have a valid value')}`
                                         );
                                     }
-                                } else if (_collat_ !== undefined) {
+                                }
+                                if (_collate_ !== undefined && typeInfo !== undefined) {
                                     let colvalue = undefined;
-                                    if (fncs.isJsonObject(_collat_)) {
-                                        colvalue = _collat_.value ?? _collat_[Object.keys(_collat_)[0]];
+                                    if (fncs.isJsonObject(_collate_)) {
+                                        colvalue = _collate_.value ?? _collate_[Object.keys(_collate_)[0]];
                                     } else {
-                                        colvalue = _collat_;
+                                        colvalue = _collate_;
                                     }
-                                    if (collations.includes(colvalue)) {
-                                        contentObj[databaseName][tableName][columnName]._collat_ = colvalue;
+                                    if (collations.includes(colvalue) && ['text', 'string'].includes(typeInfo.dataType)) {
+                                        contentObj[databaseName][tableName][columnName]._collate_ = colvalue;
+                                    } else if (!['text', 'string'].includes(typeInfo.dataType)) {
+                                        badcollation.push(
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.purple("> column type:")} ${cstyler.blue(columntype)} ${cstyler.red('can not accept collate and must be a type that accept TEXT or STRING to set a')} ${cstyler.yellow("collate")}`
+                                        );
                                     } else {
                                         badcollation.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(columnName)} ${cstyler.yellow("collat")} ${cstyler.red('value must have a valid value')}`
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.yellow("collate")} ${cstyler.red('value must have a valid value')}`
                                         );
                                     }
                                 }
@@ -992,7 +1001,7 @@ async function JSONchecker(table_json, config) {
                                 if (charactersetkeys.includes(columnName.toLowerCase())) {
                                     let charvalue = undefined;
                                     if (fncs.isJsonObject(table_json[databaseName][tableName][columnName])) {
-                                        charvalue = table_json[databaseName][tableName][columnName].value ?? table_json[databaseName][tableName][columnName][Object.keys(table_json[databaseName][tableName][columnName])[0]];
+                                        charvalue = table_json[databaseName][tableName][columnName].value ?? Object.values(table_json[databaseName][tableName][columnName])[0];
                                     } else {
                                         charvalue = table_json[databaseName][tableName][columnName];
                                     }
@@ -1005,16 +1014,16 @@ async function JSONchecker(table_json, config) {
                                     }
                                 } else if (collationkeys.includes(columnName.toLowerCase())) {
                                     let colvalue = undefined;
-                                    if (fncs.isJsonObject(table_json[databaseName][tableName])) {
-                                        colvalue = table_json[databaseName][tableName][columnName].value ?? table_json[databaseName][tableName][columnName][Object.keys(table_json[databaseName][tableName][columnName])[0]];
+                                    if (fncs.isJsonObject(table_json[databaseName][tableName][columnName])) {
+                                        colvalue = table_json[databaseName][tableName][columnName].value ?? Object.values(table_json[databaseName][tableName][columnName])[0];
                                     } else {
                                         colvalue = table_json[databaseName][tableName][columnName];
                                     }
                                     if (collations.includes(colvalue)) {
-                                        contentObj[databaseName][tableName]._collat_ = colvalue;
+                                        contentObj[databaseName][tableName]._collate_ = colvalue;
                                     } else {
                                         badcollation.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(columnName)}  ${cstyler.red('must have a valid collat value')}`
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(columnName)}  ${cstyler.red('must have a valid collate value')}`
                                         );
                                     }
                                 } else {
@@ -1047,10 +1056,10 @@ async function JSONchecker(table_json, config) {
                                 colvalue = table_json[databaseName][tableName];
                             }
                             if (collations.includes(colvalue)) {
-                                contentObj[databaseName]._collat_ = colvalue;
+                                contentObj[databaseName]._collate_ = colvalue;
                             } else {
                                 badcollation.push(
-                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(tableName)}  ${cstyler.red('must have a valid collat value')}`
+                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(tableName)}  ${cstyler.red('must have a valid collate value')}`
                                 );
                             }
                         } else {
@@ -1107,13 +1116,13 @@ async function JSONchecker(table_json, config) {
         if (badforeighkey.length > 0) {
             console.error(`Foreign keys and values that are not correct: \n${badforeighkey.join("\n")}`);
         }
-        if(badcharacterset.length > 0){
+        if (badcharacterset.length > 0) {
             console.log(cstyler.yellow("Valid character sets:"));
             console.log(cstyler.dark.yellow(characterSets.join(", ")));
             console.error(`Character sets are not correct: \n${badcharacterset.join("\n")}`);
         }
-        if(badcollation.length > 0){
-            console.log(cstyler.yellow("Valid character sets:"));
+        if (badcollation.length > 0) {
+            console.log(cstyler.yellow("Valid collates:"));
             console.log(cstyler.dark.yellow(collations.join(", ")));
             console.error(`Collation are not correct: \n${badcollation.join("\n")}`);
         }
