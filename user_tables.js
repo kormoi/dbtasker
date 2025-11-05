@@ -633,7 +633,7 @@ module.exports = {
         null: false,
         default: "CURRENT_TIMESTAMP"
       },
-      _charset_: "utf8mb4",
+      _characterset_: "utf8mb4",
       _collate_: "ascii_general_ci"
     },
     _charset_: "utf8mb4",

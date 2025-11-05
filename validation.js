@@ -181,6 +181,7 @@ function isValidDefault(columnType, defaultValue, length_value) {
 
 async function JSONchecker(table_json, config) {
     // lets check all table name and column name
+    let baddatabaseName = [];
     let badTableNames = [];
     let badColumnNames = [];
     let badtype = [];
@@ -203,7 +204,7 @@ async function JSONchecker(table_json, config) {
         characterSets = getCharsetAndCollations.characterSets;
         collations = getCharsetAndCollations.collations;
     } else {
-        console.error(cstyler.bold("We are having server problem"));
+        console.error(cstyler.red.bold("There is a problem connecting to the database. Please check database info or connection."));
         return null;
     }
     /**
@@ -212,20 +213,24 @@ async function JSONchecker(table_json, config) {
     const charactersetkeys = ['_characterset_', '_charset_'];
     const collationkeys = ['_collate_', '_collation_'];
     const charandcoll = [...charactersetkeys, ...collationkeys];
+    let contentObj = {};
     if (fncs.isJsonObject(table_json)) {
-        let contentObj = {};
         // lets loop databases
         for (const databaseName of Object.keys(table_json)) {
+            if (fncs.perseDatabaseNameWithLoop(databaseName) === false) {
+                baddatabaseName.push(
+                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                    `${cstyler.red('- database name is not valid.')}`
+                )
+            }
             if (fncs.isJsonObject(table_json[databaseName])) {
                 if (!contentObj[databaseName]) contentObj[databaseName] = {};
-                // lets check character set and collation
-
                 // lets loop tables
                 for (const tableName of Object.keys(table_json[databaseName])) {
                     if (!contentObj[databaseName][tableName]) contentObj[databaseName][tableName] = {};
 
                     if (fncs.isJsonObject(table_json[databaseName][tableName]) && !charandcoll.includes(tableName)) {
-                        if (!fncs.perseTableNameWithLoop(tableName)) {
+                        if (fncs.perseTableNameWithLoop(tableName) === false) {
                             badTableNames.push(
                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                 `${cstyler.purple('of table:')} ${cstyler.blue(tableName)} ` +
@@ -1075,12 +1080,15 @@ async function JSONchecker(table_json, config) {
             }
         }
         // Lets return result
-        if (badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0 && badcharacterset.length === 0 && badcollation.length === 0) {
+        if (baddatabaseName.length === 0 && badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0 && badcharacterset.length === 0 && badcollation.length === 0) {
             console.log(cstyler.underline.green("All JSON checking is done | Clear to continue"));
             return { status: true, data: contentObj };
         }
 
         // lets print on the console
+        if (baddatabaseName.length > 0) {
+            console.error(`Database names are not correct. May have reserved words or length is bigger than 64 character. Names are:\n${baddatabaseName.join("\n")}`);
+        }
         if (badTableNames.length > 0) {
             console.error(`Table names are not correct: \n${badTableNames.join("\n")}`);
         }

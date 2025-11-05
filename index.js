@@ -45,7 +45,7 @@ async function runit(config, table_json) {
                 if (fncs.isValidDatabaseName(dbName)) {
                     const ifexist = await fncs.checkDatabaseExists(config, dbName);
                     if (ifexist === false) {
-                        const createDB = await fncs.createDatabase(config, dbName);
+                        const createDB = await fncs.createDatabase(config, dbName, charset, collate);
                         if (createDB === true) {
                             console.log(`${cstyler.purple('Database name:')} ${cstyler.blue(dbName)} ${cstyler.green('has created successfully.')}`)
                         } else if (createDB === false) {
@@ -93,7 +93,7 @@ async function runit(config, table_json) {
             //console.log(JSON.stringify(checkeing, null, 2))
             // table json file checking done
             // lets work on tables
-            const tableAdded = await dbtask.dbTask(config, checkeing.data);
+            //const tableAdded = await dbtask.dbTask(config, checkeing.data);
 
         }
     } catch (err) {

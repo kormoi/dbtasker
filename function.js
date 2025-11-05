@@ -133,22 +133,169 @@ async function checkDatabaseExists(config, dbName) {
     return null;
   }
 }
-async function createDatabase(config, dbName) {
-  let connection;
-
+async function createDatabase(config, data) {
   try {
+    let connection;
+    const getCharsetAndCollations = await getCharsetAndCollations(config);
+    let characterSets = {};
+    let collations = {};
+    if (fncs.isJsonObject(getCharsetAndCollations)) {
+      characterSets = getCharsetAndCollations.characterSets;
+      collations = getCharsetAndCollations.collations;
+    } else {
+      console.error(cstyler.bold("There is a problem from database."));
+      return null;
+    }
     connection = await mysql.createConnection(config);
-    await connection.query(`CREATE DATABASE \`${dbName}\``);
-    console.log(`✅ Database '${dbName}' created successfully.`);
+    let queryText = `CREATE DATABASE \`${data.name}\``;
+    if (characterSets.includes(data.charset)) {
+      queryText += " CHARACTER SET " + data.charset;
+    }
+    if (collations.includes(data.collate)) {
+      queryText += " COLLATE " + data.collate;
+    }
+    await connection.query(queryText);
+    //console.log(`Database '${data.name}' created successfully.`);
     return true;
   } catch (err) {
     if (err.code === 'ER_DB_CREATE_EXISTS') {
-      console.log(`⚠️  Database '${dbName}' already exists.`);
+      //console.log(`Database '${data.name}' already exists.`);
       return false;
     } else {
-      console.error(`❌ Error creating database:`, err.message);
+      console.error(`Error creating database:`, err.message);
       return null;
     }
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+async function dropDatabase(config, databaseName) {
+  let connection;
+  try {
+    // Connect to server without specifying database
+    connection = await mysql.createConnection({
+      host: config.host,
+      user: config.user,
+      password: config.password
+    });
+
+    // Check if database exists
+    const [rows] = await connection.query(
+      `SELECT SCHEMA_NAME 
+       FROM INFORMATION_SCHEMA.SCHEMATA 
+       WHERE SCHEMA_NAME = ?`,
+      [databaseName]
+    );
+
+    if (rows.length === 0) {
+      console.log(`Database '${databaseName}' does not exist.`);
+      return;
+    }
+
+    // Drop the database
+    await connection.query(`DROP DATABASE \`${databaseName}\``);
+    console.log(`Database '${databaseName}' dropped successfully.`);
+  } catch (err) {
+    console.error("Error dropping database:", err.message);
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+async function dropTable(config, databaseName, tableName) {
+  let connection;
+  try {
+    config.database = databaseName;
+    connection = await mysql.createConnection({ ...config, database: databaseName });
+
+    // Check if table exists
+    const [tables] = await connection.query(
+      `SELECT TABLE_NAME 
+       FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`,
+      [databaseName, tableName]
+    );
+
+    if (tables.length === 0) {
+      console.log(`Table '${tableName}' does not exist in ${databaseName}`);
+      return;
+    }
+
+    // Drop foreign keys from other tables referencing this table
+    const [fkRefs] = await connection.query(
+      `SELECT TABLE_NAME, CONSTRAINT_NAME 
+       FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+       WHERE REFERENCED_TABLE_SCHEMA = ? AND REFERENCED_TABLE_NAME = ?`,
+      [databaseName, tableName]
+    );
+
+    for (const ref of fkRefs) {
+      console.log(`Dropping foreign key '${ref.CONSTRAINT_NAME}' from table '${ref.TABLE_NAME}'`);
+      await connection.query(
+        `ALTER TABLE \`${ref.TABLE_NAME}\` DROP FOREIGN KEY \`${ref.CONSTRAINT_NAME}\``
+      );
+    }
+
+    // Drop the table
+    await connection.query(`DROP TABLE \`${tableName}\``);
+
+    console.log(`Table '${tableName}' dropped successfully from ${databaseName}`);
+  } catch (err) {
+    console.error("Error dropping table:", err.message);
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+async function dropColumn(config, databaseName, tableName, columnName) {
+  let connection;
+  try {
+    config.database = databaseName;
+    connection = await mysql.createConnection({ config });
+
+    // 1️⃣ Check if column exists
+    const [columns] = await connection.query(
+      `SELECT COLUMN_NAME, COLUMN_KEY 
+       FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+      [databaseName, tableName, columnName]
+    );
+
+    if (columns.length === 0) {
+      console.log(`⚠️ Column '${columnName}' does not exist in ${databaseName}.${tableName}`);
+      return;
+    }
+
+    const columnKey = columns[0].COLUMN_KEY;
+
+    // 2️⃣ Drop foreign key constraints if exist
+    const [fkConstraints] = await connection.query(
+      `SELECT CONSTRAINT_NAME 
+       FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? 
+       AND REFERENCED_TABLE_NAME IS NOT NULL`,
+      [databaseName, tableName, columnName]
+    );
+
+    for (const fk of fkConstraints) {
+      console.log(`Dropping foreign key: ${fk.CONSTRAINT_NAME}`);
+      await connection.query(
+        `ALTER TABLE \`${tableName}\` DROP FOREIGN KEY \`${fk.CONSTRAINT_NAME}\``
+      );
+    }
+
+    // 3️⃣ Drop primary key if the column is part of PK
+    if (columnKey === "PRI") {
+      console.log(`Dropping PRIMARY KEY on column: ${columnName}`);
+      await connection.query(`ALTER TABLE \`${tableName}\` DROP PRIMARY KEY`);
+    }
+
+    // 4️⃣ Drop the column itself
+    await connection.query(
+      `ALTER TABLE \`${tableName}\` DROP COLUMN \`${columnName}\``
+    );
+
+    console.log(`✅ Column '${columnName}' dropped successfully from ${databaseName}.${tableName}`);
+  } catch (err) {
+    console.error("❌ Error dropping column:", err.message);
   } finally {
     if (connection) await connection.end();
   }
@@ -259,17 +406,28 @@ function isValidColumnName(name) {
 
   return true;
 }
+function createloopname(text) {
+  if (['year', 'years'].includes(text.loop)) {
+    return text.name + "_" + getDateTime.year;
+  } else if (['month', 'months'].includes(text.loop)) {
+    return text.name + "_" + getDateTime.year + "_" + getDateTime.month;
+  } else if (['day', 'days'].includes(text.loop)) {
+    return text.name + "_" + getDateTime.year + "_" + getDateTime.month + "_" + getDateTime.day;
+  } else {
+    return false;
+  }
+}
 function perseTableNameWithLoop(text) {
   if (typeof text !== 'string') return false;
 
-  text = text.toLowerCase().trim();
+  text = text.trim();
 
   // Case 1: product(year)
   let match = text.match(/^([a-zA-Z_][\w]*)\(([^()]+)\)$/);
   if (match) {
     const name = match[1];
     const loop = match[2];
-    if (isValidColumnName(name) && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
+    if (name && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
       return { name: name, loop: loop.toLowerCase() };
     }
     return false;
@@ -280,7 +438,7 @@ function perseTableNameWithLoop(text) {
   if (match) {
     const loop = match[1];
     const name = match[2];
-    if (isValidColumnName(name) && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
+    if (name && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
       return { name: name, loop: loop };
     }
     return false;
@@ -288,6 +446,41 @@ function perseTableNameWithLoop(text) {
 
   // Case 3: just a column name without loop
   if (isValidColumnName(text)) {
+    return { name: text, loop: null };
+  }
+
+  // Any invalid format or invalid name
+  return false;
+}
+function perseDatabaseNameWithLoop(text) {
+  if (typeof text !== 'string') return false;
+
+  text = text.trim();
+
+  // Case 1: product(year)
+  let match = text.match(/^([a-zA-Z_][\w]*)\(([^()]+)\)$/);
+  if (match) {
+    const name = match[1];
+    const loop = match[2];
+    if (name && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
+      return { name: name, loop: loop.toLowerCase() };
+    }
+    return false;
+  }
+
+  // Case 2: (year)product
+  match = text.match(/^\(([^()]+)\)([a-zA-Z_][\w]*)$/);
+  if (match) {
+    const loop = match[1];
+    const name = match[2];
+    if (name && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
+      return { name: name, loop: loop };
+    }
+    return false;
+  }
+
+  // Case 3: just a column name without loop
+  if (isValidDatabaseName(text)) {
     return { name: text, loop: null };
   }
 
@@ -500,7 +693,7 @@ const writeJsFile = async (filePath, content) => {
 };
 function removefromarray(arr, text) {
   if (!Array.isArray(arr)) {
-    throw new Error("data must be an array.");
+    return false;
   }
   let index = arr.indexOf(text);
   if (index !== -1) {
@@ -605,6 +798,36 @@ async function getColumnNames(config, databaseName, tableName) {
     if (connection) await connection.end(); // Ensure connection is closed
   }
 }
+async function getDatabaseCharsetAndCollation(config, databaseName) {
+  let connection;
+  try {
+    // Connect to the server (not to a specific database)
+    connection = await mysql.createConnection(config);
+
+    // Query the information_schema for the given database
+    const [rows] = await connection.execute(
+      `SELECT DEFAULT_CHARACTER_SET_NAME AS characterSet, DEFAULT_COLLATION_NAME AS collation 
+       FROM information_schema.SCHEMATA 
+       WHERE SCHEMA_NAME = ?`,
+      [databaseName]
+    );
+
+    if (rows.length === 0) {
+      console.error(`Database "${databaseName}" not found.`);
+      return null;
+    }
+
+    return {
+      characterSet: rows[0].characterSet,
+      collation: rows[0].collation,
+    };
+  } catch (err) {
+    console.error("Error fetching charset/collation:", err.message);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
 async function getColumnDetails(config, databaseName, tableName, columnName = null) {
   let connection;
 
@@ -682,74 +905,7 @@ async function getForeignKeyDetails(config, databaseName, tableName) {
     if (connection) await connection.end();
   }
 }
-async function dropTables(config, databaseName, tableNames) {
-  if (!config || typeof config !== 'object') {
-    throw new Error("Config must be a valid object.");
-  }
 
-  if (typeof databaseName !== 'string' || !databaseName.trim()) {
-    throw new Error("databaseName must be a non-empty string.");
-  }
-
-  if (!Array.isArray(tableNames) || tableNames.length === 0) {
-    throw new Error("tableNames must be a non-empty array of strings.");
-  }
-
-  // Create pool using the config, override the database name
-  const pool = await mysql.createPool({ ...config, database: databaseName });
-
-  try {
-    console.log(`Attempting to drop tables in database ${databaseName}: ${tableNames.join(", ")}`);
-
-    const escapedTables = tableNames
-      .map(t => `\`${databaseName.replace(/`/g, "``")}\`.\`${t.replace(/`/g, "``")}\``)
-      .join(", ");
-
-    const query = `DROP TABLE IF EXISTS ${escapedTables}`;
-    await pool.query(query);
-
-    console.log(`Tables dropped successfully in database ${databaseName}: ${tableNames.join(", ")}`);
-    return true;
-  } catch (error) {
-    console.error(`Error dropping tables in database ${databaseName}:`, error.message);
-    return false;
-  } finally {
-    await pool.end();
-  }
-}
-async function dropColumns(config, databaseName, tableName, columnNames) {
-  if (!config || typeof config !== 'object') {
-    throw new Error("Config must be a valid object.");
-  }
-  if (typeof databaseName !== 'string' || !databaseName.trim()) {
-    throw new Error("databaseName must be a non-empty string.");
-  }
-  if (typeof tableName !== 'string' || !tableName.trim()) {
-    throw new Error("tableName must be a non-empty string.");
-  }
-  if (!Array.isArray(columnNames) || columnNames.length === 0) {
-    throw new Error("columnNames must be a non-empty array of strings.");
-  }
-
-  const pool = await mysql.createPool({ ...config, database: databaseName });
-
-  try {
-    // Escape identifiers
-    const escapedTable = `\`${databaseName.replace(/`/g, "``")}\`.\`${tableName.replace(/`/g, "``")}\``;
-    const dropStatements = columnNames.map(col =>
-      `DROP COLUMN \`${col.replace(/`/g, "``")}\``).join(", ");
-
-    const query = `ALTER TABLE ${escapedTable} ${dropStatements}`;
-    console.log(`Executing: ${query}`);
-    await pool.query(query);
-
-    console.log(`Columns dropped from ${tableName}: ${columnNames.join(", ")}`);
-  } catch (error) {
-    console.error(`Error dropping columns:`, error.message);
-  } finally {
-    await pool.end();
-  }
-}
 async function runQueryReturnTrueOrNull(config, databaseName, queryText) {
   let connection;
 
@@ -769,6 +925,7 @@ async function runQueryReturnTrueOrNull(config, databaseName, queryText) {
 module.exports = {
   isNumber,
   getDateTime,
+  removefromarray,
   getMySQLVersion,
   isMySQL578OrAbove,
   isValidMySQLConfig,
@@ -780,16 +937,20 @@ module.exports = {
   isValidDatabaseName,
   isValidTableName,
   isValidColumnName,
+  createloopname,
   perseTableNameWithLoop,
+  perseDatabaseNameWithLoop,
   stringifyAny,
   isJsonString,
   isJsonObject,
   isJsonSame,
   getTableNames,
   getColumnNames,
+  getDatabaseCharsetAndCollation,
   getColumnDetails,
   getForeignKeyDetails,
-  dropTables,
-  dropColumns,
+  dropDatabase,
+  dropTable,
+  dropColumn,
   writeJsFile,
 }
