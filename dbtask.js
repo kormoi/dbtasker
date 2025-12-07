@@ -34,10 +34,11 @@ CREATE TABLE sample_table (
 );
 `
 
-async function dbTask(config, table_config, availabledatabase) {
+async function dbTask(config, table_config, seperator) {
     try {
         let insertedjson = {};
         let errorLog = [];
+        const availabledatabase = undefined; // get all available database name
         for (const databaseName of Object.keys(availabledatabase)) {
             config.database = databaseName.toLowerCase();
             const dbTableNames = await fncs.getTableNames(config, databaseName.toLowerCase());

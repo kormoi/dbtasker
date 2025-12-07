@@ -18,7 +18,6 @@ function parseQuotedListSafely(text) {
         .map(item => item.trim().replace(/^'(.*)'$/, "$1"))
         .filter(item => item.length > 0);
 }
-
 const mysqlTypeMetadata = {
     // Numeric types
     TINYINT: { lengthType: "int", required: false, query: "TINYINT(3)", supportsUnsigned: true, dataType: "numeric" },
@@ -78,7 +77,6 @@ const mysqlTypeMetadata = {
     // JSON
     JSON: { lengthType: "none", required: false, query: "JSON", supportsUnsigned: false, dataType: "json" }
 };
-
 const validIndexValues = [
     "INDEX",
     "UNIQUE",
@@ -179,7 +177,7 @@ function isValidDefault(columnType, defaultValue, length_value) {
 }
 
 
-async function JSONchecker(table_json, config) {
+async function JSONchecker(table_json, config, seperator = "_") {
     // lets check all table name and column name
     let baddatabaseName = [];
     let badTableNames = [];
@@ -217,20 +215,20 @@ async function JSONchecker(table_json, config) {
     if (fncs.isJsonObject(table_json)) {
         // lets loop databases
         for (const databaseName of Object.keys(table_json)) {
-            if (fncs.perseDatabaseNameWithLoop(databaseName) === false) {
+            if (fncs.perseDatabaseNameWithLoop(databaseName, seperator) === false) {
                 baddatabaseName.push(
                     `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                     `${cstyler.red('- database name is not valid.')}`
                 )
             }
+            if (!contentObj[databaseName]) contentObj[databaseName] = {};
             if (fncs.isJsonObject(table_json[databaseName])) {
-                if (!contentObj[databaseName]) contentObj[databaseName] = {};
                 // lets loop tables
                 for (const tableName of Object.keys(table_json[databaseName])) {
                     if (!contentObj[databaseName][tableName]) contentObj[databaseName][tableName] = {};
 
                     if (fncs.isJsonObject(table_json[databaseName][tableName]) && !charandcoll.includes(tableName)) {
-                        if (fncs.perseTableNameWithLoop(tableName) === false) {
+                        if (fncs.perseTableNameWithLoop(tableName, seperator) === false) {
                             badTableNames.push(
                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                 `${cstyler.purple('of table:')} ${cstyler.blue(tableName)} ` +

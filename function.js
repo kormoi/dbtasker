@@ -17,7 +17,7 @@ function isNumber(str) {
   }
   return !isNaN(str) && str.trim() !== "";
 }
-function getDateTime(seperator) {
+function getDateTime(seperator = "/") {
   const today = new Date();
   const formattedDateTime =
     today.getFullYear() +
@@ -84,11 +84,19 @@ async function isMySQL578OrAbove(config) {
 function isValidMySQLConfig(config) {
   if (typeof config !== 'object' || config === null) return false;
 
-  const requiredKeys = ['host', 'user', 'password'];
+  const requiredKeys = ['host', 'user', 'password', 'port'];
 
   for (const key of requiredKeys) {
     if (!(key in config)) return false;
-    if (typeof config[key] !== 'string' || config[key].trim() === '') return false;
+
+    const value = config[key];
+    const type = typeof value;
+
+    // Allow string, number, boolean
+    if (!['string', 'number', 'boolean'].includes(type)) return false;
+
+    // Extra string validation
+    if (type === 'string' && value.trim() === '') return false;
   }
 
   return true;
@@ -98,7 +106,7 @@ async function isMySQLDatabase(config) {
   if (isvalidconfig === false) {
     throw new Error("There is some information missing in config.");
   }
-  console.log("Config is okay we are good to go.");
+  console.log("Config is okay. We are good to go.");
   let connection;
   try {
     connection = await mysql.createConnection(config);
@@ -133,42 +141,6 @@ async function checkDatabaseExists(config, dbName) {
     return null;
   }
 }
-async function createDatabase(config, data) {
-  try {
-    let connection;
-    const getCharsetAndCollations = await getCharsetAndCollations(config);
-    let characterSets = {};
-    let collations = {};
-    if (fncs.isJsonObject(getCharsetAndCollations)) {
-      characterSets = getCharsetAndCollations.characterSets;
-      collations = getCharsetAndCollations.collations;
-    } else {
-      console.error(cstyler.bold("There is a problem from database."));
-      return null;
-    }
-    connection = await mysql.createConnection(config);
-    let queryText = `CREATE DATABASE \`${data.name}\``;
-    if (characterSets.includes(data.charset)) {
-      queryText += " CHARACTER SET " + data.charset;
-    }
-    if (collations.includes(data.collate)) {
-      queryText += " COLLATE " + data.collate;
-    }
-    await connection.query(queryText);
-    //console.log(`Database '${data.name}' created successfully.`);
-    return true;
-  } catch (err) {
-    if (err.code === 'ER_DB_CREATE_EXISTS') {
-      //console.log(`Database '${data.name}' already exists.`);
-      return false;
-    } else {
-      console.error(`Error creating database:`, err.message);
-      return null;
-    }
-  } finally {
-    if (connection) await connection.end();
-  }
-}
 async function dropDatabase(config, databaseName) {
   let connection;
   try {
@@ -189,14 +161,16 @@ async function dropDatabase(config, databaseName) {
 
     if (rows.length === 0) {
       console.log(`Database '${databaseName}' does not exist.`);
-      return;
+      return false;
     }
 
     // Drop the database
     await connection.query(`DROP DATABASE \`${databaseName}\``);
     console.log(`Database '${databaseName}' dropped successfully.`);
+    return true;
   } catch (err) {
     console.error("Error dropping database:", err.message);
+    return null;
   } finally {
     if (connection) await connection.end();
   }
@@ -317,6 +291,10 @@ async function getAllDatabaseNames(config) {
     if (connection) await connection.end();
   }
 }
+function isValidMySQLIdentifier(name) {
+  if (typeof name !== "string") return false;
+  return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name);
+}
 function isValidDatabaseName(name) {
   if (typeof name !== 'string') return false;
 
@@ -406,86 +384,126 @@ function isValidColumnName(name) {
 
   return true;
 }
-function createloopname(text) {
-  if (['year', 'years'].includes(text.loop)) {
-    return text.name + "_" + getDateTime.year;
+function createloopname(text, seperator = "_") {
+  if (!isJsonObject(text)) {
+    return null;
+  }
+  seperator = seperator.toString();
+  if (text.loop === null) {
+    return text.name;
+  } else if (['year', 'years'].includes(text.loop)) {
+    return text.name + "_" + seperator + getDateTime().year + seperator + "_";
   } else if (['month', 'months'].includes(text.loop)) {
-    return text.name + "_" + getDateTime.year + "_" + getDateTime.month;
+    return text.name + "_" + seperator + getDateTime().year + seperator + getDateTime().month + seperator + "_";
   } else if (['day', 'days'].includes(text.loop)) {
-    return text.name + "_" + getDateTime.year + "_" + getDateTime.month + "_" + getDateTime.day;
+    return text.name + "_" + seperator + getDateTime().year + seperator + getDateTime().month + seperator + getDateTime().day + seperator + "_";
   } else {
     return false;
   }
 }
-function perseTableNameWithLoop(text) {
-  if (typeof text !== 'string') return false;
-
-  text = text.trim();
-
-  // Case 1: product(year)
-  let match = text.match(/^([a-zA-Z_][\w]*)\(([^()]+)\)$/);
-  if (match) {
-    const name = match[1];
-    const loop = match[2];
-    if (name && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
-      return { name: name, loop: loop.toLowerCase() };
-    }
-    return false;
+function getloop(text) {
+  if (typeof text !== "string") {
+    return null;
   }
-
-  // Case 2: (year)product
-  match = text.match(/^\(([^()]+)\)([a-zA-Z_][\w]*)$/);
-  if (match) {
-    const loop = match[1];
-    const name = match[2];
-    if (name && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
-      return { name: name, loop: loop };
-    }
-    return false;
+  if (text.startsWith("(year)") || text.endsWith("(year)")) {
+    return { name: text.replace("(year)", ""), loop: "year" };
+  } else if (text.startsWith("(years)") || text.endsWith("(years)")) {
+    return { name: text.replace("(years)", ""), loop: "year" };
+  } else if (text.startsWith("(month)") || text.endsWith("(month)")) {
+    return { name: text.replace("(month)", ""), loop: "month" };
+  } else if (text.startsWith("(months)") || text.endsWith("(months)")) {
+    return { name: text.replace("(months)", ""), loop: "month" };
+  } else if (text.startsWith("(day)") || text.endsWith("(day)")) {
+    return { name: text.replace("(day)", ""), loop: "day" };
+  } else if (text.startsWith("(days)") || text.endsWith("(days)")) {
+    return { name: text.replace("(days)", ""), loop: "day" };
+  } else {
+    return { name: text, loop: null }
   }
-
-  // Case 3: just a column name without loop
-  if (isValidColumnName(text)) {
-    return { name: text, loop: null };
-  }
-
-  // Any invalid format or invalid name
-  return false;
 }
-function perseDatabaseNameWithLoop(text) {
-  if (typeof text !== 'string') return false;
-
+function perseTableNameWithLoop(text, seperator = "_") {
+  if (typeof text !== 'string') return null;
   text = text.trim();
-
-  // Case 1: product(year)
-  let match = text.match(/^([a-zA-Z_][\w]*)\(([^()]+)\)$/);
-  if (match) {
-    const name = match[1];
-    const loop = match[2];
-    if (name && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
-      return { name: name, loop: loop.toLowerCase() };
+  let gtlp = getloop(text);
+  if (gtlp.loop === null) {
+    if (isValidTableName(gtlp.name)) {
+      gtlp.loopname = gtlp.name;
+      return gtlp;
+    } else {
+      return false;
     }
+  } else if (gtlp === null) {
     return false;
-  }
-
-  // Case 2: (year)product
-  match = text.match(/^\(([^()]+)\)([a-zA-Z_][\w]*)$/);
-  if (match) {
-    const loop = match[1];
-    const name = match[2];
-    if (name && ['year', 'years', 'month', 'months', 'day', 'days'].includes(loop)) {
-      return { name: name, loop: loop };
+  } else {
+    const loopname = createloopname(gtlp, seperator);
+    if (isValidTableName(loopname)) {
+      return { name: gtlp.name, loop: gtlp.loop, loopname: loopname }
+    } else {
+      return false;
     }
+  }
+}
+function perseDatabaseNameWithLoop(text, seperator = "_") {
+  if (typeof text !== 'string') return false;
+  text = text.trim();
+  let gtlp = getloop(text);
+  if (gtlp.loop === null) {
+    if (isValidDatabaseName(gtlp.name)) {
+      gtlp.loopname = gtlp.name;
+      return gtlp;
+    } else {
+      return false;
+    }
+  } else if (gtlp === null) {
     return false;
+  } else {
+    const loopname = createloopname(gtlp, seperator);
+    if (isValidDatabaseName(loopname)) {
+      return { name: gtlp.name, loop: gtlp.loop, loopname: loopname }
+    } else {
+      return false;
+    }
+  }
+}
+function reverseLoopName(input) {
+  // Detect: name + "_" + separator (non-alphanumeric)
+  const sepMatch = input.match(/^(.*)_([^a-zA-Z0-9])/);
+  if (!sepMatch) return input;
+
+  const name = sepMatch[1];
+  const sep = sepMatch[2];
+
+  // Escape separator
+  const s = sep.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+
+  // Strict pattern
+  const regex = new RegExp(
+    `^(${name})_${s}` +       // name + "_" + sep
+    `(\\d{4})` +              // year
+    `(?:${s}(\\d{2}))?` +     // optional month
+    `(?:${s}(\\d{2}))?` +     // optional day
+    `${s}_$`                  // sep + "_"
+  );
+
+  const match = input.match(regex);
+  if (!match) return input;   // <<== return input instead of false
+
+  const [, , year, month, day] = match;
+
+  // Validate month/day
+  if (month) {
+    const m = Number(month);
+    if (m < 1 || m > 12) return input;
+  }
+  if (day) {
+    const d = Number(day);
+    if (d < 1 || d > 31) return input;
   }
 
-  // Case 3: just a column name without loop
-  if (isValidDatabaseName(text)) {
-    return { name: text, loop: null };
-  }
-
-  // Any invalid format or invalid name
-  return false;
+  // Return type
+  if (day) return `${name}(day)`;
+  if (month) return `${name}(month)`;
+  return `${name}(year)`;
 }
 
 
@@ -932,14 +950,16 @@ module.exports = {
   isMySQLDatabase,
   getCharsetAndCollations,
   checkDatabaseExists,
-  createDatabase,
   getAllDatabaseNames,
+  isValidMySQLIdentifier,
   isValidDatabaseName,
   isValidTableName,
   isValidColumnName,
   createloopname,
   perseTableNameWithLoop,
   perseDatabaseNameWithLoop,
+  getloop,
+  reverseLoopName,
   stringifyAny,
   isJsonString,
   isJsonObject,

@@ -9,12 +9,38 @@ const dbtask = require("./dbtask");
 
 const moduleName = "databaser";
 
-async function runit(config, table_json) {
+async function runit(allconfig, table_json) {
     try {
         console.log(cstyler.blue("Initializing DBTASKER..."))
         let errorLog = [];
         let availabledatabases = {};
         let unavailabledbnames = [];
+        // check if enough database available on table json
+        const databaseNames = Object.keys(table_json);
+        if (databaseNames.length === 0) {
+            console.error(cstyler.bold("No data in table information object. Please add some database and tables."));
+            return;
+        }
+        // Check config
+        console.log("Lets check config");
+        const isvalidconfig = fncs.isValidMySQLConfig(allconfig);
+        if (isvalidconfig === false) {
+            console.error("Please check your config object. It may requires more information...");
+            return;
+        }
+        const config = {
+            'host': allconfig.host,
+            'user': allconfig.user,
+            'password': allconfig.password,
+            'port': allconfig.port,
+            'waitForConnections': true,
+            'connectionLimit': 100
+        }
+        // Declare seperator
+        let seperator = "_";
+        if (allconfig.seperator && fncs.isValidMySQLIdentifier(allconfig.seperator)) {
+            seperator = allconfig.seperator;
+        }
         // lets check database type
         const ifmysqldatabase = await fncs.isMySQLDatabase(config);
         if (ifmysqldatabase === false) {
@@ -37,65 +63,19 @@ async function runit(config, table_json) {
             return;
         }
         console.log(cstyler.bold.underline.yellow("Table need an upgrade."))
-        // json file checking is done
-        const databaseNames = Object.keys(table_json);
-        if (Array.isArray(databaseNames)) {
-            for (let dbName of databaseNames) {
-                dbName = dbName.toLocaleLowerCase();
-                if (fncs.isValidDatabaseName(dbName)) {
-                    const ifexist = await fncs.checkDatabaseExists(config, dbName);
-                    if (ifexist === false) {
-                        const createDB = await fncs.createDatabase(config, dbName, charset, collate);
-                        if (createDB === true) {
-                            console.log(`${cstyler.purple('Database name:')} ${cstyler.blue(dbName)} ${cstyler.green('has created successfully.')}`)
-                        } else if (createDB === false) {
-                            console.log(`${cstyler.purple('Database name:')} ${cstyler.blue(dbName)} ${cstyler.yellow("is already created.")}`)
-                        } else {
-                            throw new Error("Can not perform. There is a database connection problem.");
-                        }
-                    } else if (ifexist === true) {
-                        console.log(`${cstyler.purple('Database name:')} ${cstyler.blue(dbName)} ${cstyler.green('is available')}`);
-                    } else {
-                        throw new Error("Can not perform. There is a database connection problem.");
-                    }
-                } else {
-                    errorLog.push(`${cstyler.purple('Database name:')} "${cstyler.yellow(dbName)}" ${cstyler.red("is not valid")}`);
-                }
-            }
-            // Lets check how many database added
-            const getalldbnames = await fncs.getAllDatabaseNames(config);
-            if (getalldbnames === null) {
-                throw new Error("Can not perform. There is a database connection problem.");
-            }
-            if (Array.isArray(getalldbnames)) {
-                for (const items of databaseNames) {
-                    if (!getalldbnames.includes(items.toLocaleLowerCase())) {
-                        unavailabledbnames.push(items.toLocaleLowerCase());
-                        console.error(`${cstyler.purple('Database name:')} ${items} is not available. Please try again.`);
-                    } else {
-                        availabledatabases[items] = table_json[items];
-                    }
-                }
-            }
-            if (Object.keys(availabledatabases).length === 0) {
-                console.error("There is no available database to work on tables.");
-                return;
-            }
-            if (unavailabledbnames.length > 0) {
-                console.error("Check these databases that are not available.\n", cstyler.blue(unavailabledbnames.join(", ")));
-            }
-            // lets check all table name and column name
-            const checkeing = await checker.JSONchecker(table_json, config);
-            if (checkeing === false) {
-                console.log(cstyler.bold.underline.red("Please correct those information and try again."))
-                return;
-            }
-            //console.log(JSON.stringify(checkeing, null, 2))
-            // table json file checking done
-            // lets work on tables
-            //const tableAdded = await dbtask.dbTask(config, checkeing.data);
-
+        // lets check all table name and column name
+        const checking = await checker.JSONchecker(table_json, config, seperator);
+        if (checking === false) {
+            console.log(cstyler.bold.underline.red("Please correct those information and try again."))
+            return;
         }
+        console.log(checking)
+        //console.log(JSON.stringify(checkeing, null, 2))
+        // table json file checking done
+        // lets work on tables
+        //const tableAdded = await dbtask.dbTask(config, checkeing.data, seperator);
+
+
     } catch (err) {
         console.error(err.message);
         return;
