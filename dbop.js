@@ -1,8 +1,5 @@
 const fncs = require("./function");
-const recordedjson = require("./tables");
 const cstyler = require("cstyler");
-const checker = require("./validation");
-const dbtask = require("./dbtask");
 
 const defaultdb = ['information_schema', 'mysql', 'performance_schema', 'sys', 'world'];
 
@@ -85,11 +82,17 @@ async function createDatabase(config, databaseName, characterSet = null, collate
         if (connection) await connection.end();
     }
 }
-async function databaseAddDeleteAlter(config, jsondata, dropdb = false, seperator = "_") {
+async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, donttouchdb = [], seperator = "_") {
     try {
         // lets add databases and drop databases
+        let config;
+        if (fncs.isValidMySQLConfig(allconfig)) {
+            config = { "port": allconfig.port, "host": allconfig.host, "user": allconfig.user, "password": allconfig.password }
+        } else {
+            console.error(cstyler.bold("Invalid config"));
+            return null;
+        }
         let jsondbnames = Object.keys(jsondata);
-
         const avldblist = await fncs.getAllDatabaseNames(config);
         if (!Array.isArray(avldblist)) {
             console.error(cstyler.red.bold("There is a problem connecting to the database. Please check database info or connection."));
@@ -165,7 +168,7 @@ async function databaseAddDeleteAlter(config, jsondata, dropdb = false, seperato
             // Let's arrange database names
             let arrngdbnms = {};
             for (const dbnms of avldblist) {
-                if (defaultdb.includes(dbnms)) { continue }
+                if ([...defaultdb, ...donttouchdb].includes(dbnms)) { continue }
                 const getrev = fncs.reverseLoopName(dbnms);
                 if (arrngdbnms.hasOwnProperty(getrev)) {
                     arrngdbnms[getrev].push(dbnms);
@@ -181,6 +184,7 @@ async function databaseAddDeleteAlter(config, jsondata, dropdb = false, seperato
                 }
             }
         }
+        return true;
     } catch (err) {
         console.error(err.message);
         return null;

@@ -34,7 +34,7 @@ CREATE TABLE sample_table (
 );
 `
 
-async function dbTask(config, table_config, seperator) {
+async function dbTask(config, table_config, seperator = "_") {
     try {
         let insertedjson = {};
         let errorLog = [];
@@ -58,7 +58,7 @@ async function dbTask(config, table_config, seperator) {
                         tableName = isValidTableName.name + '_' + new Date().getFullYear();
                     } else if (['month', 'months'].includes(isValidTableName.loop)) {
                         tableName = isValidTableName.name + '_' + new Date().getFullYear() + '_' + new Date().getMonth();
-                    } else if(['day', 'days'].includes(isValidTableName.loop)){
+                    } else if (['day', 'days'].includes(isValidTableName.loop)) {
                         tableName = isValidTableName.name + '_' + new Date().getFullYear() + '_' + new Date().getMonth() + "_" + new Date().getDate().toString().padStart(2, "0");
                     } else {
                         delete availabledatabase[databaseName][JSONTableName];

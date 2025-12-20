@@ -36,6 +36,25 @@ async function runit(allconfig, table_json) {
             'waitForConnections': true,
             'connectionLimit': 100
         }
+        // get don't touch database
+        let donttouchdb = [];
+        const donttouchkeys = ['donttouch', 'donottouch', 'donttouchdb', 'donottouchdb', 'donttouchdatabase', 'donottouchdatabase', 'dontdelete', 'donotdelete', 'dontdeletedb', 'donotdeletedb', 'dontdeletedatabase', 'donotdeletedatabase', 'dont_touch', 'do_not_touch', 'dont_touch_db', 'do_not_touch_db', 'dont_touch_database', 'do_not_touch_database', 'dont_delete', 'do_not_delete', 'dont_delete_db', 'do_not_delete_db', 'dont_delete_database', 'do_not_delete_database', 'reserveddb', 'reserved_db'];
+        for(const item of donttouchkeys){
+            if(allconfig.hasOwnProperty(item)){
+                if(Array.isArray(allconfig[item])){
+                    for(const dbs of allconfig[item]){
+                        if(typeof dbs !== "string"){
+                            console.error("Non deletable database names must string. Please provide valid data type.");
+                            return;
+                        }
+                    }
+                    donttouchdb = allconfig[item];
+                } else {
+                    console.error(cstyler.bold("Please provide database name as an array that can not be deleted."));
+                    return;
+                }
+            }
+        }
         // Declare seperator
         let seperator = "_";
         if (allconfig.seperator && fncs.isValidMySQLIdentifier(allconfig.seperator)) {
@@ -69,8 +88,8 @@ async function runit(allconfig, table_json) {
             console.log(cstyler.bold.underline.red("Please correct those information and try again."))
             return;
         }
-        console.log(checking)
-        //console.log(JSON.stringify(checkeing, null, 2))
+        //console.log(checking)
+        console.log(JSON.stringify(checking, null, 2))
         // table json file checking done
         // lets work on tables
         //const tableAdded = await dbtask.dbTask(config, checkeing.data, seperator);

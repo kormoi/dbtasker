@@ -1,3 +1,5 @@
+const { updateRecord } = require("../../kormoi/server/services/functions");
+
 module.exports = {
   main: {
     users: {
@@ -640,6 +642,68 @@ module.exports = {
     _collate_: "utf8mb4_zh_0900_as_cs"
   },
   finance: {
+    users: {
+      id: {
+        type: "BIGINT",
+        null: false,
+        comment: "Primary Key",
+        auto_increment: true,
+        index: "PRIMARY KEY",
+      },
+      ac_status: {
+        type: "ENUM",
+        LengthValue:
+          "'registered', 'requested', 'approved', 'rejected', 'suspended', 'restricted', 'blocked', 'deleted'",
+        null: false,
+        default: "registered",
+      },
+      user_role: {
+        type: "ENUM",
+        LengthValue:
+          "'admin', 'back_end_dev', 'app_dev', 'front_end_dev', 'employee', 'marketer', 'support', 'higher_support', 'advocate', 'user'",
+        null: false,
+        default: "user",
+      },
+      first_name: { type: "VARCHAR", LengthValue: 60, null: false },
+      last_name: { type: "VARCHAR", LengthValue: 100, null: false },
+      display_name: { type: "VARCHAR", LengthValue: 255, null: false },
+      bio: { type: "TEXT", null: false },
+      profile_title: { type: "VARCHAR", LengthValue: 100, null: false },
+      description: { type: "JSON", null: false },
+      skills: { type: "TEXT", null: false },
+      languages: { type: "JSON", null: false },
+      profile_picture: { type: "VARCHAR", LengthValue: 255, null: true },
+      cover_picture: { type: "VARCHAR", LengthValue: 255, null: true },
+      seller_level: {
+        type: "ENUM",
+        LengthValue:
+          "'none','starter', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ruby', 'sapphire', 'emerald', 'obsidian'",
+        null: true,
+        default: "none",
+      },
+      accoutn_badges: { type: "JSON", null: true, comment: "List of badges" },
+      overall_rating: { type: "FLOAT", null: true },
+      avg_response_time: {
+        type: "INT",
+        null: false,
+        comment: "Average response time in hours.",
+        default: "0",
+      },
+      review_count: { type: "INT", null: false, default: "0" },
+      follow_count: { type: "BIGINT", null: false, default: "0" },
+      following_count: { type: "BIGINT", null: false, default: "0" },
+      ideator_level: { type: "VARCHAR", LengthValue: 255, null: true },
+      created_at: {
+        type: "TIMESTAMP",
+        null: false,
+        default: "CURRENT_TIMESTAMP",
+      },
+      updated_at: {
+        type: "TIMESTAMP",
+        null: false,
+        default: "CURRENT_TIMESTAMP",
+      },
+    },
     payment_method: {
       id: {
         type: "BIGINT",
@@ -835,6 +899,16 @@ module.exports = {
         auto_increment: true,
         index: "PRIMARY KEY",
       },
+      user_id: {
+        type: "BIGINT",
+        null: false,
+        foreign_key: {
+          table: "users",
+          column: "id",
+          delete: true,
+          update: true
+        },
+      },
       currency: {
         type: "VARCHAR",
         LengthValue: 5,
@@ -851,10 +925,15 @@ module.exports = {
         default: "CURRENT_TIMESTAMP",
       },
       updated_at: {
-        type: "TIMESTAMP",
+        type: "TEXT",
         null: false,
         default: "CURRENT_TIMESTAMP",
+        comment: "Hi. Its me here.",
+        charset: "utf8mb4",
+        collate: "utf8mb4_zh_0900_as_cs"
+
       },
+      "_engine_": "CSV"
     },
   },
 };

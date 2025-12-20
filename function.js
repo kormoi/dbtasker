@@ -223,57 +223,68 @@ async function dropColumn(config, databaseName, tableName, columnName) {
   let connection;
   try {
     config.database = databaseName;
-    connection = await mysql.createConnection({ config });
+    connection = await mysql.createConnection(config);
 
     // 1️⃣ Check if column exists
     const [columns] = await connection.query(
-      `SELECT COLUMN_NAME, COLUMN_KEY 
-       FROM INFORMATION_SCHEMA.COLUMNS 
+      `SELECT COLUMN_NAME, COLUMN_KEY
+       FROM INFORMATION_SCHEMA.COLUMNS
        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
       [databaseName, tableName, columnName]
     );
 
+    // ❌ Column does not exist → return false
     if (columns.length === 0) {
-      console.log(`⚠️ Column '${columnName}' does not exist in ${databaseName}.${tableName}`);
-      return;
+      console.log(
+        `Column '${columnName}' does not exist in ${databaseName}.${tableName}`
+      );
+      return false;
     }
 
     const columnKey = columns[0].COLUMN_KEY;
 
-    // 2️⃣ Drop foreign key constraints if exist
+    // 2️⃣ Drop foreign key constraints
     const [fkConstraints] = await connection.query(
-      `SELECT CONSTRAINT_NAME 
-       FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? 
-       AND REFERENCED_TABLE_NAME IS NOT NULL`,
+      `SELECT CONSTRAINT_NAME
+       FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+       WHERE TABLE_SCHEMA = ?
+         AND TABLE_NAME = ?
+         AND COLUMN_NAME = ?
+         AND REFERENCED_TABLE_NAME IS NOT NULL`,
       [databaseName, tableName, columnName]
     );
 
     for (const fk of fkConstraints) {
-      console.log(`Dropping foreign key: ${fk.CONSTRAINT_NAME}`);
       await connection.query(
         `ALTER TABLE \`${tableName}\` DROP FOREIGN KEY \`${fk.CONSTRAINT_NAME}\``
       );
     }
 
-    // 3️⃣ Drop primary key if the column is part of PK
+    // 3️⃣ Drop primary key if needed
     if (columnKey === "PRI") {
-      console.log(`Dropping PRIMARY KEY on column: ${columnName}`);
-      await connection.query(`ALTER TABLE \`${tableName}\` DROP PRIMARY KEY`);
+      await connection.query(
+        `ALTER TABLE \`${tableName}\` DROP PRIMARY KEY`
+      );
     }
 
-    // 4️⃣ Drop the column itself
+    // 4️⃣ Drop column
     await connection.query(
       `ALTER TABLE \`${tableName}\` DROP COLUMN \`${columnName}\``
     );
 
-    console.log(`✅ Column '${columnName}' dropped successfully from ${databaseName}.${tableName}`);
+    console.log(
+      `Column '${columnName}' dropped successfully from ${databaseName}.${tableName}`
+    );
+
+    return true;
   } catch (err) {
-    console.error("❌ Error dropping column:", err.message);
+    console.error("Error dropping column:", err.message);
+    return null;
   } finally {
     if (connection) await connection.end();
   }
 }
+
 async function getAllDatabaseNames(config) {
   let connection;
 
@@ -523,7 +534,32 @@ async function getCharsetAndCollations(config) {
     return null;
   }
 }
+async function getMySQLEngines(config) {
+  let connection;
 
+  try {
+    connection = await mysql.createConnection(config);
+
+    const [rows] = await connection.query("SHOW ENGINES");
+
+    const engines = {};
+
+    for (const row of rows) {
+      engines[row.Engine] = {
+        support: row.Support,
+        comment: row.Comment
+      };
+    }
+
+    return engines;
+
+  } catch (err) {
+    console.error(`Failed to fetch MySQL engines: ${err.message}`);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
 
 
 function stringifyAny(data) {
@@ -755,6 +791,27 @@ function isJsonSame(a, b) {
 
   return true;
 }
+function JoinJsonObjects(target = {}, source = {}) {
+  const result = { ...target };
+
+  for (const key of Object.keys(source)) {
+    if (
+      typeof source[key] === "object" &&
+      source[key] !== null &&
+      !Array.isArray(source[key]) &&
+      typeof target[key] === "object" &&
+      target[key] !== null &&
+      !Array.isArray(target[key])
+    ) {
+      result[key] = deepJoinObjects(target[key], source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+
+  return result;
+}
+
 function bypassQuotes(data) {
   let stringData = "";
 
@@ -781,7 +838,7 @@ async function getTableNames(config, databaseName) {
     WHERE table_schema = ?
   `;
 
-  const pool = await mysql.createPool(config);
+  const pool = mysql.createPool(config);
   try {
     const [results] = await pool.query(query, [dbName]);
     return results.map(row => row.TABLE_NAME || row.table_name);
@@ -846,53 +903,153 @@ async function getDatabaseCharsetAndCollation(config, databaseName) {
     if (connection) await connection.end();
   }
 }
-async function getColumnDetails(config, databaseName, tableName, columnName = null) {
+async function getColumnDetails(config, dbName, tableName, columnName) {
   let connection;
-
-  const query = `
-    SELECT 
-      COLUMN_NAME AS column_name,
-      DATA_TYPE AS data_type,
-      COLUMN_TYPE AS column_type,
-      CHARACTER_MAXIMUM_LENGTH AS character_maximum_length,
-      IS_NULLABLE AS is_nullable,
-      COLUMN_DEFAULT AS default_value,
-      COLUMN_COMMENT AS column_comment,
-      COLLATION_NAME AS collation_name
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE 
-      TABLE_SCHEMA = ?
-      AND TABLE_NAME = ?
-      ${columnName ? "AND COLUMN_NAME = ?" : ""}
-  `;
-
-  const params = columnName
-    ? [databaseName, tableName, columnName]
-    : [databaseName, tableName];
-
   try {
-    connection = await mysql.createConnection({ ...config, database: databaseName });
-    const [rows] = await connection.execute(query, params);
+    connection = await mysql.createConnection({ ...config, database: dbName });
 
-    // Process ENUM and SET types
-    rows.forEach((row) => {
-      if (row.data_type === "enum" || row.data_type === "set") {
-        row.enum_set_values = row.column_type
-          .replace(/(enum|set)\((.*)\)/i, "$2")
-          .split(",")
-          .map((val) => val.replace(/'/g, ""));
-      }
-    });
+    // 1. Column metadata
+    const [cols] = await connection.execute(
+      `
+      SELECT 
+        COLUMN_TYPE,
+        DATA_TYPE,
+        CHARACTER_MAXIMUM_LENGTH,
+        NUMERIC_PRECISION,
+        NUMERIC_SCALE,
+        IS_NULLABLE,
+        COLUMN_DEFAULT,
+        EXTRA,
+        COLUMN_KEY,
+        CHARACTER_SET_NAME,
+        COLLATION_NAME,
+        COLUMN_COMMENT
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+        AND COLUMN_NAME = ?
+      `,
+      [dbName, tableName, columnName]
+    );
 
-    return rows;
-  } catch (error) {
-    console.error("Error fetching column details:", error.message);
+    if (!cols.length) return false;
+    const c = cols[0];
+
+    // 2. Parse ENUM / SET
+    let length_value = null;
+    // DECIMAL / FLOAT / DOUBLE ONLY
+    if (["decimal", "float", "double"].includes(c.DATA_TYPE)) {
+      length_value =
+        c.NUMERIC_SCALE !== null
+          ? [c.NUMERIC_PRECISION, c.NUMERIC_SCALE]
+          : c.NUMERIC_PRECISION;
+    }
+
+    // INTEGER TYPES → no length_value
+    else if (
+      ["tinyint", "smallint", "mediumint", "int", "bigint"].includes(c.DATA_TYPE)
+    ) {
+      length_value = null;
+    }
+    else if (c.DATA_TYPE === "enum" || c.DATA_TYPE === "set") {
+      length_value = c.COLUMN_TYPE
+        .slice(c.DATA_TYPE.length + 1, -1)
+        .split(",")
+        .map(v => v.trim().replace(/^'(.*)'$/, "$1"));
+    }
+    // CHAR / VARCHAR
+    else if (c.CHARACTER_MAXIMUM_LENGTH !== null) {
+      length_value = c.CHARACTER_MAXIMUM_LENGTH;
+    }
+
+    return {
+      columntype: c.DATA_TYPE.toUpperCase(),
+      length_value,
+      unsigned: /unsigned/i.test(c.COLUMN_TYPE),
+      zerofill: /zerofill/i.test(c.COLUMN_TYPE),
+      nulls: c.IS_NULLABLE === "YES",
+      defaults: c.COLUMN_DEFAULT,
+      autoincrement: c.EXTRA.includes("auto_increment"),
+      index:
+        c.COLUMN_KEY === "PRI" ? "PRIMARY KEY" :
+          c.COLUMN_KEY === "UNI" ? "UNIQUE" :
+            c.COLUMN_KEY === "MUL" ? "KEY" : "",
+      _charset_: c.CHARACTER_SET_NAME,
+      _collate_: c.COLLATION_NAME,
+      comment: c.COLUMN_COMMENT
+    };
+
+  } catch (err) {
+    console.error(err.message);
     return null;
   } finally {
     if (connection) await connection.end();
   }
 }
-async function getForeignKeyDetails(config, databaseName, tableName) {
+async function getForeignKeyDetails(config, databaseName, tableName, columnName = null) {
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      ...config,
+      database: databaseName
+    });
+
+    const sql = `
+      SELECT
+        kcu.CONSTRAINT_NAME,
+        kcu.REFERENCED_TABLE_NAME,
+        kcu.REFERENCED_COLUMN_NAME,
+        rc.DELETE_RULE,
+        rc.UPDATE_RULE,
+        kcu.COLUMN_NAME
+      FROM information_schema.KEY_COLUMN_USAGE kcu
+      JOIN information_schema.REFERENTIAL_CONSTRAINTS rc
+        ON rc.CONSTRAINT_SCHEMA = kcu.CONSTRAINT_SCHEMA
+       AND rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+      WHERE kcu.TABLE_SCHEMA = ?
+        AND kcu.TABLE_NAME = ?
+        AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+        ${columnName ? "AND kcu.COLUMN_NAME = ?" : ""}
+    `;
+
+    const params = columnName
+      ? [databaseName, tableName, columnName]
+      : [databaseName, tableName];
+
+    const [rows] = await connection.query(sql, params);
+
+    if (!rows.length) return false;
+
+    // single-column FK
+    if (columnName) {
+      const r = rows[0];
+      return {
+        table: r.REFERENCED_TABLE_NAME,
+        column: r.REFERENCED_COLUMN_NAME,
+        deleteOption: r.DELETE_RULE,
+        updateOption: r.UPDATE_RULE,
+        constraintName: r.CONSTRAINT_NAME
+      };
+    }
+
+    // multiple FKs
+    return rows.map(r => ({
+      column: r.COLUMN_NAME,
+      table: r.REFERENCED_TABLE_NAME,
+      referencedColumn: r.REFERENCED_COLUMN_NAME,
+      deleteOption: r.DELETE_RULE,
+      updateOption: r.UPDATE_RULE,
+      constraintName: r.CONSTRAINT_NAME
+    }));
+
+  } catch (err) {
+    console.error("FK lookup error:", err.message);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+async function getAllForeignKeyDetails(config, databaseName, tableName) {
   let connection;
 
   const query = `
@@ -923,21 +1080,140 @@ async function getForeignKeyDetails(config, databaseName, tableName) {
     if (connection) await connection.end();
   }
 }
+async function addForeignKeyWithIndex(config, dbname, tableName, columnName, refTable, refColumn, options = {}) {
+  const {
+    onDelete = "RESTRICT",
+    onUpdate = "RESTRICT"
+  } = options;
 
-async function runQueryReturnTrueOrNull(config, databaseName, queryText) {
+  const indexName = `idx_${tableName}_${columnName}`;
+  const fkName = `fk_${tableName}_${refTable}_${columnName}`;
+
   let connection;
-
   try {
-    connection = await mysql.createConnection({ ...config, database: databaseName });
-    await connection.query(queryText);
+    connection = await mysql.createConnection({ ...config, database: dbname });
+
+    // 1. Add index if it does not exist
+    await connection.query(`
+      ALTER TABLE \`${tableName}\`
+      ADD INDEX \`${indexName}\` (\`${columnName}\`)
+    `).catch(() => { }); // ignore if index already exists
+
+    // 2. Add foreign key
+    await connection.query(`
+      ALTER TABLE \`${tableName}\`
+      ADD CONSTRAINT \`${fkName}\`
+      FOREIGN KEY (\`${columnName}\`)
+      REFERENCES \`${refTable}\` (\`${refColumn}\`)
+      ON DELETE ${onDelete}
+      ON UPDATE ${onUpdate}
+    `);
+
     return true;
   } catch (err) {
-    console.error("Query error:", err.message);
+    const errmess = err.message;
+    console.error("FK add error:", errmess);
+    if (errmess.toLowerCase().includes("duplicate")) {
+      return false;
+    }
     return null;
   } finally {
     if (connection) await connection.end();
   }
 }
+async function removeForeignKeyFromColumn(config, databaseName, tableName, columnName) {
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      ...config,
+      database: databaseName
+    });
+
+    // Step 1: find FK constraint name
+    const fkSql = `
+      SELECT CONSTRAINT_NAME
+      FROM information_schema.KEY_COLUMN_USAGE
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+        AND COLUMN_NAME = ?
+        AND REFERENCED_TABLE_NAME IS NOT NULL
+    `;
+
+    const [rows] = await connection.query(fkSql, [
+      databaseName,
+      tableName,
+      columnName
+    ]);
+
+    if (!rows.length) {
+      return false; // no FK on this column
+    }
+
+    const constraintName = rows[0].CONSTRAINT_NAME;
+
+    // Step 2: drop foreign key
+    const dropSql = `
+      ALTER TABLE \`${tableName}\`
+      DROP FOREIGN KEY \`${constraintName}\`
+    `;
+
+    await connection.query(dropSql);
+
+    return true;
+
+  } catch (err) {
+    console.error("Drop FK error:", err.message);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+async function columnExists(config, databaseName, tableName, columnName) {
+  let connection;
+  try {
+    connection = await mysql.createConnection(config);
+
+    const [rows] = await connection.execute(
+      `
+            SELECT 1
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+            LIMIT 1
+            `,
+      [databaseName, tableName, columnName]
+    );
+
+    return rows.length > 0;
+  } catch (err) {
+    console.error("columnExists error:", err.message);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+async function runQuery(config, databaseName, queryText) {
+  let connection;
+  try {
+    if (!queryText || typeof queryText !== "string") return null;
+
+    connection = await mysql.createConnection({
+      ...config,
+      database: databaseName
+    });
+
+    await connection.execute(queryText);
+    return true;
+  } catch (err) {
+    console.error(err.message);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+
+
 
 
 module.exports = {
@@ -949,6 +1225,7 @@ module.exports = {
   isValidMySQLConfig,
   isMySQLDatabase,
   getCharsetAndCollations,
+  getMySQLEngines,
   checkDatabaseExists,
   getAllDatabaseNames,
   isValidMySQLIdentifier,
@@ -964,13 +1241,19 @@ module.exports = {
   isJsonString,
   isJsonObject,
   isJsonSame,
+  JoinJsonObjects,
   getTableNames,
   getColumnNames,
   getDatabaseCharsetAndCollation,
   getColumnDetails,
   getForeignKeyDetails,
+  getAllForeignKeyDetails,
+  addForeignKeyWithIndex,
+  removeForeignKeyFromColumn,
+  columnExists,
   dropDatabase,
   dropTable,
   dropColumn,
   writeJsFile,
+  runQuery,
 }

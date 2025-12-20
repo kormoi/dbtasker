@@ -1,7 +1,31 @@
 const cstyler = require("cstyler");
 const fncs = require("./function");
 
+function validateMySQLComment(comment) {
+    const errors = [];
 
+    // 1. Must be string
+    if (typeof comment !== "string") {
+        errors.push("Comment is not a string");
+        return { valid: false, errors };
+    }
+
+    // 2. Must not contain NULL byte
+    if (/[\x00]/.test(comment)) {
+        errors.push("Comment contains NULL byte (\\x00)");
+    }
+
+    // 3. Length limit (MySQL: 1024 bytes)
+    const byteLength = Buffer.byteLength(comment, "utf8");
+    if (byteLength > 1024) {
+        errors.push(`Comment exceeds 1024 bytes (found ${byteLength})`);
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors
+    };
+}
 function parseQuotedListSafely(text) {
     if (Array.isArray(text)) return text;
     if (typeof text !== 'string') return [];
@@ -194,10 +218,12 @@ async function JSONchecker(table_json, config, seperator = "_") {
     let badzerofill = [];
     let badcharacterset = [];
     let badcollation = [];
+    let badengine = [];
     console.log("Initializing JSON checking...");
+    // get all character set and collate
+    let characterSets;
+    let collations;
     const getCharsetAndCollations = await fncs.getCharsetAndCollations(config);
-    let characterSets = {};
-    let collations = {};
     if (fncs.isJsonObject(getCharsetAndCollations)) {
         characterSets = getCharsetAndCollations.characterSets;
         collations = getCharsetAndCollations.collations;
@@ -205,12 +231,17 @@ async function JSONchecker(table_json, config, seperator = "_") {
         console.error(cstyler.red.bold("There is a problem connecting to the database. Please check database info or connection."));
         return null;
     }
-    /**
-     * 
-     */
-    const charactersetkeys = ['_characterset_', '_charset_'];
-    const collationkeys = ['_collate_', '_collation_'];
-    const charandcoll = [...charactersetkeys, ...collationkeys];
+    // get all mysql table engines
+    const mysqlEngines = await fncs.getMySQLEngines(config);
+    if (!fncs.isJsonObject(mysqlEngines)) {
+        console.error(cstyler.red.bold("There is a problem connecting to the database. Please check database info or connection."));
+        return null;
+    }
+    // key variabls
+    const charactersetkeys = ['_character_set_', '_characterset_', '_charset_', '_char_set_', 'character_set', 'characterset', 'charset', 'char_set'];
+    const collationkeys = ['_collate_', '_collation_', 'collate', 'collation'];
+    const enginekey = ["engine", "_engine_", "__engine__"];
+    const commetnkey = ["comment", "_comment_", "__comment__"];
     let contentObj = {};
     if (fncs.isJsonObject(table_json)) {
         // lets loop databases
@@ -227,7 +258,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                 for (const tableName of Object.keys(table_json[databaseName])) {
                     if (!contentObj[databaseName][tableName]) contentObj[databaseName][tableName] = {};
 
-                    if (fncs.isJsonObject(table_json[databaseName][tableName]) && !charandcoll.includes(tableName)) {
+                    if (fncs.isJsonObject(table_json[databaseName][tableName])) {
                         if (fncs.perseTableNameWithLoop(tableName, seperator) === false) {
                             badTableNames.push(
                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
@@ -237,7 +268,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                         }
                         // lets loop columns
                         for (const columnName of Object.keys(table_json[databaseName][tableName])) {
-                            if (fncs.isJsonObject(table_json[databaseName][tableName][columnName]) && !charandcoll.includes(columnName)) {
+                            if (fncs.isJsonObject(table_json[databaseName][tableName][columnName])) {
                                 if (!contentObj[databaseName][tableName][columnName]) contentObj[databaseName][tableName][columnName] = {}
                                 const deepColumn = table_json[databaseName][tableName][columnName];
                                 let columntype = undefined;
@@ -309,16 +340,12 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  * AUTO_INCREMENT
                                  * AUTOINCREMENT
                                  */
-                                if (deepColumn.hasOwnProperty("autoIncrement")) {
-                                    autoincrement = deepColumn.autoIncrement;
-                                } else if (deepColumn.hasOwnProperty("autoincrement")) {
-                                    autoincrement = deepColumn.autoincrement;
-                                } else if (deepColumn.hasOwnProperty("auto_increment")) {
-                                    autoincrement = deepColumn.auto_increment;
-                                } else if (deepColumn.hasOwnProperty("AUTO_INCREMENT")) {
-                                    autoincrement = deepColumn.AUTO_INCREMENT;
-                                } else if (deepColumn.hasOwnProperty("AUTOINCREMENT")) {
-                                    autoincrement = deepColumn.AUTOINCREMENT;
+                                const autoincrementkeys = ["autoIncrement", "autoincrement", "auto_increment", "AUTO_INCREMENT", "AUTOINCREMENT", "increment", "INCREMENT"]
+                                for(const item of autoincrementkeys){
+                                    if(deepColumn.hasOwnProperty(item)){
+                                        autoincrement = deepColumn[item];
+                                        break;
+                                    }
                                 }
                                 if (truers.includes(autoincrement)) {
                                     autoincrement = true;
@@ -340,6 +367,12 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     indexes = deepColumn.INDEX;
                                 } else if (deepColumn.hasOwnProperty("Index")) {
                                     indexes = deepColumn.Index;
+                                }
+                                if(indexes !== undefined) indexes = fncs.stringifyAny(indexes).toUpperCase();
+                                if (indexes === "PRIMARY" || indexes === "KEY") {
+                                    indexes = "PRIMARY KEY"
+                                } else if (indexes === "FULL"){
+                                    indexes = "FULLTEXT";
                                 }
                                 /**
                                  * null
@@ -463,6 +496,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 } else {
                                     zerofill = null;
                                 }
+                                // Let's work on character set and collate
                                 for (const item of charactersetkeys) {
                                     if (deepColumn.hasOwnProperty(item)) {
                                         _charset_ = deepColumn[item];
@@ -556,9 +590,9 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     }
                                 }
                                 // check auto increment
-                                if (autoincrement === true && typeInfo !== undefined) {
+                                if (autoincrement === true && typeInfo.dataType === "numeric") {
                                     if (typeof indexes === "string") {
-                                        if (typeInfo.dataType !== "numeric" || !['PRIMARY KEY', 'UNIQUE'].includes(indexes.toUpperCase()) || nulls === true || defaults !== undefined) {
+                                        if (typeInfo.dataType !== "numeric" || !['PRIMARY KEY', 'UNIQUE'].includes(indexes) || nulls === true || defaults !== undefined) {
                                             badautoincrement.push(
                                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                                 `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
@@ -582,16 +616,11 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     for (const column of Object.keys(table_json[databaseName][tableName])) {
                                         const doubleDeepColumn = table_json[databaseName][tableName][column];
                                         let allautoincrement = undefined;
-                                        if (doubleDeepColumn.hasOwnProperty("autoIncrement")) {
-                                            allautoincrement = doubleDeepColumn.autoIncrement;
-                                        } else if (doubleDeepColumn.hasOwnProperty("autoincrement")) {
-                                            allautoincrement = doubleDeepColumn.autoincrement;
-                                        } else if (doubleDeepColumn.hasOwnProperty("auto_increment")) {
-                                            allautoincrement = doubleDeepColumn.auto_increment;
-                                        } else if (doubleDeepColumn.hasOwnProperty("AUTO_INCREMENT")) {
-                                            allautoincrement = doubleDeepColumn.AUTO_INCREMENT;
-                                        } else if (doubleDeepColumn.hasOwnProperty("AUTOINCREMENT")) {
-                                            allautoincrement = doubleDeepColumn.AUTOINCREMENT;
+                                        for (const item of autoincrementkeys){
+                                            if(doubleDeepColumn.hasOwnProperty(item)){
+                                                allautoincrement = doubleDeepColumn[item];
+                                                break;
+                                            }
                                         }
                                         if (truers.includes(allautoincrement)) {
                                             autoincrementcolumnlist.push(column);
@@ -676,27 +705,26 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     }
                                 }
                                 // check zerofill
-                                if (typeInfo !== undefined) {
-                                    if (zerofill === true && !typeInfo.dataType === "numeric") {
+                                if (zerofill === true && typeInfo !== undefined) {
+                                    if (!typeInfo.dataType === "numeric") {
                                         badzerofill.push(
                                             cstyler`{purple Database:} {blue ${databaseName}} ` +
                                             cstyler`{purple > Table:} {blue ${tableName}} ` +
                                             cstyler`{purple > Column:} {blue ${columnName}} ` +
                                             cstyler.red(" - for `zerofill` column type has to be numeric")
                                         );
-                                    } else if (zerofill === null) {
-                                        badzerofill.push(
-                                            cstyler`{purple Database:} {blue ${databaseName}} ` +
-                                            cstyler`{purple > Table:} {blue ${tableName}} ` +
-                                            cstyler`{purple > Column:} {blue ${columnName}} ` +
-                                            cstyler.red(" - has invalid `zerofill` value and must be boolean and simillar")
-                                        );
                                     }
+                                } else if (zerofill === null) {
+                                    badzerofill.push(
+                                        cstyler`{purple Database:} {blue ${databaseName}} ` +
+                                        cstyler`{purple > Table:} {blue ${tableName}} ` +
+                                        cstyler`{purple > Column:} {blue ${columnName}} ` +
+                                        cstyler.red(" - has invalid `zerofill` value and must be boolean or simillar")
+                                    );
                                 }
                                 // check index
                                 if (indexes !== undefined) {
                                     if (typeof indexes === "string") {
-                                        indexes = indexes.toUpperCase();
                                         if (columntype === "JSON") {
                                             badindex.push(
                                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
@@ -718,7 +746,8 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                                 `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
                                                 `${cstyler.red(' - ')}${cstyler.yellow('FULLTEXT - index')} ${cstyler.red('can only be used with ')}${cstyler.yellow('CHAR, VARCHAR, TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT')} ${cstyler.red('column types which are string.')}`
                                             );
-                                        } else if (!validIndexValues.includes(indexes.toUpperCase())) {
+                                        } else if (!validIndexValues.includes(indexes)) {
+                                            console.log(indexes);
                                             badindex.push(
                                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                                 `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
@@ -738,14 +767,8 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 }
                                 // Lets work on character set and collat
                                 if (_charset_ !== undefined && typeInfo !== undefined) {
-                                    let charvalue = undefined;
-                                    if (fncs.isJsonObject(_charset_)) {
-                                        charvalue = _charset_.value ?? _charset_[Object.keys(_charset_)[0]];
-                                    } else {
-                                        charvalue = _charset_;
-                                    }
-                                    if (characterSets.includes(charvalue) && ['text', 'string'].includes(typeInfo.dataType)) {
-                                        contentObj[databaseName][tableName][columnName]._charset_ = charvalue;
+                                    if (characterSets.includes(_charset_) && ['text', 'string'].includes(typeInfo.dataType)) {
+                                        contentObj[databaseName][tableName][columnName]._charset_ = _charset_;
                                     } else if (!['text', 'string'].includes(typeInfo.dataType)) {
                                         badcharacterset.push(
                                             `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.purple("> column type:")} ${cstyler.blue(columntype)} ${cstyler.red('can not accept character set and must be a type that accept TEXT or STRING to set a')} ${cstyler.yellow("character set")}`
@@ -757,14 +780,8 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     }
                                 }
                                 if (_collate_ !== undefined && typeInfo !== undefined) {
-                                    let colvalue = undefined;
-                                    if (fncs.isJsonObject(_collate_)) {
-                                        colvalue = _collate_.value ?? _collate_[Object.keys(_collate_)[0]];
-                                    } else {
-                                        colvalue = _collate_;
-                                    }
-                                    if (collations.includes(colvalue) && ['text', 'string'].includes(typeInfo.dataType)) {
-                                        contentObj[databaseName][tableName][columnName]._collate_ = colvalue;
+                                    if (collations.includes(_collate_) && ['text', 'string'].includes(typeInfo.dataType)) {
+                                        contentObj[databaseName][tableName][columnName]._collate_ = _collate_;
                                     } else if (!['text', 'string'].includes(typeInfo.dataType)) {
                                         badcollation.push(
                                             `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.purple("> column type:")} ${cstyler.blue(columntype)} ${cstyler.red('can not accept collate and must be a type that accept TEXT or STRING to set a')} ${cstyler.yellow("collate")}`
@@ -956,11 +973,8 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 if (autoincrement === true) {
                                     contentObj[databaseName][tableName][columnName].autoincrement = true;
                                 }
+                                // indexes
                                 if (typeof indexes === "string" && validIndexValues.includes(fncs.stringifyAny(indexes).toUpperCase())) {
-                                    indexes = fncs.stringifyAny(indexes).toUpperCase();
-                                    if (indexes === "PRIMARY") {
-                                        indexes = "PRIMARY KEY"
-                                    }
                                     contentObj[databaseName][tableName][columnName].index = indexes;
                                 }
                                 if (typeof nulls === "boolean") {
@@ -978,6 +992,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 if (typeof zerofill === "boolean") {
                                     contentObj[databaseName][tableName][columnName].zerofill = zerofill;
                                 }
+                                // foreign key
                                 if (deepColumn.hasOwnProperty("foreign_key")) {
                                     contentObj[databaseName][tableName][columnName].foreign_key = {};
                                     contentObj[databaseName][tableName][columnName].foreign_key.table = fktable;
@@ -1002,12 +1017,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 }
                             } else {
                                 if (charactersetkeys.includes(columnName.toLowerCase())) {
-                                    let charvalue = undefined;
-                                    if (fncs.isJsonObject(table_json[databaseName][tableName][columnName])) {
-                                        charvalue = table_json[databaseName][tableName][columnName].value ?? Object.values(table_json[databaseName][tableName][columnName])[0];
-                                    } else {
-                                        charvalue = table_json[databaseName][tableName][columnName];
-                                    }
+                                    const charvalue = table_json[databaseName][tableName][columnName];
                                     if (characterSets.includes(charvalue)) {
                                         contentObj[databaseName][tableName]._charset_ = charvalue;
                                     } else {
@@ -1016,12 +1026,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                         );
                                     }
                                 } else if (collationkeys.includes(columnName.toLowerCase())) {
-                                    let colvalue = undefined;
-                                    if (fncs.isJsonObject(table_json[databaseName][tableName][columnName])) {
-                                        colvalue = table_json[databaseName][tableName][columnName].value ?? Object.values(table_json[databaseName][tableName][columnName])[0];
-                                    } else {
-                                        colvalue = table_json[databaseName][tableName][columnName];
-                                    }
+                                    const colvalue = table_json[databaseName][tableName][columnName];
                                     if (collations.includes(colvalue)) {
                                         contentObj[databaseName][tableName]._collate_ = colvalue;
                                     } else {
@@ -1029,21 +1034,42 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                             `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(columnName)}  ${cstyler.red('must have a valid collate value')}`
                                         );
                                     }
+                                } else if (enginekey.includes(columnName.toLowerCase())) {
+                                    const engvalue = table_json[databaseName][tableName][columnName];
+                                    if (Object.keys(mysqlEngines).includes(engvalue)) {
+                                        if (mysqlEngines[engvalue].support === "YES") {
+                                            contentObj[databaseName][tableName]._engine_ = engvalue;
+                                        } else {
+                                            badengine.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Engine key:')} ${cstyler.blue(columnName)} ${cstyler.purple("Engine name: ")} ${cstyler.blue(engvalue)} ${cstyler.red('- The storage engine exists in MySQL source code but is not available on this server.')}`
+                                            );
+                                        }
+                                    } else {
+                                        badengine.push(
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Engine key:')} ${cstyler.blue(columnName)} ${cstyler.purple("Engine name:")} ${cstyler.blue(engvalue)} ${cstyler.red('- must have a valid engine value')}`
+                                        );
+                                    }
+                                } else if (commetnkey.includes(columnName.toLowerCase())) {
+                                    const commentval = table_json[databaseName][tableName][columnName];
+                                    if (!validateMySQLComment(commentval).valid) {
+                                        badcomment.push(
+                                            `${cstyler.purpal("Database:")} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purpal("> Table:")} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purpal("> Table comment:")} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.red("- Invalid comment:")} ` +
+                                            result.errors.map(e => cstyler.red(e)).join(", ")
+                                        )
+                                    }
                                 } else {
                                     badColumnNames.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> columnName:')} ${cstyler.blue(columnName)}  ${cstyler.red('- That column name have some problem with its property')}`
+                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> columnName:')} ${cstyler.blue(columnName)}  ${cstyler.red('- That column name have some problem with its value')}`
                                     )
                                 }
                             }
                         }
                     } else {
                         if (charactersetkeys.includes(tableName.toLowerCase())) {
-                            let charvalue = undefined;
-                            if (fncs.isJsonObject(table_json[databaseName][tableName])) {
-                                charvalue = table_json[databaseName][tableName].value ?? Object.values(table_json[databaseName][tableName])[0];
-                            } else {
-                                charvalue = table_json[databaseName][tableName];
-                            }
+                            const charvalue = table_json[databaseName][tableName];
                             if (characterSets.includes(charvalue)) {
                                 contentObj[databaseName]._charset_ = charvalue;
                             } else {
@@ -1052,18 +1078,25 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 );
                             }
                         } else if (collationkeys.includes(tableName.toLowerCase())) {
-                            let colvalue = undefined;
-                            if (fncs.isJsonObject(table_json[databaseName][tableName])) {
-                                colvalue = table_json[databaseName][tableName].value ?? Object.values(table_json[databaseName][tableName])[0];
-                            } else {
-                                colvalue = table_json[databaseName][tableName];
-                            }
+                            const colvalue = table_json[databaseName][tableName];
                             if (collations.includes(colvalue)) {
                                 contentObj[databaseName]._collate_ = colvalue;
                             } else {
                                 badcollation.push(
                                     `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(tableName)}  ${cstyler.red('must have a valid collate value')}`
                                 );
+                            }
+                        } else if (commetnkey.includes(tableName.toLowerCase())) {
+                            const commentval = table_json[databaseName][tableName];
+                            if (validateMySQLComment(commentval).valid) {
+                                contentObj[databaseName]._comment_ = commentval;
+                            } else {
+                                badcomment.push(
+                                    `${cstyler.purpal("Database:")} ${cstyler.blue(databaseName)} ` +
+                                    `${cstyler.purpal("> Database comment:")} ${cstyler.blue(tableName)} ` +
+                                    `${cstyler.red("- Invalid comment:")} ` +
+                                    result.errors.map(e => cstyler.red(e)).join(", ")
+                                )
                             }
                         } else {
                             badTableNames.push(
@@ -1078,7 +1111,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
             }
         }
         // Lets return result
-        if (baddatabaseName.length === 0 && badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0 && badcharacterset.length === 0 && badcollation.length === 0) {
+        if (baddatabaseName.length === 0 && badengine.length === 0 && badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0 && badcharacterset.length === 0 && badcollation.length === 0) {
             console.log(cstyler.underline.green("All JSON checking is done | Clear to continue"));
             return { status: true, data: contentObj };
         }
@@ -1132,6 +1165,11 @@ async function JSONchecker(table_json, config, seperator = "_") {
             console.log(cstyler.dark.yellow(collations.join(", ")));
             console.error(`Collation are not correct: \n${badcollation.join("\n")}`);
         }
+        if (badengine.length > 0) {
+            console.log(cstyler.yellow("Valid engines:"));
+            console.log(cstyler.dark.yellow(Object.keys(mysqlEngines).join(", ")));
+            console.error(`Engines are not correct: \n${badengine.join("\n")}`);
+        }
         console.log(cstyler.red("<<<All JSON checking is done. JSON need correction.>>>"));
         return false;
     } else {
@@ -1141,4 +1179,5 @@ async function JSONchecker(table_json, config, seperator = "_") {
 }
 module.exports = {
     JSONchecker,
+    mysqlTypeMetadata
 }
