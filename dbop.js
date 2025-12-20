@@ -85,7 +85,6 @@ async function createDatabase(config, databaseName, characterSet = null, collate
         if (connection) await connection.end();
     }
 }
-
 async function databaseAddDeleteAlter(config, jsondata, dropdb = false, seperator = "_") {
     try {
         // lets add databases and drop databases
