@@ -81,6 +81,48 @@ async function isMySQL578OrAbove(config) {
   // major==5, minor==7
   return patch >= 8;
 }
+async function getCharsetAndCollations(config) {
+  try {
+    const conn = await mysql.createConnection(config);
+
+    const [charsetRows] = await conn.query("SHOW CHARACTER SET");
+    const characterSets = charsetRows.map(row => row.Charset);
+
+    const [collationRows] = await conn.query("SHOW COLLATION");
+    const collations = collationRows.map(row => row.Collation);
+
+    await conn.end();
+    return { characterSets, collations };
+  } catch (err) {
+    return null;
+  }
+}
+async function getMySQLEngines(config) {
+  let connection;
+
+  try {
+    connection = await mysql.createConnection(config);
+
+    const [rows] = await connection.query("SHOW ENGINES");
+
+    const engines = {};
+
+    for (const row of rows) {
+      engines[row.Engine] = {
+        support: row.Support,
+        comment: row.Comment
+      };
+    }
+
+    return engines;
+
+  } catch (err) {
+    console.error(`Failed to fetch MySQL engines: ${err.message}`);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
 function isValidMySQLConfig(config) {
   if (typeof config !== 'object' || config === null) return false;
 
@@ -191,7 +233,7 @@ async function dropTable(config, databaseName, tableName) {
 
     if (tables.length === 0) {
       console.log(`Table '${tableName}' does not exist in ${databaseName}`);
-      return;
+      return false;
     }
 
     // Drop foreign keys from other tables referencing this table
@@ -213,8 +255,10 @@ async function dropTable(config, databaseName, tableName) {
     await connection.query(`DROP TABLE \`${tableName}\``);
 
     console.log(`Table '${tableName}' dropped successfully from ${databaseName}`);
+    return true;
   } catch (err) {
     console.error("Error dropping table:", err.message);
+    return null;
   } finally {
     if (connection) await connection.end();
   }
@@ -403,11 +447,11 @@ function createloopname(text, seperator = "_") {
   if (text.loop === null) {
     return text.name;
   } else if (['year', 'years'].includes(text.loop)) {
-    return text.name + "_" + seperator + getDateTime().year + seperator + "_";
+    return text.name + seperator + getDateTime().year + seperator;
   } else if (['month', 'months'].includes(text.loop)) {
-    return text.name + "_" + seperator + getDateTime().year + seperator + getDateTime().month + seperator + "_";
+    return text.name + seperator + getDateTime().year + seperator + getDateTime().month + seperator;
   } else if (['day', 'days'].includes(text.loop)) {
-    return text.name + "_" + seperator + getDateTime().year + seperator + getDateTime().month + seperator + getDateTime().day + seperator + "_";
+    return text.name + seperator + getDateTime().year + seperator + getDateTime().month + seperator + getDateTime().day + seperator;
   } else {
     return false;
   }
@@ -476,138 +520,51 @@ function perseDatabaseNameWithLoop(text, seperator = "_") {
     }
   }
 }
-function reverseLoopName(input) {
-  // Detect: name + "_" + separator (non-alphanumeric)
-  const sepMatch = input.match(/^(.*)_([^a-zA-Z0-9])/);
-  if (!sepMatch) return input;
-
-  const name = sepMatch[1];
-  const sep = sepMatch[2];
-
-  // Escape separator
-  const s = sep.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-
-  // Strict pattern
-  const regex = new RegExp(
-    `^(${name})_${s}` +       // name + "_" + sep
-    `(\\d{4})` +              // year
-    `(?:${s}(\\d{2}))?` +     // optional month
-    `(?:${s}(\\d{2}))?` +     // optional day
-    `${s}_$`                  // sep + "_"
-  );
-
-  const match = input.match(regex);
-  if (!match) return input;   // <<== return input instead of false
-
-  const [, , year, month, day] = match;
-
-  // Validate month/day
-  if (month) {
-    const m = Number(month);
-    if (m < 1 || m > 12) return input;
+function reverseLoopName(text) {
+  if (typeof text !== "string") return text;
+  let a = text.split(text[text.length - 1]);
+  while (a.includes("")) {
+    a = fncs.removefromarray(a);
   }
-  if (day) {
-    const d = Number(day);
-    if (d < 1 || d > 31) return input;
-  }
-
-  // Return type
-  if (day) return `${name}(day)`;
-  if (month) return `${name}(month)`;
-  return `${name}(year)`;
-}
-
-
-async function getCharsetAndCollations(config) {
-  try {
-    const conn = await mysql.createConnection(config);
-
-    const [charsetRows] = await conn.query("SHOW CHARACTER SET");
-    const characterSets = charsetRows.map(row => row.Charset);
-
-    const [collationRows] = await conn.query("SHOW COLLATION");
-    const collations = collationRows.map(row => row.Collation);
-
-    await conn.end();
-    return { characterSets, collations };
-  } catch (err) {
-    return null;
-  }
-}
-async function getMySQLEngines(config) {
-  let connection;
-
-  try {
-    connection = await mysql.createConnection(config);
-
-    const [rows] = await connection.query("SHOW ENGINES");
-
-    const engines = {};
-
-    for (const row of rows) {
-      engines[row.Engine] = {
-        support: row.Support,
-        comment: row.Comment
-      };
-    }
-
-    return engines;
-
-  } catch (err) {
-    console.error(`Failed to fetch MySQL engines: ${err.message}`);
-    return null;
-  } finally {
-    if (connection) await connection.end();
-  }
-}
-
-
-function stringifyAny(data) {
-  // If the data is undefined or a symbol, handle it explicitly.
-  if (typeof data === 'undefined') {
-    return 'undefined';
-  } else if (data === null) {
-    return 'null';
-  } else if (data === true) {
-    return "true";
-  } else if (data === false) {
-    return "false";
-  }
-  if (typeof data === 'symbol') {
-    return data.toString();
-  }
-  // For non-objects (primitives) that are not undefined, simply convert them.
-  if (typeof data !== 'object' && typeof data !== 'function') {
-    return String(data);
-  }
-  if (typeof data === "string") {
-    return data;
-  }
-  // Handle objects and functions using JSON.stringify with a custom replacer.
-  const seen = new WeakSet();
-  const replacer = (key, value) => {
-    if (typeof value === 'function') {
-      // Convert functions to their string representation.
-      return value.toString();
-    }
-    if (typeof value === 'undefined') {
-      return 'undefined';
-    }
-    if (typeof value === 'object' && value !== null) {
-      // Check for circular references
-      if (seen.has(value)) {
-        return '[Circular]';
+  if (fncs.isNumber(a[a.length - 1])) {
+    if (a[a.length - 1].length === 2 && Number(a[a.length - 1]) <= 31) {
+      if (a[a.length - 2].length === 2 && Number(a[a.length - 2]) <= 12) {
+        if (a[a.length - 3].length === 4) {
+          const year = new Date().getFullYear();
+          if (Number(a[a.length - 3]) <= year && Number(a[a.length - 2]) <= 12 && Number(a[a.length - 1]) <= 31) {
+            let y = "";
+            for (let i = 0; i < text.length - 12; i++) {
+              y += text[i];
+            }
+            return [y + "(day)", y + "(days)"];
+          }
+          return text;
+        }
+      } else if (a[a.length - 2].length === 4) {
+        const year = new Date().getFullYear();
+        if (Number(a[a.length - 2]) <= year && Number(a[a.length - 1]) <= 12) {
+          let y = "";
+          for (let i = 0; i < text.length - 9; i++) {
+            y += text[i];
+          }
+          return [y + "(month)", y + "(months)"];
+        }
+        return text;
       }
-      seen.add(value);
+    } else if (a[a.length - 1].length === 4) {
+      const year = new Date().getFullYear();
+      if (Number(a[a.length - 1]) <= year) {
+        let y = "";
+        for (let i = 0; i < text.length - 6; i++) {
+          y += text[i];
+        }
+        return [y + "(year)", y + "(years)"];
+      }
+      return text;
     }
-    return value;
-  };
-  try {
-    return JSON.stringify(data, replacer, 2);
-  } catch (error) {
-    // Fallback to a simple string conversion if JSON.stringify fails
-    return String(data);
+    return text;
   }
+  return text;
 }
 
 
@@ -733,7 +690,6 @@ async function writeJsonFile(filePath, data) {
     return null;
   }
 }
-//Write js file
 const writeJsFile = async (filePath, content) => {
   try {
     await fs.access(filePath).catch(() => fs.mkdir(path.dirname(filePath), { recursive: true }));
@@ -745,7 +701,56 @@ const writeJsFile = async (filePath, content) => {
     return false;
   }
 };
-function removefromarray(arr, text) {
+
+
+function stringifyAny(data) {
+  // If the data is undefined or a symbol, handle it explicitly.
+  if (typeof data === 'undefined') {
+    return 'undefined';
+  } else if (data === null) {
+    return 'null';
+  } else if (data === true) {
+    return "true";
+  } else if (data === false) {
+    return "false";
+  }
+  if (typeof data === 'symbol') {
+    return data.toString();
+  }
+  // For non-objects (primitives) that are not undefined, simply convert them.
+  if (typeof data !== 'object' && typeof data !== 'function') {
+    return String(data);
+  }
+  if (typeof data === "string") {
+    return data;
+  }
+  // Handle objects and functions using JSON.stringify with a custom replacer.
+  const seen = new WeakSet();
+  const replacer = (key, value) => {
+    if (typeof value === 'function') {
+      // Convert functions to their string representation.
+      return value.toString();
+    }
+    if (typeof value === 'undefined') {
+      return 'undefined';
+    }
+    if (typeof value === 'object' && value !== null) {
+      // Check for circular references
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+  try {
+    return JSON.stringify(data, replacer, 2);
+  } catch (error) {
+    // Fallback to a simple string conversion if JSON.stringify fails
+    return String(data);
+  }
+}
+function removefromarray(arr, text = "") {
   if (!Array.isArray(arr)) {
     return false;
   }

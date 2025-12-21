@@ -1,5 +1,9 @@
 const fncs = require("./function");
 const cstyler = require("cstyler");
+const mysql = require('mysql2/promise');
+
+
+
 
 const defaultdb = ['information_schema', 'mysql', 'performance_schema', 'sys', 'world'];
 
@@ -73,13 +77,45 @@ async function createDatabase(config, databaseName, characterSet = null, collate
             (characterSet ? ` created with CHARACTER SET '${cstyler.yellow(characterSet)}'` : "") +
             (collate ? ` and COLLATE '${cstyler.yellow(collate)}'` : "")
         );
-
         return true;
     } catch (err) {
         console.error("Error creating database:", err.message);
         return null;
     } finally {
         if (connection) await connection.end();
+    }
+}
+async function dropTable(config, json_data, seperator = "_") {
+    try {
+        console.log("Starting dropping the table.");
+        for (const jsondb of Object.keys(json_data)) {
+            let dbname = fncs.perseDatabaseNameWithLoop(jsondb, seperator);
+            if (dbname === false) {
+                console.error("There must be some mistake. Please re install the module.");
+            }
+            const alltables = await fncs.getTableNames(config, dbname.loopname);
+            if (alltables === null) {
+                console.error("Having problem getting all the table name of the Database: ", cstyler.yellow(dbname.loopname), ". Please re-install the module.");
+                return null;
+            }
+            let tables = {};
+            for (const tableName of (alltables)) {
+                const revlpnm = fncs.reverseLoopName(tableName);
+                if (!Object.keys(json_data[jsondb]).includes(revlpnm[0]) && !Object.keys(json_data[jsondb]).includes(revlpnm[1])) {
+                    const droptable = await fncs.dropTable(config, dbname.loopname, tableName);
+                    if (droptable === null) {
+                        console.error("Having problem dropping table. Please check database connection.");
+                        return null;
+                    }
+                    console.log(cstyler.purple("Database: "), cstyler.blue(dbname.loopname),cstyler.purple("Table: "), cstyler.blue(tableName), "- has dropped successfully.")
+                }
+            }
+            console.log(cstyler.green("Successfully dropped all unlisted tables."));
+            return true;
+        }
+    } catch (err) {
+        console.error(err.message);
+        return null;
     }
 }
 async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, donttouchdb = [], seperator = "_") {
@@ -101,7 +137,7 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
         // Lets add databases
         for (const jsondb of jsondbnames) {
             let data = {};
-            data.name = fncs.perseDatabaseNameWithLoop(jsondb, seperator);
+            data.name = fncs.perseDatabaseNameWithLoop(jsondb, seperator).loopname;
             if (fncs.isJsonObject(jsondata[jsondb])) {
                 if (jsondata[jsondb].hasOwnProperty("_collate_")) {
                     data.collate = jsondata[jsondb]._collate_;
@@ -119,7 +155,7 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
             }
             if (avldblist.includes(data.name)) {
                 // Let's Alter database if needed
-                console.log(cstyler.purple("Database Name: "), cstyler.blue(jsondb), " is exist. Checking for charactar set and collate configuration");
+                console.log(cstyler.purple("Database Name: "), cstyler.blue(data.name), " is exist. Checking for charactar set and collate configuration");
                 const dbdetails = await fncs.getDatabaseCharsetAndCollation(config, data.name);
                 if (!fncs.isJsonObject(dbdetails)) {
                     console.error(cstyler.bold("Having problem getting database character set and collate."));
@@ -144,7 +180,8 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
 
             } else {
                 // Let's Create database
-                console.log(cstyler.purple("Database Name: "), cstyler.blue(jsondb), " do not exist.");
+                console.log(cstyler.purple("Database Name: "), cstyler.blue(data.name), " do not exist.");
+                console.log("Lets create Database: ", cstyler.yellow(jsondb));
                 const createdb = await createDatabase(config, data.name, data.charset, data.collate);
                 if (createdb === true) {
                     console.log(cstyler.purple("Database Name: "), cstyler.blue(jsondb), cstyler.green(" have created successfully"));
@@ -170,8 +207,10 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
             for (const dbnms of avldblist) {
                 if ([...defaultdb, ...donttouchdb].includes(dbnms)) { continue }
                 const getrev = fncs.reverseLoopName(dbnms);
-                if (arrngdbnms.hasOwnProperty(getrev)) {
-                    arrngdbnms[getrev].push(dbnms);
+                if (arrngdbnms.hasOwnProperty(getrev)[0]) {
+                    arrngdbnms[getrev[0]].push(dbnms);
+                } else if (arrngdbnms.hasOwnProperty(getrev)[1]) {
+                    arrngdbnms[getrev[1]].push(dbnms);
                 } else {
                     arrngdbnms[getrev] = [dbnms];
                 }
@@ -192,5 +231,6 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
 }
 
 module.exports = {
-    databaseAddDeleteAlter
+    databaseAddDeleteAlter,
+    dropTable
 }

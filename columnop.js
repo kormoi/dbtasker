@@ -1,7 +1,5 @@
 const fncs = require("./function");
-const recordedjson = require("./tables");
 const cstyler = require("cstyler");
-const checker = require("./validation");
 const validateion = require("./validation");
 
 const mysqlTypeMetadata = validateion.mysqlTypeMetadata;
@@ -269,7 +267,7 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
                     const alterquery = alterColumnQuery(columnData, columnName, tableName);
                     if (alterquery === null) {
                         // Not that important
-                        console.error("There must be an issue with the validation system. Please reinstall.");
+                        console.error("There must be an issue with the validation system. Please re-install.");
                         return null;
                     }
                     queries.push(alterquery);
@@ -345,7 +343,7 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
                 // add column query
                 const columnquery = addColumnQuery(columnData, columnName, tableName);
                 if (columnquery === null) {
-                    console.error("There must be an issue with the validation system. Please reinstall.");
+                    console.error("There must be an issue with the validation system. Please re-install.");
                     return null;
                 }
                 queries.push(columnquery);
@@ -554,7 +552,7 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
         return null;
     }
 }
-async function columnAddDeleteAlter(allconfig, jsondata, seperator = "_") {
+async function columnAddDeleteAlter(allconfig, jsondata, dropcolumn = false, seperator = "_") {
     try {
         console.log(cstyler.bold.blue("Let's initiate table and column operations"));
         if (!fncs.isJsonObject(jsondata)) {
@@ -575,7 +573,6 @@ async function columnAddDeleteAlter(allconfig, jsondata, seperator = "_") {
             return null;
         }
         // Lets decleare main variables
-        let queries = [];
         let foreignKeys = {};
         // let work on tables and columns
         for (const dbname of Object.keys(jsondata)) {
@@ -583,7 +580,7 @@ async function columnAddDeleteAlter(allconfig, jsondata, seperator = "_") {
                 if (!foreignKeys.hasOwnProperty(dbname)) foreignKeys[dbname] = {};
                 const loopedName = fncs.perseDatabaseNameWithLoop(dbname, seperator);
                 if (loopedName === null || loopedName === false) {
-                    console.error(cstyler.bold("There must be some function error. Please reinstall the module and use it."));
+                    console.error(cstyler.bold("There must be some function error. Please re-install the module and use it."));
                     return loopedName;
                 }
                 const databaseName = loopedName.loopname;
@@ -596,7 +593,7 @@ async function columnAddDeleteAlter(allconfig, jsondata, seperator = "_") {
                 for (const tableName of Object.keys(jsondata[dbname])) {
                     const loopedTableName = fncs.perseTableNameWithLoop(tableName, seperator);
                     if (loopedTableName === null || loopedTableName === false) {
-                        console.error(cstyler.bold("There must be some function error. Please reinstall the module and use it."));
+                        console.error(cstyler.bold("There must be some function error. Please re-install the module and use it."));
                         return loopedTableName;
                     }
                     const createdTableName = loopedTableName.loopname;
@@ -606,14 +603,14 @@ async function columnAddDeleteAlter(allconfig, jsondata, seperator = "_") {
                             /**
                              * Alter Table
                              */
-                            const altertable = await alterTableQuery(config, tabledata, tableName, dbname, allconfig.dropColumn);
+                            const altertable = await alterTableQuery(config, tabledata, createdTableName, databaseName, dropcolumn);
                             if (altertable === null) return null;
                             foreignKeys[dbname][tableName] = altertable;
                         } else {
                             /**
                              * Create table
                              */
-                            const createtable = await createTableQuery(config, tabledata, tableName, dbname);
+                            const createtable = await createTableQuery(config, tabledata, createdTableName, databaseName);
                             if (createtable === null) {
                                 return null;
                             }
@@ -623,12 +620,30 @@ async function columnAddDeleteAlter(allconfig, jsondata, seperator = "_") {
                         // as we already have deal with the database on dbop.js file
                         continue;
                     } else {
-                        console.error(cstyler.bold.red("There must be some issue with the module. Please reinstall and run the operation."));
+                        console.error(cstyler.bold.red("There must be some issue with the module. Please re-install and run the operation."));
                     }
                 }
             } else {
-                console.error(cstyler.bold.red("There must be some issue with the module. Please reinstall and run the operation."));
+                console.error(cstyler.bold.red("There must be some issue with the module. Please re-install and run the operation."));
             }
+        }
+        // lets work on foreign keys
+        let idxes = [];
+        let fkses = [];
+        for (const dbs of Object.keys(foreignKeys)) {
+            config.database = fncs.perseDatabaseNameWithLoop(dbs).loopname;
+            for (const tables of Object.keys(foreignKeys[dbs])) {
+                const tableName = fncs.perseTableNameWithLoop(tables, seperator).loopname;
+                for (const cols of Object.keys(foreignKeys[dbs][tables])) {
+                    const fk = foreignKeys[dbs][tables][cols];
+                    const fkquries = addForeignKeyWithIndexQuery(tableName, cols, fk.table, fk.column, { onDelete: fk.deleteOption, onUpdate: fk.updateOption });
+                    idxes.push(fkquries.indexQuery);
+                    fkses.push(fkquries.foreignKeyQuery);
+                }
+            }
+            /**
+             * run query
+             */
         }
     } catch (err) {
         console.error(err.message);
