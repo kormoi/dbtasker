@@ -260,7 +260,15 @@ async function JSONchecker(table_json, config, seperator = "_") {
                 // lets loop tables
                 for (const tableName of Object.keys(table_json[databaseName])) {
                     if (!contentObj[databaseName][tableName]) contentObj[databaseName][tableName] = {};
-
+                    let engine = undefined;
+                    for (const ecolumn of Object.keys(table_json[databaseName][tableName])) {
+                        for (const item of enginekey) {
+                            if (item === ecolumn.toLowerCase());
+                            engine = table_json[databaseName][tableName][ecolumn];
+                            break;
+                        }
+                        if(engine)break;
+                    }
                     if (fncs.isJsonObject(table_json[databaseName][tableName])) {
                         if (fncs.perseTableNameWithLoop(tableName, seperator) === false) {
                             badTableNames.push(
