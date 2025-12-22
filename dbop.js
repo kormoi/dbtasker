@@ -107,7 +107,7 @@ async function dropTable(config, json_data, seperator = "_") {
                         console.error("Having problem dropping table. Please check database connection.");
                         return null;
                     }
-                    console.log(cstyler.purple("Database: "), cstyler.blue(dbname.loopname),cstyler.purple("Table: "), cstyler.blue(tableName), "- has dropped successfully.")
+                    console.log(cstyler.purple("Database: "), cstyler.blue(dbname.loopname), cstyler.purple("Table: "), cstyler.blue(tableName), "- has dropped successfully.")
                 }
             }
             console.log(cstyler.green("Successfully dropped all unlisted tables."));
@@ -155,14 +155,14 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
             }
             if (avldblist.includes(data.name)) {
                 // Let's Alter database if needed
-                console.log(cstyler.purple("Database Name: "), cstyler.blue(data.name), " is exist. Checking for charactar set and collate configuration");
+                console.log(cstyler.purple("Database Name: "), cstyler.blue(data.name), cstyler.green(" is exist. Checking for charactar set and collate configuration"));
                 const dbdetails = await fncs.getDatabaseCharsetAndCollation(config, data.name);
                 if (!fncs.isJsonObject(dbdetails)) {
                     console.error(cstyler.bold("Having problem getting database character set and collate."));
                     return null;
                 } else {
                     if ((data.charset === null || dbdetails.characterSet === data.charset) && (data.collate === null || dbdetails.collation === data.collate)) {
-                        console.log(cstyler.purple("Database: "), cstyler.blue(data.name), cstyler.yellow(" no changes needed."))
+                        console.log(cstyler.purple("Database: "), cstyler.blue(data.name), " no changes needed.");
                     } else {
                         // lets alter the database charset and collate
                         if (data.charset === null) {

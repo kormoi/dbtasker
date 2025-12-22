@@ -97,6 +97,27 @@ async function getCharsetAndCollations(config) {
     return null;
   }
 }
+async function isCharsetCollationValid(config, charset, collation) {
+    let connection;
+
+    try {
+        connection = await mysql.createConnection(config);
+
+        const [rows] = await connection.execute(`
+            SELECT 1
+            FROM information_schema.COLLATIONS
+            WHERE COLLATION_NAME = ?
+              AND CHARACTER_SET_NAME = ?
+        `, [collation, charset]);
+
+        return rows.length > 0;
+
+    } catch (err) {
+        return null;
+    } finally {
+        if (connection) await connection.end();
+    }
+}
 async function getMySQLEngines(config) {
   let connection;
 
@@ -991,6 +1012,42 @@ async function getColumnDetails(config, dbName, tableName, columnName) {
     if (connection) await connection.end();
   }
 }
+async function columnHasKey(config, databaseName, tableName, columnName) {
+  let connection;
+  try {
+    connection = await mysql.createConnection({ ...config, database: databaseName });
+
+    // Query for PRIMARY and UNIQUE keys
+    const [indexRows] = await connection.execute(`
+            SELECT INDEX_NAME
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+        `, [databaseName, tableName, columnName]);
+
+    // Query for FOREIGN KEY constraints
+    const [fkRows] = await connection.execute(`
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+              AND REFERENCED_TABLE_NAME IS NOT NULL
+        `, [databaseName, tableName, columnName]);
+
+    const keys = [
+      ...indexRows.map(row => row.INDEX_NAME),
+      ...fkRows.map(row => row.CONSTRAINT_NAME)
+    ];
+
+    return { hasKey: keys.length > 0, keys };
+  } catch (err) {
+    throw err;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
 async function getForeignKeyDetails(config, databaseName, tableName, columnName = null) {
   let connection;
   try {
@@ -1128,15 +1185,18 @@ async function addForeignKeyWithIndex(config, dbname, tableName, columnName, ref
 }
 async function removeForeignKeyFromColumn(config, databaseName, tableName, columnName) {
   let connection;
+
   try {
     connection = await mysql.createConnection({
       ...config,
       database: databaseName
     });
 
-    // Step 1: find FK constraint name
-    const fkSql = `
-      SELECT CONSTRAINT_NAME
+    // 1️⃣ Find FK constraint(s) for this column
+    const fkRowsSql = `
+      SELECT
+        CONSTRAINT_NAME,
+        ORDINAL_POSITION
       FROM information_schema.KEY_COLUMN_USAGE
       WHERE TABLE_SCHEMA = ?
         AND TABLE_NAME = ?
@@ -1144,30 +1204,145 @@ async function removeForeignKeyFromColumn(config, databaseName, tableName, colum
         AND REFERENCED_TABLE_NAME IS NOT NULL
     `;
 
-    const [rows] = await connection.query(fkSql, [
+    const [fkRows] = await connection.query(fkRowsSql, [
       databaseName,
       tableName,
       columnName
     ]);
 
-    if (!rows.length) {
-      return false; // no FK on this column
+    if (!fkRows.length) {
+      return false; // no FK
     }
 
-    const constraintName = rows[0].CONSTRAINT_NAME;
+    // Multiple rows possible for composite FKs
+    const constraintName = fkRows[0].CONSTRAINT_NAME;
 
-    // Step 2: drop foreign key
-    const dropSql = `
-      ALTER TABLE \`${tableName}\`
-      DROP FOREIGN KEY \`${constraintName}\`
+    // 2️⃣ Get all columns in this FK constraint
+    const fkColsSql = `
+      SELECT COLUMN_NAME
+      FROM information_schema.KEY_COLUMN_USAGE
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+        AND CONSTRAINT_NAME = ?
+      ORDER BY ORDINAL_POSITION
     `;
 
-    await connection.query(dropSql);
+    const [fkCols] = await connection.query(fkColsSql, [
+      databaseName,
+      tableName,
+      constraintName
+    ]);
+
+    const fkColumnNames = fkCols.map(r => r.COLUMN_NAME);
+
+    // 3️⃣ Drop the foreign key constraint
+    await connection.query(`
+      ALTER TABLE \`${tableName}\`
+      DROP FOREIGN KEY \`${constraintName}\`
+    `);
+
+    // 4️⃣ Find candidate indexes that exactly match FK columns
+    const indexSql = `
+      SELECT
+        INDEX_NAME,
+        COLUMN_NAME,
+        SEQ_IN_INDEX
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+        AND COLUMN_NAME IN (?)
+      ORDER BY INDEX_NAME, SEQ_IN_INDEX
+    `;
+
+    const [indexRows] = await connection.query(indexSql, [
+      databaseName,
+      tableName,
+      fkColumnNames
+    ]);
+
+    // Group index columns
+    const indexMap = new Map();
+
+    for (const row of indexRows) {
+      if (!indexMap.has(row.INDEX_NAME)) {
+        indexMap.set(row.INDEX_NAME, []);
+      }
+      indexMap.get(row.INDEX_NAME).push(row.COLUMN_NAME);
+    }
+
+    // 5️⃣ Drop index only if it exactly matches FK columns
+    for (const [indexName, cols] of indexMap.entries()) {
+      if (
+        cols.length === fkColumnNames.length &&
+        cols.every((c, i) => c === fkColumnNames[i])
+      ) {
+        await connection.query(`
+          ALTER TABLE \`${tableName}\`
+          DROP INDEX \`${indexName}\`
+        `);
+        break; // only one index per FK
+      }
+    }
 
     return true;
 
   } catch (err) {
     console.error("Drop FK error:", err.message);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+async function removeForeignKeyConstraintFromColumn(config, databaseName, tableName, columnName) {
+  let connection;
+  let removed = false;
+
+  try {
+    connection = await mysql.createConnection({
+      ...config,
+      database: databaseName
+    });
+
+    /* 1️⃣ Remove FOREIGN KEY if exists */
+    const [fkRows] = await connection.execute(`
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+              AND REFERENCED_TABLE_NAME IS NOT NULL
+        `, [databaseName, tableName, columnName]);
+
+    for (const row of fkRows) {
+      await connection.execute(`
+                ALTER TABLE \`${tableName}\`
+                DROP FOREIGN KEY \`${row.CONSTRAINT_NAME}\`
+            `);
+      removed = true;
+    }
+
+    /* 2️⃣ Remove INDEX / UNIQUE KEY (excluding PRIMARY) */
+    const [indexRows] = await connection.execute(`
+            SELECT DISTINCT INDEX_NAME
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+              AND INDEX_NAME <> 'PRIMARY'
+        `, [databaseName, tableName, columnName]);
+
+    for (const row of indexRows) {
+      await connection.execute(`
+                ALTER TABLE \`${tableName}\`
+                DROP INDEX \`${row.INDEX_NAME}\`
+            `);
+      removed = true;
+    }
+
+    return removed;
+
+  } catch (err) {
+    console.error(err.message);
     return null;
   } finally {
     if (connection) await connection.end();
@@ -1211,7 +1386,8 @@ async function runQuery(config, databaseName, queryText) {
     await connection.execute(queryText);
     return true;
   } catch (err) {
-    console.error(err.message);
+    const errms = err.message;
+    console.error(errms);
     return null;
   } finally {
     if (connection) await connection.end();
@@ -1230,6 +1406,7 @@ module.exports = {
   isValidMySQLConfig,
   isMySQLDatabase,
   getCharsetAndCollations,
+  isCharsetCollationValid,
   getMySQLEngines,
   checkDatabaseExists,
   getAllDatabaseNames,
@@ -1251,10 +1428,12 @@ module.exports = {
   getColumnNames,
   getDatabaseCharsetAndCollation,
   getColumnDetails,
+  columnHasKey,
   getForeignKeyDetails,
   getAllForeignKeyDetails,
   addForeignKeyWithIndex,
   removeForeignKeyFromColumn,
+  removeForeignKeyConstraintFromColumn,
   columnExists,
   dropDatabase,
   dropTable,

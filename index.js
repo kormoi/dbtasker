@@ -132,7 +132,6 @@ async function runit(allconfig, table_json) {
             return;
         }
         const jsondata = checking.data;
-        console.log(JSON.stringify(checking, null, 2))
         console.log(cstyler.bold.purple("Lets start operation on databases."));
         const dbop = require("./dbop");
         const databaseop = await dbop.databaseAddDeleteAlter(config, jsondata, dropdatabase, donttouchdb, seperator);

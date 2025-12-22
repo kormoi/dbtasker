@@ -635,8 +635,7 @@ module.exports = {
         null: false,
         default: "CURRENT_TIMESTAMP"
       },
-      _characterset_: "utf8mb4",
-      _collate_: "ascii_general_ci"
+      _characterset_: "utf8mb4"
     },
     _charset_: "utf8mb4",
     _collate_: "utf8mb4_zh_0900_as_cs"
@@ -918,7 +917,7 @@ module.exports = {
       balance: { type: "FLOAT", null: false, default: "0" },
       total_earnings: { type: "FLOAT", null: false, default: "0" },
       total_withdraw: { type: "FLOAT", null: false, default: "0" },
-      total_spent: { type: "FLOAT", null: false, default: "0", signed: true, zerofill: false, index: "primary key" },
+      total_spent: { type: "FLOAT", null: false, default: "0", signed: true, zerofill: false, index: "Unique" },
       created_at: {
         type: "TIMESTAMP",
         null: false,
@@ -927,7 +926,6 @@ module.exports = {
       updated_at: {
         type: "TEXT",
         null: false,
-        default: "CURRENT_TIMESTAMP",
         comment: "Hi. Its me here.",
         charset: "utf8mb4",
         collate: "utf8mb4_zh_0900_as_cs"

@@ -20,28 +20,25 @@ function alterColumnQuery(columndata, columnName, tableName) {
             const lengthval = columndata.length_value;
 
             if (typeof lengthval === "number") {
-                queryText += `(${lengthval}) `;
+                queryText += `(${lengthval})`;
             } else if (
                 Array.isArray(lengthval) &&
                 lengthval.length === 2 &&
                 lengthval.every(v => typeof v === "number")
             ) {
-                queryText += `(${lengthval[0]},${lengthval[1]}) `;
+                queryText += `(${lengthval[0]},${lengthval[1]})`;
             } else if (
                 Array.isArray(lengthval) &&
                 lengthval.every(v => typeof v === "string")
             ) {
                 const escaped = lengthval.map(v => `'${v.replace(/'/g, "''")}'`);
-                queryText += `(${escaped.join(",")}) `;
+                queryText += `(${escaped.join(",")})`;
             }
         }
-
+        queryText += " ";
         if (columndata.unsigned === true) queryText += "UNSIGNED ";
         if (columndata.zerofill === true) queryText += "ZEROFILL ";
 
-        if (columndata.hasOwnProperty("nulls")) {
-            queryText += columndata.nulls ? "NULL " : "NOT NULL ";
-        }
 
         if (columndata.hasOwnProperty("defaults")) {
             const d = columndata.defaults;
@@ -58,6 +55,9 @@ function alterColumnQuery(columndata, columnName, tableName) {
         if (columndata._charset_) queryText += `CHARACTER SET ${columndata._charset_} `;
         if (columndata._collate_) queryText += `COLLATE ${columndata._collate_} `;
 
+        if (columndata.hasOwnProperty("nulls")) {
+            queryText += columndata.nulls ? "NULL " : "NOT NULL ";
+        }
         if (columndata.comment) {
             queryText += `COMMENT '${columndata.comment.replace(/'/g, "''")}' `;
         }
@@ -71,7 +71,7 @@ function alterColumnQuery(columndata, columnName, tableName) {
 function addColumnQuery(columndata, columnName, tableName) {
     try {
         if (!columndata.columntype) {
-            throw new Error("columntype is required to add a column");
+            throw new Error("columntype is required to add a column. Table:", tableName, "Column name:", columnName);
         }
 
         let queryText = "";
@@ -85,28 +85,25 @@ function addColumnQuery(columndata, columnName, tableName) {
             const lengthval = columndata.length_value;
 
             if (typeof lengthval === "number") {
-                queryText += `(${lengthval}) `;
+                queryText += `(${lengthval})`;
             } else if (
                 Array.isArray(lengthval) &&
                 lengthval.length === 2 &&
                 lengthval.every(v => typeof v === "number")
             ) {
-                queryText += `(${lengthval[0]},${lengthval[1]}) `;
+                queryText += `(${lengthval[0]},${lengthval[1]})`;
             } else if (
                 Array.isArray(lengthval) &&
                 lengthval.every(v => typeof v === "string")
             ) {
                 const escaped = lengthval.map(v => `'${v.replace(/'/g, "''")}'`);
-                queryText += `(${escaped.join(",")}) `;
+                queryText += `(${escaped.join(",")})`;
             }
         }
-
+        queryText += " ";
         if (columndata.unsigned === true) queryText += "UNSIGNED ";
         if (columndata.zerofill === true) queryText += "ZEROFILL ";
 
-        if (columndata.hasOwnProperty("nulls")) {
-            queryText += columndata.nulls ? "NULL " : "NOT NULL ";
-        }
 
         if (columndata.hasOwnProperty("defaults")) {
             const d = columndata.defaults;
@@ -123,6 +120,9 @@ function addColumnQuery(columndata, columnName, tableName) {
         if (columndata._charset_) queryText += `CHARACTER SET ${columndata._charset_} `;
         if (columndata._collate_) queryText += `COLLATE ${columndata._collate_} `;
 
+        if (columndata.hasOwnProperty("nulls")) {
+            queryText += columndata.nulls ? "NULL " : "NOT NULL ";
+        }
         if (columndata.comment) {
             queryText += `COMMENT '${columndata.comment.replace(/'/g, "''")}' `;
         }
@@ -161,9 +161,11 @@ function addForeignKeyWithIndexQuery(tableName, columnName, refTable, refColumn,
         foreignKeyQuery
     };
 }
-function isColumnDataSame(columnData, columndetails) {
+function isColumnDataSame(columnData, columndetails, fkdetails, tableName, columnName) {
     // 1. Column type
     if (columnData.columntype !== columndetails.columntype) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Column type do not match"));
         return false;
     }
 
@@ -174,58 +176,101 @@ function isColumnDataSame(columnData, columndetails) {
 
         // ENUM / SET → array of strings
         if (['ENUM', 'SET'].includes(columnData.columntype)) {
-            if (!Array.isArray(a) || !Array.isArray(b)) return false;
-            if (a.length !== b.length) return false;
+            if (!Array.isArray(a) || !Array.isArray(b)) {
+                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+                console.log(cstyler.red("ENUM or SET values must be an array"));
+                return false;
+            }
+            if (a.length !== b.length) {
+                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+                console.log(cstyler.red("ENUM or SET - value length are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                return false;
+            }
 
             for (let i = 0; i < a.length; i++) {
-                if (!a.includes(b[i])) return false;
+                if (!a.includes(b[i])) {
+                    console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+                    console.log(cstyler.red("ENUM or SET - Server and given value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                    return false;
+
+                }
             }
         }
         // DECIMAL(p,s) → [number, number]
         else if (Array.isArray(a)) {
-            if (!Array.isArray(b) || a.length !== b.length) return false;
-            if (a[0] !== b[0] || a[1] !== b[1]) return false;
+            if (!Array.isArray(b) || a.length !== b.length) {
+                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+                console.log(cstyler.red("Decimal length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                return false;
+            }
+            if (a[0] !== b[0] || a[1] !== b[1]) {
+                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+                console.log(cstyler.red("Decimal length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                return false;
+            }
         }
         // INT, VARCHAR, CHAR, etc. → number
         else {
-            if (a !== b && a !== undefined) return false;
+            if (a !== b && a !== undefined) {
+                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+                console.log(cstyler.red("Length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                return false;
+            }
         }
     }
 
     // 3. UNSIGNED
     if (typeof columnData.unsigned === "boolean" &&
         columnData.unsigned !== columndetails.unsigned) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Unsigned have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.unsigned), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.unsigned),);
         return false;
     }
 
     // 4. ZEROFILL
     if (typeof columnData.zerofill === "boolean" &&
         columnData.zerofill !== columndetails.zerofill) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Zerofill have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.zerofill), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.zerofill),);
         return false;
     }
 
     // 5. NULL / NOT NULL
     if (typeof columnData.nulls === "boolean" &&
         columnData.nulls !== columndetails.nulls) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Null have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.nulls), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.nulls),);
         return false;
     }
 
     // 6. DEFAULT
     const defA = columnData.defaults ?? null;
     const defB = columndetails.defaults ?? null;
-    if (defA !== defB) {
+    if (defA != defB) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Default need some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.defaults), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.defaults),);
         return false;
     }
 
     // 7. INDEX (PRIMARY / UNIQUE / "")
     const idxA = columnData.index ?? "";
     const idxB = columndetails.index ?? "";
-    if (idxA !== idxB) {
+
+    const realfk =
+        fncs.isJsonObject(fkdetails) &&
+        idxB === "KEY" &&
+        (idxA === "" || idxA === undefined);
+
+    if (idxA !== idxB && !realfk) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Index are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.index), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.index),);
         return false;
     }
 
     // 8. AUTO_INCREMENT
     if ((columnData.autoincrement !== undefined && columnData.autoincrement !== columndetails.autoincrement) || (columnData.autoincrement === undefined && columndetails.autoincrement === true)) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Autoincrement have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.autoincrement), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.autoincrement),);
         return false;
     }
 
@@ -233,18 +278,24 @@ function isColumnDataSame(columnData, columndetails) {
     const comA = columnData.comment ?? "";
     const comB = columndetails.comment ?? "";
     if (comA !== comB) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Comment have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.comment), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.comment),);
         return false;
     }
 
     // 10. CHARACTER SET
     if (columnData._charset_ !== undefined &&
         columnData._charset_ !== columndetails._charset_) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Character set have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData._charset_), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails._charset_),);
         return false;
     }
 
     // 11. COLLATION
     if (columnData._collate_ !== undefined &&
         columnData._collate_ !== columndetails._collate_) {
+        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
+        console.log(cstyler.red("Collate have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData._collate_), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails._collate_),);
         return false;
     }
 
@@ -257,26 +308,46 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
         let idxkey = [];
         let foreignkeys = [];
         let leftfk = [];
+        console.log(cstyler.yellow("Lets check if any changes needed on"), cstyler.purple("Database:"), cstyler.blue(dbName), cstyler.purple("Table:"), cstyler.blue(tableName));
         for (const columnName of Object.keys(tabledata)) {
             const columnData = tabledata[columnName];
             const fkData = columnData.foreign_key;
             const columndetails = await fncs.getColumnDetails(config, dbName, tableName, columnName);
-            if (columndetails === true) {
+            const fkdetails = await fncs.getForeignKeyDetails(config, dbName, tableName, columnName);
+            const constraintexist = await fncs.columnHasKey(config, dbName, tableName, columnName);
+            if (fkdetails === null) {
+                console.error("Server error: Having problem getting foreignkey details of ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
+                return null;
+            }
+            if (constraintexist === null) {
+                console.error("Server error: Having problem removing foreignkey constraint from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
+                return null;
+            }
+            if (fncs.isJsonObject(columndetails)) {
                 // alter column query
-                if (!isColumnDataSame(columnData, columndetails)) {
+                if (!isColumnDataSame(columnData, columndetails, fkdetails, tableName, columnName)) {
+                    if (fkdetails) {
+                        const removefk = await fncs.removeForeignKeyFromColumn(config, dbName, tableName, columnName);
+                        if (removefk === null) {
+                            console.error("Having problem removing foreignkey from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
+                            return null;
+                        }
+                    }
+                    if (fkdetails === false && constraintexist.hasKey === true) {
+                        const delkey = await fncs.removeForeignKeyConstraintFromColumn(config, dbName, tableName, columnName);
+                        if (delkey === null) {
+                            console.error("Having problem deleting foreign key constraint from column -", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
+                            return null;
+                        }
+                    }
                     const alterquery = alterColumnQuery(columnData, columnName, tableName);
                     if (alterquery === null) {
                         // Not that important
-                        console.error("There must be an issue with the validation system. Please re-install.");
+                        console.error("There was an issue when creating alter column query for", cstyler.purple("Database:"), cstyler.blue(dbName), cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
                         return null;
                     }
                     queries.push(alterquery);
                     // lets work on foreign key
-                    const remfk = await fncs.removeForeignKeyFromColumn(config, dbName, tableName, columnName);
-                    if (remfk === null) {
-                        console.error("Having problem removing foreignkey from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                        return null;
-                    }
                     if (columnData.hasOwnProperty("foreign_key")) {
                         // lets check foreign key table column exist
                         const fktcexist = await fncs.columnExists(config, dbName, fkData.table, fkData.column);
@@ -295,7 +366,6 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
                 } else {
                     if (columnData.hasOwnProperty("foreign_key")) {
                         // is foreignkey same0
-                        const fkdetails = await fncs.getForeignKeyDetails(config, dbName, tableName, columnName);
                         if (fncs.isJsonObject(fkdetails)) {
                             let issame = true;
                             // lets check if foreign keys are same or not
@@ -304,6 +374,7 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
                             if (fkData.deleteOption !== fkdetails.deleteOption) issame = false;
                             if (fkData.updateOption !== undefined && fkData.updateOption !== fkdetails.updateOption) issame = false;
                             if (issame === false) {
+                                console.log(cstyler.red("Foreign key server and given value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(fkData), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(fkdetails),);
                                 const dfk = await fncs.removeForeignKeyFromColumn(config, dbName, tableName, columnName);
                                 if (dfk === true || dfk === false) {
                                     const fkquery = addForeignKeyWithIndexQuery(tableName, columnName, fkData.table, fkData.column, { onDelete: fkData.deleteOption, onUpdate: fkData.updateOption });
@@ -313,6 +384,8 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
                                 } else {
                                     console.error("Having problem deleting foreign key from column. Please check your database connection.");
                                 }
+                            } else {
+                                console.log(cstyler.bold.green("No changes needed on "), cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName));
                             }
                         } else if (fkdetails === false) {
                             const fktcexist = await fncs.columnExists(config, dbName, fkData.table, fkData.column);
@@ -339,11 +412,11 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
                         }
                     }
                 }
-            } else if (columndetails === false) {
+            } else if (columndetails === false && !['_charset_', '_collate_'].includes(columnName)) {
                 // add column query
                 const columnquery = addColumnQuery(columnData, columnName, tableName);
                 if (columnquery === null) {
-                    console.error("There must be an issue with the validation system. Please re-install.");
+                    console.error("There was an issue when creating column query for", cstyler.purple("Database:"), cstyler.blue(dbName), cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
                     return null;
                 }
                 queries.push(columnquery);
@@ -362,6 +435,9 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
                         return null;
                     }
                 }
+            } else if (['_charset_', '_collate_'].includes(columnName)) {
+                // used for storing characterset and collate data
+                const notacolumn = true;
             } else {
                 console.error("Having problem getting column details from the database. Please check your database connection.");
                 return null;
@@ -386,26 +462,33 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
         }
         // lets arrange all the query
         for (const item of queries) {
+            console.log("Running query: ", cstyler.green(item));
             const runquery = await fncs.runQuery(config, dbName, item);
             if (runquery === null) {
                 console.error("Having problem running query. Please check database connection.");
                 return null;
             }
+            console.log(cstyler.blue("Successful"));
         }
         for (const item of idxkey) {
+            console.log("Running query of idxkey: ", cstyler.green(item));
             const runquery = await fncs.runQuery(config, dbName, item);
             if (runquery === null) {
-                console.error("Having problem running query. Please check database connection.");
+                return null;
+            } else if (runquery === false) {
                 return null;
             }
+            console.log(cstyler.blue("Successful"));
         }
         for (const item of foreignkeys) {
+            console.log("Running query of foreignkey: ", cstyler.green(item));
             const runquery = await fncs.runQuery(config, dbName, item);
             if (runquery === null) {
-                console.error("Having problem running query. Please check database connection.");
                 return null;
             }
+            console.log(cstyler.blue("Successful"));
         }
+        console.log(cstyler.underline.hex("#00b809ff")("All checking done. We are good to go..."));
         return leftfk;
     } catch (err) {
         console.error(err.message);
@@ -431,7 +514,7 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
 
                 // INT, VARCHAR, CHAR, BIT, etc.
                 if (typeof lengthval === "number") {
-                    queryText += `(${lengthval}) `;
+                    queryText += `(${lengthval})`;
                 }
 
                 // DECIMAL, FLOAT, DOUBLE → [precision, scale]
@@ -440,7 +523,7 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
                     lengthval.length === 2 &&
                     lengthval.every(v => typeof v === "number")
                 ) {
-                    queryText += `(${lengthval[0]},${lengthval[1]}) `;
+                    queryText += `(${lengthval[0]},${lengthval[1]})`;
                 }
 
                 // ENUM / SET → ['a','b','c']
@@ -449,14 +532,27 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
                     lengthval.every(v => typeof v === "string")
                 ) {
                     const escaped = lengthval.map(v => `'${v.replace(/'/g, "''")}'`);
-                    queryText += `(${escaped.join(",")}) `;
+                    queryText += `(${escaped.join(",")})`;
                 }
             }
+            queryText += " ";
             if (tabledata[columnName].hasOwnProperty("unsigned") && tabledata[columnName].unsigned === true) {
                 queryText += `UNSIGNED `
             }
             if (tabledata[columnName].zerofill === true) {
                 queryText += `ZEROFILL `
+            }
+            if (tabledata[columnName].autoincrement === true) {
+                queryText += `AUTO_INCREMENT `
+            }
+            if (tabledata[columnName].hasOwnProperty("index")) {
+                queryText += `${tabledata[columnName].index} `
+            }
+            if (tabledata[columnName].hasOwnProperty("_charset_")) {
+                queryText += `CHARACTER SET ${tabledata[columnName]._charset_} `
+            }
+            if (tabledata[columnName].hasOwnProperty("_collate_")) {
+                queryText += `COLLATE ${tabledata[columnName]._collate_} `
             }
             if (tabledata[columnName].hasOwnProperty("nulls")) {
                 if (tabledata[columnName].nulls === true) {
@@ -471,18 +567,6 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
                 else if (typeof d === "number") queryText += `DEFAULT ${d} `;
                 else if (/^CURRENT_TIMESTAMP$/i.test(d)) queryText += `DEFAULT ${d} `;
                 else queryText += `DEFAULT '${d.replace(/'/g, "''")}' `;
-            }
-            if (tabledata[columnName].autoincrement === true) {
-                queryText += `AUTO_INCREMENT `
-            }
-            if (tabledata[columnName].hasOwnProperty("index")) {
-                queryText += `${tabledata[columnName].index} `
-            }
-            if (tabledata[columnName].hasOwnProperty("_charset_")) {
-                queryText += `CHARACTER SET ${tabledata[columnName]._charset_} `
-            }
-            if (tabledata[columnName].hasOwnProperty("_collate_")) {
-                queryText += `COLLATE ${tabledata[columnName]._collate_} `
             }
             if (tabledata[columnName].hasOwnProperty("comment")) {
                 queryText += `COMMENT '${tabledata[columnName].comment}' `
@@ -500,7 +584,7 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
             for (const fks in foreignkeys) {
                 const ifexist = await fncs.columnExists(config, dbname, tabledata[fks].foreign_key.table, tabledata[fks].foreign_key.column);
                 if (ifexist === false) {
-                    console.log(cstyler.yellow("Foreign key column do not exist."));
+                    console.log(cstyler.red("Foreign key column do not exist."));
                 } else if (ifexist === true) {
                     let fktext = "";
                     fktext +=
@@ -511,6 +595,7 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
                         fktext += `ON DELETE ${foreignkeys[fks].deleteOption} `
                     }
                     if (foreignkeys[fks].hasOwnProperty("updateOption")) {
+                        console.log(cstyler.red("has update option"), foreignkeys[fks].updateOption)
                         fktext += `ON UPDATE ${foreignkeys[fks].updateOption} `
                     }
                     fkquery.push(fktext);
@@ -523,7 +608,7 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
                 }
             }
         }
-        let lastqueryText = `)`;
+        let lastqueryText = ``;
         if (tabledata.hasOwnProperty("_engine_")) {
             lastqueryText += `ENGINE=${tabledata._engine_}\n`;
         }
@@ -541,11 +626,12 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
             ${[...quries, ...keyidx, ...fkquery].join(",\n  ")}
             ) ${lastqueryText};
             `;
+        console.log("Running query: ", cstyler.green(fullqueryText));
         const runquery = await fncs.runQuery(config, dbname, fullqueryText);
         if (runquery === null) {
-            console.error("Having problem running query. Please check database connection.");
             return null;
         }
+        console.log(cstyler.green("Successfully created "), cstyler.purple("Table: "), cstyler.blue(tableName), " on ", cstyler.purple("Database: "), cstyler.blue(dbname));
         return foreignkeys;
     } catch (err) {
         console.error(err.message);
@@ -580,7 +666,7 @@ async function columnAddDeleteAlter(allconfig, jsondata, dropcolumn = false, sep
                 if (!foreignKeys.hasOwnProperty(dbname)) foreignKeys[dbname] = {};
                 const loopedName = fncs.perseDatabaseNameWithLoop(dbname, seperator);
                 if (loopedName === null || loopedName === false) {
-                    console.error(cstyler.bold("There must be some function error. Please re-install the module and use it."));
+                    console.error(cstyler.bold("There must be some function error. Please re-install the module and use it.", dbname, loopedName));
                     return loopedName;
                 }
                 const databaseName = loopedName.loopname;
@@ -591,13 +677,13 @@ async function columnAddDeleteAlter(allconfig, jsondata, dropcolumn = false, sep
                     return null;
                 }
                 for (const tableName of Object.keys(jsondata[dbname])) {
-                    const loopedTableName = fncs.perseTableNameWithLoop(tableName, seperator);
-                    if (loopedTableName === null || loopedTableName === false) {
-                        console.error(cstyler.bold("There must be some function error. Please re-install the module and use it."));
-                        return loopedTableName;
-                    }
-                    const createdTableName = loopedTableName.loopname;
                     if (!["_charset_", "_collate_"].includes(tableName) || fncs.isJsonObject(jsondata[dbname][tableName])) {
+                        const loopedTableName = fncs.perseTableNameWithLoop(tableName, seperator);
+                        if (loopedTableName === null || loopedTableName === false) {
+                            console.error("There must be some function error. Please re-install the module and use it.");
+                            return loopedTableName;
+                        }
+                        const createdTableName = loopedTableName.loopname;
                         const tabledata = jsondata[dbname][tableName];
                         if (existingTable.includes(createdTableName)) {
                             /**
@@ -622,6 +708,7 @@ async function columnAddDeleteAlter(allconfig, jsondata, dropcolumn = false, sep
                     } else {
                         console.error(cstyler.bold.red("There must be some issue with the module. Please re-install and run the operation."));
                     }
+
                 }
             } else {
                 console.error(cstyler.bold.red("There must be some issue with the module. Please re-install and run the operation."));

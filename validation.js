@@ -111,93 +111,95 @@ const validIndexValues = [
 ];
 const truers = [true, 1, "1", "true", "True", "TRUE"];
 const falsers = [false, 0, "0", "false", "False", "FALSE"];
-function isValidDefault(columnType, defaultValue, length_value) {
-    // NULL is always valid if column allows NULL
-    if (defaultValue === null) return null;
-
-    // Normalize type (just in case user passes lowercase)
+function validateDefault(columnType, defaultValue, length_value, nullable = false) {
     const type = columnType.toUpperCase();
 
-    // Numeric types
-    if (["INT", "BIGINT", "SMALLINT", "TINYINT", "DECIMAL", "NUMERIC", "FLOAT", "DOUBLE"].includes(type)) {
-        if (typeof defaultValue === "number") return true;
-        if (typeof defaultValue === "string" && !isNaN(defaultValue)) return true;
-        return false;
+    // If default is undefined (not explicitly set) → usually valid
+    if (defaultValue === undefined) return { valid: true, message: null };
+
+    // NULL default
+    if (defaultValue === null) {
+        return nullable
+            ? { valid: true, message: null }
+            : { valid: false, message: "Column does not allow NULL as default" };
     }
 
-    // ENUM and SET
-    if (["ENUM", "SET"].includes(type)) {
-        if (length_value !== undefined) {
-            const options = parseQuotedListSafely(length_value);
-            if (options.length === 0) {
-                return false;
-            } else {
-                if (options.includes(defaultValue)) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        } else {
-            return false;
-        }
+    // Numeric types
+    if (["INT", "BIGINT", "SMALLINT", "TINYINT", "DECIMAL", "NUMERIC", "FLOAT", "DOUBLE", "REAL"].includes(type)) {
+        if (typeof defaultValue === "number") return { valid: true, message: null };
+        if (typeof defaultValue === "string" && !isNaN(defaultValue)) return { valid: true, message: null };
+        return { valid: false, message: "Invalid numeric default value" };
     }
+
+    // ENUM / SET
+    if (["ENUM", "SET"].includes(type)) {
+        if (!length_value) return { valid: false, message: "Missing ENUM/SET options" };
+        const options = length_value.split(",").map(s => s.trim().replace(/^'(.*)'$/, "$1"));
+        if (options.includes(defaultValue)) return { valid: true, message: null };
+        return { valid: false, message: `Default value not in ENUM/SET options [${options.join(", ")}]` };
+    }
+
     // Character types
-    if (["CHAR", "VARCHAR", "TEXT"].some(t => type.startsWith(t))) {
-        if (typeof defaultValue === "string") return true;
-        return false;
+    if (["CHAR", "VARCHAR"].includes(type)) {
+        return typeof defaultValue === "string"
+            ? { valid: true, message: null }
+            : { valid: false, message: "Default must be a string" };
+    }
+
+    // TEXT types → valid if no default, invalid only if default explicitly set
+    if (["TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT"].includes(type)) {
+        return { valid: false, message: "TEXT columns cannot have default values" };
     }
 
     // Binary types
-    if (["BINARY", "VARBINARY", "BLOB"].some(t => type.startsWith(t))) {
-        if (typeof defaultValue === "string") return true; // literal string
-        if (/^x'[0-9A-Fa-f]+'$/.test(defaultValue)) return true; // hex literal
-        return false;
+    if (["BINARY", "VARBINARY"].includes(type)) {
+        return typeof defaultValue === "string" || /^x'[0-9A-Fa-f]+'$/.test(defaultValue)
+            ? { valid: true, message: null }
+            : { valid: false, message: "Invalid binary default value" };
+    }
+    if (["BLOB", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB"].includes(type)) {
+        return { valid: false, message: "BLOB columns cannot have default values" };
     }
 
-    // Date/time types
-    if (["DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR"].includes(type)) {
-        if (typeof defaultValue === "string") {
-            // Allow CURRENT_TIMESTAMP / NOW() only for DATETIME & TIMESTAMP
-            if (
-                ["DATETIME", "TIMESTAMP"].includes(type) &&
-                /^(CURRENT_TIMESTAMP|NOW)(\(\d*\))?$/.test(defaultValue)
-            ) {
-                return true;
-            }
-
-            // Validate literal formats
-            switch (type) {
-                case "DATE": // YYYY-MM-DD
-                    return /^\d{4}-\d{2}-\d{2}$/.test(defaultValue);
-
-                case "DATETIME": // YYYY-MM-DD HH:MM:SS
-                case "TIMESTAMP":
-                    return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(defaultValue);
-
-                case "TIME": // HH:MM:SS
-                    return /^\d{2}:\d{2}:\d{2}$/.test(defaultValue);
-
-                case "YEAR": // YYYY (4-digit only)
-                    return /^\d{4}$/.test(defaultValue);
-            }
-        }
-        return false;
+    // Date / Time types
+    if (["DATETIME", "TIMESTAMP"].includes(type)) {
+        if (typeof defaultValue !== "string") return { valid: false, message: "Default must be a string for DATETIME/TIMESTAMP" };
+        if (/^(CURRENT_TIMESTAMP)(\(\d{0,6}\))?$/i.test(defaultValue)) return { valid: true, message: null };
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(defaultValue)) return { valid: true, message: null };
+        return { valid: false, message: "Invalid DATETIME/TIMESTAMP default format" };
+    }
+    if (type === "DATE") {
+        return /^\d{4}-\d{2}-\d{2}$/.test(defaultValue)
+            ? { valid: true, message: null }
+            : { valid: false, message: "Invalid DATE default format" };
+    }
+    if (type === "TIME") {
+        return /^\d{2}:\d{2}:\d{2}$/.test(defaultValue)
+            ? { valid: true, message: null }
+            : { valid: false, message: "Invalid TIME default format" };
+    }
+    if (type === "YEAR") {
+        return /^\d{4}$/.test(defaultValue)
+            ? { valid: true, message: null }
+            : { valid: false, message: "Invalid YEAR default format" };
     }
 
-
-    // Boolean (alias of TINYINT(1))
+    // BOOLEAN
     if (type === "BOOLEAN") {
-        return defaultValue === 0 || defaultValue === 1 || defaultValue === "0" || defaultValue === "1" || defaultValue === true || defaultValue === false || defaultValue === "true" || defaultValue === "false" || defaultValue === "True" || defaultValue === "False" || defaultValue === "TRUE" || defaultValue === "FALSE";
+        return defaultValue === 0 || defaultValue === 1
+            ? { valid: true, message: null }
+            : { valid: false, message: "BOOLEAN default must be 0 or 1" };
     }
 
-    // JSON cannot have default except NULL (in MySQL < 8.0.13)
+    // JSON
     if (type === "JSON") {
-        return defaultValue === null;
+        return defaultValue === null || defaultValue === '{}' || defaultValue === '[]'
+            ? { valid: true, message: null }
+            : { valid: false, message: "JSON columns cannot have this default" };
     }
 
-    // If unknown type → reject
-    return false;
+    // Unknown types
+    return { valid: false, message: "Unknown column type or invalid default" };
 }
 
 
@@ -218,6 +220,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
     let badzerofill = [];
     let badcharacterset = [];
     let badcollation = [];
+    let badcarcol = [];
     let badengine = [];
     console.log("Initializing JSON checking...");
     // get all character set and collate
@@ -341,8 +344,8 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  * AUTOINCREMENT
                                  */
                                 const autoincrementkeys = ["autoIncrement", "autoincrement", "auto_increment", "AUTO_INCREMENT", "AUTOINCREMENT", "increment", "INCREMENT"]
-                                for(const item of autoincrementkeys){
-                                    if(deepColumn.hasOwnProperty(item)){
+                                for (const item of autoincrementkeys) {
+                                    if (deepColumn.hasOwnProperty(item)) {
                                         autoincrement = deepColumn[item];
                                         break;
                                     }
@@ -361,17 +364,16 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  * INDEX
                                  * Index
                                  */
-                                if (deepColumn.hasOwnProperty("index")) {
-                                    indexes = deepColumn.index;
-                                } else if (deepColumn.hasOwnProperty("INDEX")) {
-                                    indexes = deepColumn.INDEX;
-                                } else if (deepColumn.hasOwnProperty("Index")) {
-                                    indexes = deepColumn.Index;
+                                const indexkey = ["index", "INDEX", "Index"];
+                                for (const item of indexkey) {
+                                    if (deepColumn.hasOwnProperty(item)) {
+                                        indexes = deepColumn[item];
+                                    }
                                 }
-                                if(indexes !== undefined) indexes = fncs.stringifyAny(indexes).toUpperCase();
+                                if (indexes !== undefined) indexes = fncs.stringifyAny(indexes).toUpperCase();
                                 if (indexes === "PRIMARY" || indexes === "KEY") {
                                     indexes = "PRIMARY KEY"
-                                } else if (indexes === "FULL"){
+                                } else if (indexes === "FULL") {
                                     indexes = "FULLTEXT";
                                 }
                                 /**
@@ -616,8 +618,8 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     for (const column of Object.keys(table_json[databaseName][tableName])) {
                                         const doubleDeepColumn = table_json[databaseName][tableName][column];
                                         let allautoincrement = undefined;
-                                        for (const item of autoincrementkeys){
-                                            if(doubleDeepColumn.hasOwnProperty(item)){
+                                        for (const item of autoincrementkeys) {
+                                            if (doubleDeepColumn.hasOwnProperty(item)) {
                                                 allautoincrement = doubleDeepColumn[item];
                                                 break;
                                             }
@@ -764,6 +766,26 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                             `${cstyler.red('- ')}${cstyler.yellow('index')} ${cstyler.red('value must be text or string.')}`
                                         );
                                     }
+                                    // check multi autoincrement
+                                    let doubblePrimary = [];
+                                    for (const column of Object.keys(table_json[databaseName][tableName])) {
+                                        const doubleDeepColumn = table_json[databaseName][tableName][column];
+                                        for (const item of indexkey) {
+                                            if (doubleDeepColumn.hasOwnProperty(item)) {
+                                                if (doubleDeepColumn[item].toUpperCase() === "KEY" || doubleDeepColumn[item].toUpperCase() === "PRIMARY KEY")
+                                                    doubblePrimary.push(doubleDeepColumn[item]);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (doubblePrimary.length > 1) {
+                                        badindex.push(
+                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.red('- This table has more than one')} ${cstyler.yellow('PRIMARY KEY')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('PRIMARY KEY')} ${cstyler.red('column.')}`
+                                        );
+                                    }
                                 }
                                 // Lets work on character set and collat
                                 if (_charset_ !== undefined && typeInfo !== undefined) {
@@ -792,20 +814,28 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                         );
                                     }
                                 }
-                                // lets check default fsp list none
-                                if ((fncs.isNumber(defaults) || typeof defaults === "string") && columntype) {
-                                    const isvaliddefaultvalue = isValidDefault(columntype, defaults, length_value);
-                                    if (isvaliddefaultvalue === null || isvaliddefaultvalue === false) {
-                                        baddefaults.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('valid')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value required')}`
-                                        );
+                                if (contentObj[databaseName][tableName][columnName].hasOwnProperty("_collate_") && contentObj[databaseName][tableName][columnName].hasOwnProperty("_charset_")) {
+                                    const isvalid = await fncs.isCharsetCollationValid(config, contentObj[databaseName][tableName][columnName]._charset_, contentObj[databaseName][tableName][columnName]._collate_);
+                                    if (isvalid === false) {
+                                        badcarcol.push(
+                                            `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purple("Table:")} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purple("Column:")} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.purple("> Character set:")} ${cstyler.blue(contentObj[databaseName][tableName][columnName]._charset_)} ` +
+                                            `${cstyler.purple("> Collate:")} ${cstyler.blue(contentObj[databaseName][tableName][columnName]._collate_)} ` +
+                                            `${cstyler.red("- is invalid combination")} `
+                                        )
                                     }
-                                } else if (defaults === null) {
+                                }
+                                // lets check default fsp list none
+                                const result = validateDefault(columntype, defaults, length_value, nulls);
+
+                                if (!result.valid) {
                                     baddefaults.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ${cstyler.red('-')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value can not be null')}`
+                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ` +
+                                        `${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ` +
+                                        `${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ${cstyler.red(result.message)}`
                                     );
-                                } else {
-                                    defaults = undefined;
                                 }
                                 // lets check bad foreign_key delete and update options
                                 let deleteOption = undefined;
@@ -1012,8 +1042,12 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     } else if (["DEFAULT", "SET DEFAULT"].includes(updateOption)) {
                                         updateOption = "SET DEFAULT";
                                     }
-                                    contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
-                                    contentObj[databaseName][tableName][columnName].foreign_key.updateOption = updateOption;
+                                    if (deleteOption !== undefined) {
+                                        contentObj[databaseName][tableName][columnName].foreign_key.deleteOption = deleteOption;
+                                    }
+                                    if (updateOption !== undefined) {
+                                        contentObj[databaseName][tableName][columnName].foreign_key.updateOption = updateOption;
+                                    }
                                 }
                             } else {
                                 if (charactersetkeys.includes(columnName.toLowerCase())) {
@@ -1053,9 +1087,9 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     const commentval = table_json[databaseName][tableName][columnName];
                                     if (!validateMySQLComment(commentval).valid) {
                                         badcomment.push(
-                                            `${cstyler.purpal("Database:")} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purpal("> Table:")} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purpal("> Table comment:")} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purple("> Table:")} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purple("> Table comment:")} ${cstyler.blue(columnName)} ` +
                                             `${cstyler.red("- Invalid comment:")} ` +
                                             result.errors.map(e => cstyler.red(e)).join(", ")
                                         )
@@ -1064,6 +1098,18 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     badColumnNames.push(
                                         `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> columnName:')} ${cstyler.blue(columnName)}  ${cstyler.red('- That column name have some problem with its value')}`
                                     )
+                                }
+                                if (contentObj[databaseName][tableName].hasOwnProperty("_collate_") && contentObj[databaseName][tableName].hasOwnProperty("_charset_")) {
+                                    const isvalid = await fncs.isCharsetCollationValid(config, contentObj[databaseName][tableName]._charset_, contentObj[databaseName][tableName]._collate_);
+                                    if (isvalid === false) {
+                                        badcarcol.push(
+                                            `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
+                                            `${cstyler.purple("Table:")} ${cstyler.blue(tableName)} ` +
+                                            `${cstyler.purple("> Character set:")} ${cstyler.blue(contentObj[databaseName][tableName]._charset_)} ` +
+                                            `${cstyler.purple("> Collate:")} ${cstyler.blue(contentObj[databaseName][tableName]._collate_)} ` +
+                                            `${cstyler.red("- is invalid combination")} `
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1092,8 +1138,8 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 contentObj[databaseName]._comment_ = commentval;
                             } else {
                                 badcomment.push(
-                                    `${cstyler.purpal("Database:")} ${cstyler.blue(databaseName)} ` +
-                                    `${cstyler.purpal("> Database comment:")} ${cstyler.blue(tableName)} ` +
+                                    `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
+                                    `${cstyler.purple("> Database comment:")} ${cstyler.blue(tableName)} ` +
                                     `${cstyler.red("- Invalid comment:")} ` +
                                     result.errors.map(e => cstyler.red(e)).join(", ")
                                 )
@@ -1103,6 +1149,18 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.red('- That table may have some problem with its property')}`
                             )
                         }
+                        if (contentObj[databaseName].hasOwnProperty("_collate_") && contentObj[databaseName].hasOwnProperty("_charset_")) {
+                            const isvalid = await fncs.isCharsetCollationValid(config, contentObj[databaseName]._charset_, contentObj[databaseName]._collate_);
+                            if (isvalid === false) {
+                                badcarcol.push(
+                                    `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
+                                    `${cstyler.purple("> Character set:")} ${cstyler.blue(contentObj[databaseName]._charset_)} ` +
+                                    `${cstyler.purple("> Collate:")} ${cstyler.blue(contentObj[databaseName]._collate_)} ` +
+                                    `${cstyler.red("- is invalid combination")} `
+                                )
+                            }
+                        }
+
                     }
                 }
             } else {
@@ -1111,7 +1169,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
             }
         }
         // Lets return result
-        if (baddatabaseName.length === 0 && badengine.length === 0 && badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0 && badcharacterset.length === 0 && badcollation.length === 0) {
+        if (baddatabaseName.length === 0 && badcarcol.length === 0 && badengine.length === 0 && badTableNames.length === 0 && badColumnNames.length === 0 && badcomment.length === 0 && badunsigned.length === 0 && badzerofill.length === 0 && badtype.length === 0 && badindex.length === 0 && badautoincrement.length === 0 && badnulls.length === 0 && baddefaults.length === 0 && badlength.length === 0 && badforeighkey.length === 0 && badcharacterset.length === 0 && badcollation.length === 0) {
             console.log(cstyler.underline.green("All JSON checking is done | Clear to continue"));
             return { status: true, data: contentObj };
         }
@@ -1164,6 +1222,9 @@ async function JSONchecker(table_json, config, seperator = "_") {
             console.log(cstyler.yellow("Valid collates:"));
             console.log(cstyler.dark.yellow(collations.join(", ")));
             console.error(`Collation are not correct: \n${badcollation.join("\n")}`);
+        }
+        if (badcarcol.length > 0) {
+            console.error(`Character set and Collation combination are not correct: \n${badcarcol.join("\n")}`);
         }
         if (badengine.length > 0) {
             console.log(cstyler.yellow("Valid engines:"));
