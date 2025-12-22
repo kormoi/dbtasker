@@ -405,10 +405,13 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
                             return null;
                         }
                     } else {
-                        const dfk = await fncs.removeForeignKeyFromColumn(config, dbName, tableName, columnName);
-                        if (dfk === null) {
-                            console.error("Having problem removing foreignkey from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                            return null;
+                        if (constraintexist || fkdetails) {
+                            const dfk = await fncs.removeForeignKeyFromColumn(config, dbName, tableName, columnName);
+                            const delkey = await fncs.removeForeignKeyConstraintFromColumn(config, dbName, tableName, columnName);
+                            if (dfk === null || delkey === null) {
+                                console.error("Having problem removing foreignkey from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
+                                return null;
+                            }
                         }
                     }
                 }
@@ -488,7 +491,7 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
             }
             console.log(cstyler.blue("Successful"));
         }
-        console.log(cstyler.underline.hex("#00b809ff")("All checking done. We are good to go..."));
+        console.log(cstyler.underline.green("All column checking are done for"), cstyler.purple("Database:"), cstyler.blue(dbName), cstyler.purple("Table:"), cstyler.blue(tableName), "Lets go>>>");
         return leftfk;
     } catch (err) {
         console.error(err.message);

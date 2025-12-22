@@ -9,7 +9,7 @@ const checker = require("./validation");
 const moduleName = "dbtasker";
 const truers = [true, 1, "1", "true", "True", "TRUE"];
 
-async function runit(allconfig, table_json) {
+module.exports = async function(allconfig, table_json) {
     try {
         console.log(cstyler.blue("Initializing DBTASKER..."))
         // check if enough database available on table json
@@ -111,20 +111,7 @@ async function runit(allconfig, table_json) {
             console.error("My SQL version 5.7.8 or above is required. Please check if you have installed mysql2. To install: npm install mysql2");
             return;
         }
-        /**
-         * need to work on this section
-         */
-        // Lets check both json file is same or not
-        if (fncs.isJsonObject(table_json)) {
-            if (fncs.isJsonSame(table_json, recordedjson)) {
-                console.log(cstyler.bold.italic.underline.green("All the tables are up to date. No changes needed"));
-                return;
-            }
-        } else {
-            console.error("Please provice a valid json file to continue.");
-            return;
-        }
-        console.log(cstyler.bold.underline.yellow("Table need an upgrade."))
+        console.log(cstyler.bold.underline.yellow("Lets check if the table need an upgrade"))
         // lets check all table name and column name
         const checking = await checker.JSONchecker(table_json, config, seperator);
         if (checking.status === false) {
@@ -153,29 +140,10 @@ async function runit(allconfig, table_json) {
         if (columnop === null) {
             return;
         }
-        console.log(cstyler.green("All database work is done perfectly."));
-
-        /**
-         * Let's store on js file
-         */
-        //console.log(checking)
-        // table json file checking done
-        // lets work on tables
-        //const tableAdded = await dbtask.dbTask(config, checkeing.data, seperator);
-        console.log(cstyler.yellow("All work has done. You are good to go..."))
-
+        console.log(cstyler.bold.underline.green("<<<All database work is done perfectly>>>"));
     } catch (err) {
         console.error(err.message);
         return;
     }
 }
 
-
-
-
-
-
-
-const { DBInfo } = require("./app");
-const tables = require("./user_tables");
-runit(DBInfo, tables);

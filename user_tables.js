@@ -900,12 +900,11 @@ module.exports = {
       },
       user_id: {
         type: "BIGINT",
-        null: false,
+        null: true,
         foreign_key: {
           table: "users",
           column: "id",
-          delete: true,
-          update: true
+          delete: true
         },
       },
       currency: {
@@ -914,7 +913,7 @@ module.exports = {
         null: false,
         default: "BDT",
       },
-      balance: { type: "FLOAT", null: false, default: "0" },
+      balance: { type: "FLOAT", null: true, default: "0" },
       total_earnings: { type: "FLOAT", null: false, default: "0" },
       total_withdraw: { type: "FLOAT", null: false, default: "0" },
       total_spent: { type: "FLOAT", null: false, default: "0", signed: true, zerofill: false, index: "Unique" },
@@ -930,8 +929,7 @@ module.exports = {
         charset: "utf8mb4",
         collate: "utf8mb4_zh_0900_as_cs"
 
-      },
-      "_engine_": "CSV"
+      }
     },
   },
 };
