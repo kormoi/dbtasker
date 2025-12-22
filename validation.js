@@ -1,5 +1,6 @@
 const cstyler = require("cstyler");
 const fncs = require("./function");
+const eng = require("./enginesupport");
 
 function validateMySQLComment(comment) {
     const errors = [];
@@ -262,12 +263,9 @@ async function JSONchecker(table_json, config, seperator = "_") {
                     if (!contentObj[databaseName][tableName]) contentObj[databaseName][tableName] = {};
                     let engine = undefined;
                     for (const ecolumn of Object.keys(table_json[databaseName][tableName])) {
-                        for (const item of enginekey) {
-                            if (item === ecolumn.toLowerCase());
+                        if (enginekey.includes(ecolumn.toLowerCase())) {
                             engine = table_json[databaseName][tableName][ecolumn];
-                            break;
                         }
-                        if(engine)break;
                     }
                     if (fncs.isJsonObject(table_json[databaseName][tableName])) {
                         if (fncs.perseTableNameWithLoop(tableName, seperator) === false) {
@@ -543,6 +541,18 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     );
                                     columntype = null;
                                 } else {
+                                    if (engine !== undefined) {
+                                        if (!eng.isColumnTypeAllowed(engine, columntype.toUpperCase())) {
+                                            badengine.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
+                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.purple('> Type:')} ${cstyler.blue(columntype.toUpperCase())} ` +
+                                                `${cstyler.red('> type is not supported by engine.')}`
+                                            )
+                                        }
+                                    }
                                     if (!allMySQLColumnTypes.includes(columntype.toUpperCase())) {
                                         badtype.push(
                                             `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
@@ -620,6 +630,18 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                             `${cstyler.red('a valid')} ${cstyler.yellow('index')} ${cstyler.red('value must be ')}` +
                                             `${cstyler.yellow('PRIMARY KEY, UNIQUE')} ${cstyler.red('for autoincrement.')}`
                                         );
+                                    }
+                                    if (engine !== undefined) {
+                                        if (!eng.isEngineFeatureAllowed(engine, 'AutoIncrement')) {
+                                            badengine.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
+                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.red('> Engine - does not support')}` +
+                                                `${cstyler.yellow(' - Autoincrement')}`
+                                            )
+                                        }
                                     }
                                     // check multi autoincrement
                                     let autoincrementcolumnlist = [];
@@ -724,6 +746,18 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                             cstyler.red(" - for `zerofill` column type has to be numeric")
                                         );
                                     }
+                                    if (engine !== undefined) {
+                                        if (!eng.isEngineFeatureAllowed(engine, 'ZeroFill')) {
+                                            badengine.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
+                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.red('> Engine - does not support')}` +
+                                                `${cstyler.yellow(' - ZeroFill')}`
+                                            )
+                                        }
+                                    }
                                 } else if (zerofill === null) {
                                     badzerofill.push(
                                         cstyler`{purple Database:} {blue ${databaseName}} ` +
@@ -765,6 +799,19 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                                 `${cstyler.red('- has unsupported index value.')} ` +
                                                 `${cstyler.red('Value must be')} ${cstyler.yellow(validIndexValues.join(', '))}`
                                             );
+                                        }
+
+                                        if (engine !== undefined) {
+                                            if (!eng.isEngineFeatureAllowed(engine, 'Index')) {
+                                                badengine.push(
+                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                                    `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                                    `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
+                                                    `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                    `${cstyler.red('> Engine - does not support')}` +
+                                                    `${cstyler.yellow(' - Index')}`
+                                                )
+                                            }
                                         }
                                     } else {
                                         badindex.push(
@@ -1017,9 +1064,35 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 }
                                 if (typeof nulls === "boolean") {
                                     contentObj[databaseName][tableName][columnName].nulls = nulls;
+
+                                    if (engine !== undefined) {
+                                        if (!eng.isEngineFeatureAllowed(engine, 'Null')) {
+                                            badengine.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
+                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.red('> Engine - does not support')}` +
+                                                `${cstyler.yellow(' - Null')}`
+                                            )
+                                        }
+                                    }
                                 }
                                 if (typeof defaults === "string" || typeof defaults === "number") {
                                     contentObj[databaseName][tableName][columnName].defaults = defaults;
+
+                                    if (engine !== undefined) {
+                                        if (!eng.isEngineFeatureAllowed(engine, 'Default')) {
+                                            badengine.push(
+                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
+                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
+                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.red('> Engine - does not support')}` +
+                                                `${cstyler.yellow(' - Default')}`
+                                            )
+                                        }
+                                    }
                                 }
                                 if (comment !== undefined) {
                                     contentObj[databaseName][tableName][columnName].comment = comment;

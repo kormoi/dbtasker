@@ -108,7 +108,14 @@ const ENGINE_COLUMN_TYPES = {
 function isColumnTypeAllowed(type, engine) {
   if (!type || !engine) return false;
 
-  const baseType = type.toUpperCase().replace(/\(.*?\)/g, "").split(/\s+/)[0];
+  // Ensure type is a string
+  const typeStr = String(type);
+
+  const baseType = typeStr
+    .toUpperCase()
+    .replace(/\(.*?\)/g, "")  // remove length/precision
+    .split(/\s+/)[0];
+
   const types = ENGINE_COLUMN_TYPES[engine] || [];
   return types.includes(baseType);
 }
@@ -116,8 +123,6 @@ const ENGINE_CAPABILITIES = {
   INNODB: {
     Null: true,
     Index: true,
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
@@ -125,8 +130,6 @@ const ENGINE_CAPABILITIES = {
   MYISAM: {
     Null: true,
     Index: true,
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
@@ -134,8 +137,6 @@ const ENGINE_CAPABILITIES = {
   MEMORY: {
     Null: true,
     Index: true,
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
@@ -143,8 +144,6 @@ const ENGINE_CAPABILITIES = {
   CSV: {
     Null: false,
     Index: false,
-    Primary: false,
-    Unique: false,
     AutoIncrement: false,
     ZeroFill: false,
     Default: true
@@ -152,8 +151,6 @@ const ENGINE_CAPABILITIES = {
   ARCHIVE: {
     Null: false,
     Index: false,
-    Primary: false,
-    Unique: false,
     AutoIncrement: false,
     ZeroFill: false,
     Default: true
@@ -161,8 +158,6 @@ const ENGINE_CAPABILITIES = {
   BLACKHOLE: {
     Null: true,
     Index: false,
-    Primary: false,
-    Unique: false,
     AutoIncrement: false,
     ZeroFill: false,
     Default: false
@@ -170,8 +165,6 @@ const ENGINE_CAPABILITIES = {
   FEDERATED: {
     Null: true,
     Index: false,       // depends on remote
-    Primary: false,
-    Unique: false,
     AutoIncrement: false,
     ZeroFill: false,
     Default: true       // allows literals
@@ -179,8 +172,6 @@ const ENGINE_CAPABILITIES = {
   MRG_MYISAM: {
     Null: true,
     Index: true,        // inherits from underlying MyISAM tables
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
@@ -188,8 +179,6 @@ const ENGINE_CAPABILITIES = {
   NDB: {
     Null: true,
     Index: true,
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
@@ -197,8 +186,6 @@ const ENGINE_CAPABILITIES = {
   NDBCLUSTER: {       // same as NDB
     Null: true,
     Index: true,
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
@@ -206,8 +193,6 @@ const ENGINE_CAPABILITIES = {
   EXAMPLE: {
     Null: true,
     Index: false,
-    Primary: false,
-    Unique: false,
     AutoIncrement: false,
     ZeroFill: false,
     Default: false
@@ -215,8 +200,6 @@ const ENGINE_CAPABILITIES = {
   TOKUDB: {
     Null: true,
     Index: true,
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
@@ -224,8 +207,6 @@ const ENGINE_CAPABILITIES = {
   ROCKSDB: {
     Null: true,
     Index: true,
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
@@ -233,16 +214,20 @@ const ENGINE_CAPABILITIES = {
   SPIDER: {
     Null: true,
     Index: true,
-    Primary: true,
-    Unique: true,
     AutoIncrement: true,
     ZeroFill: true,
     Default: true
   }
 };
 function isEngineFeatureAllowed(engine, feature) {
-  const caps = ENGINE_CAPABILITIES[engine.toUpperCase()];
+  if (!engine) return null;
+
+  // Ensure engine is a string
+  const engineStr = String(engine);
+
+  const caps = ENGINE_CAPABILITIES[engineStr.toUpperCase()];
   if (!caps) return null; // unknown engine
+
   return !!caps[feature];
 }
 
