@@ -23,6 +23,7 @@ Properties: Rules, types, defaults, and constraints
 DbTasker normalizes keys case-insensitively, so multiple naming styles are supported (camelCase, snake_case, uppercase, lowercase).
 
 JSON Schema Structure
+```js
 {
   DatabaseName: {
     TableName: {
@@ -59,6 +60,7 @@ Demo Schema Example
     }
   }
 }
+```
 
 ## Configuration File
 
