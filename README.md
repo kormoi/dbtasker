@@ -190,28 +190,41 @@ This configuration will:
 
 ## Column Key Aliases (Case-Insensitive)
 DbTasker allows multiple aliases for each column property. Keys are normalized internally.
+
 **Zerofill**
+```js
 zerofill, zero_fill, iszerofill, zerofillup
+```
 
 **Defaults / Default Value**
+```js
 default, defaults, defaultvalue, default_value,
 example, sample, columndefault, column_default
+```
 
 **Signed / Unsigned**
+```js
 signed, issigned, numericunsigned, numeric_unsigned,
 unsigned, isunsigned
+```
 
 **Comments / Description / Notes**
+```js
 comment, comments, columncomment, column_comment,
 description, label, helptext, hint, note
+```
 
 **Null / Not Null**
 Disallow NULL / Required
+```js
 notnull, not_null, nonnullable, notnullable,
 required, disallownull, non_nullable, not_nullable, disallow_null
+```
 
 **Allow NULL / Optional**
---- null, nulls, nullable, optional, isnulable, allownull, canbenull
+```js
+null, nulls, nullable, optional, isnulable, allownull, canbenull
+```
 
 **Index / Key**
 ```js
@@ -252,11 +265,13 @@ foreign_key: {
 ```
 ## Foreign Key Aliases (Case-Insensitive)
 DbTasker accepts:
+```js
 "fk", "foreign_key", "foreignkey"
+```
 
 Foreign Key Properties & Aliases
 Property
-Alias Options
+### Alias Options
 Purpose
 table
 table, Table, TABLE, refTable, referenceTable
@@ -272,7 +287,8 @@ update, Update, onUpdate, on_update
 ON UPDATE CASCADE behavior
 
 Notes:
-DbTasker automatically normalizes all keys internally.
+
+---DbTasker automatically normalizes all keys internally.
 
 
 Foreign key constraints are generated safely and include necessary indexes automatically.
@@ -282,12 +298,9 @@ Foreign key constraints are generated safely and include necessary indexes autom
 Defaults (Advanced Usage)
 Standard SQL: "defaults": "value" → DEFAULT 'value'
 
-
 Computed / Expressions: "defaults": () => "CURRENT_TIMESTAMP" → SQL expression
 
-
 JSON / Array: "defaults": [] → JSON default
-
 
 ORM-only: "applyOnlyInORM": true → used only in runtime
 
@@ -304,97 +317,63 @@ DbTasker JSON can map directly to ORM objects (Sequelize, TypeORM, Prisma, etc.)
 Example ORM object:
 
 
+```js
 {
   id: 1,
   name: "Alice",
   email: "alice@example.com",
   isActive: true
 }
+```
 
 
 Engine Awareness
 DbTasker supports MySQL engines and handles constraints accordingly:
-InnoDB
 
-
-MyISAM
-
-
-MEMORY
-
-
-CSV
-
-
-ARCHIVE
-
-
-BLACKHOLE
-
-
-FEDERATED
-
-
-NDB / NDBCLUSTER
-
-
-MRG_MYISAM
-
-
-Spider
-
-
-RocksDB
-
-
-TokuDB
+- InnoDB
+- MyISAM
+- MEMORY
+- CSV
+- ARCHIVE
+- BLACKHOLE
+- FEDERATED
+- NDB / NDBCLUSTER
+- MRG_MYISAM
+- Spider
+- RocksDB
+- TokuDB
 
 
 
-Design Philosophy
-Schema-first, declarative JSON
+#### Design Philosophy
 
-
-Validation before SQL generation
-
-
-Engine-aware and safe migrations
-
-
-Flexible key aliases and metadata support
-
-
-Supports both SQL-level and ORM-level annotations
+- Schema-first, declarative JSON
+- Validation before SQL generation
+- Engine-aware and safe migrations
+- Flexible key aliases and metadata support
+- Supports both SQL-level and ORM-level annotations
 
 
 
-Use Cases
+#### Use Cases
 Schema builders and migration tools
 
 
-Admin dashboards
-
-
-SaaS platforms and automation pipelines
-
-
+#### Admin dashboards
 Low-code / no-code backends
 
 
-
-Compatibility
-Node.js 16+
-
-
-MySQL 5.7+ / 8+
+#### Compatibility
+- Node.js 16+
+- MySQL 5.7+ / 8+
 
 
-
-License
+#### License
 MIT
 
-Author
-Manik
+
+#### Author
+Md Nasiruddin Ahmed (Manik)
  Designed for safe, flexible, and high-quality MySQL schema automation.
 
 
