@@ -6,18 +6,12 @@ It is engine-aware, handles MySQL constraints, and is fully compatible with ORMs
 
 ## Core Concept
 DbTasker uses a schema-first, JSON-driven design:
-Database → Tables → Columns → Column Properties
+```js Database → Tables → Columns → Column Properties ```
 
-Database: Name of the MySQL database
-
-
-Table: Table within the database
-
-
-Column: Column within the table
-
-
-Properties: Rules, types, defaults, and constraints
+- Database: Name of the MySQL database
+- Table: Table within the database
+- Column: Column within the table
+- Properties: Rules, types, defaults, and constraints
 
 
 DbTasker normalizes keys case-insensitively, so multiple naming styles are supported (camelCase, snake_case, uppercase, lowercase).
