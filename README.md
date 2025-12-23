@@ -1,12 +1,13 @@
 # dbtasker
 
-# DbTasker
 DbTasker is a powerful MySQL schema intelligence and query generation module. It allows developers to define database schemas declaratively in JSON. DbTasker automatically validates, normalizes, and generates correct SQL for tables, columns, indexes, defaults, foreign keys, and more.
 It is engine-aware, handles MySQL constraints, and is fully compatible with ORMs or other automation tools.
 
 ## Core Concept
 DbTasker uses a schema-first, JSON-driven design:
-```js Database → Tables → Columns → Column Properties ```
+```js 
+Database → Tables → Columns → Column Properties
+```
 
 - Database: Name of the MySQL database
 - Table: Table within the database
