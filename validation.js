@@ -304,54 +304,32 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  * ColumnType
                                  * COLUMNTYPE
                                  */
-                                if (deepColumn.hasOwnProperty("type")) {
-                                    columntype = deepColumn.type;
-                                } else if (deepColumn.hasOwnProperty("Type")) {
-                                    columntype = deepColumn.Type;
-                                } else if (deepColumn.hasOwnProperty("TYPE")) {
-                                    columntype = deepColumn.TYPE;
-                                } else if (deepColumn.hasOwnProperty("columntype")) {
-                                    columntype = deepColumn.columntype;
-                                } else if (deepColumn.hasOwnProperty("column_type")) {
-                                    columntype = deepColumn.column_type;
-                                } else if (deepColumn.hasOwnProperty("Column_Type")) {
-                                    columntype = deepColumn.Column_Type;
-                                } else if (deepColumn.hasOwnProperty("ColumnType")) {
-                                    columntype = deepColumn.ColumnType;
-                                } else if (deepColumn.hasOwnProperty("COLUMNTYPE")) {
-                                    columntype = deepColumn.COLUMNTYPE;
+                                const coltypekeys = ['type', 'columntype', 'column_type', 'datatype', 'data_type', 'typename', 'type_name'];
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (coltypekeys.includes(item.toLowerCase())) {
+                                        columntype = deepColumn[item];
+                                        break;
+                                    }
                                 }
                                 if (typeof columntype !== "string" && columntype !== undefined) {
                                     columntype = null;
                                 }
                                 /**
-                                 * LengthValue
-                                 * lengthvalue
-                                 * LENGTHVALUE
-                                 * length_value
                                  * Length_Value
                                  */
-                                if (deepColumn.hasOwnProperty("LengthValue")) {
-                                    length_value = deepColumn.LengthValue;
-                                } else if (deepColumn.hasOwnProperty("lengthvalue")) {
-                                    length_value = deepColumn.lengthvalue;
-                                } else if (deepColumn.hasOwnProperty("length_value")) {
-                                    length_value = deepColumn.length_value;
-                                } else if (deepColumn.hasOwnProperty("LENGTHVALUE")) {
-                                    length_value = deepColumn.LENGTHVALUE;
-                                } else if (deepColumn.hasOwnProperty("Length_Value")) {
-                                    length_value = deepColumn.Length_Value;
+                                const legnthkeys = ["lengthvalue", "length_value", 'size', 'scale', 'lengths', 'length', 'value', 'values', 'range', 'maxlength', 'max_length', 'precision'];
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (legnthkeys.includes(item.toLowerCase())) {
+                                        length_value = deepColumn[item];
+                                        break;
+                                    }
                                 }
                                 /**
-                                 * autoIncrement
-                                 * autoincrement
-                                 * auto_increment
                                  * AUTO_INCREMENT
-                                 * AUTOINCREMENT
                                  */
-                                const autoincrementkeys = ["autoIncrement", "autoincrement", "auto_increment", "AUTO_INCREMENT", "AUTOINCREMENT", "increment", "INCREMENT"]
-                                for (const item of autoincrementkeys) {
-                                    if (deepColumn.hasOwnProperty(item)) {
+                                const autoincrementkeys = ['autoincrement', 'auto_increment', 'increment', 'serial', 'generated', 'isidentity', 'identity']
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (autoincrementkeys.includes(item.toLowerCase())) {
                                         autoincrement = deepColumn[item];
                                         break;
                                     }
@@ -370,16 +348,52 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  * INDEX
                                  * Index
                                  */
-                                const indexkey = ["index", "INDEX", "Index"];
-                                for (const item of indexkey) {
-                                    if (deepColumn.hasOwnProperty(item)) {
+                                let indexvalue = undefined;
+                                const indexkey = ["index", 'indexkey', 'index_key', 'indexing'];
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (indexkey.includes(item.toLowerCase())) {
                                         indexes = deepColumn[item];
+                                        break;
+                                    } else if (['primarykey', 'primary_key', 'primary', 'isprimary', 'isprimarykey'].includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            indexes = "PRIMARY KEY";
+                                            break;
+                                        } else {
+                                            indexes = undefined;
+                                        }
+                                    } else if (['isunique', 'isuniquekey', 'uniqueindex', 'uniquekey', 'unique_index', 'unique_key'].includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            indexes = "UNIQUE";
+                                            break;
+                                        } else {
+                                            indexes = undefined;
+                                        }
+                                    } else if (['fulltext', 'isfulltext'].includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            indexes = "FULLTEXT";
+                                            break;
+                                        } else {
+                                            indexes = undefined;
+                                        }
+                                    } else if (['spatial', 'isspatial'].includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            indexes = "SPATIAL";
+                                            break;
+                                        } else {
+                                            indexes = undefined;
+                                        }
+                                    } else if (['index'].includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            indexes = "INDEX";
+                                            break;
+                                        } else {
+                                            indexes = undefined;
+                                        }
                                     }
                                 }
-                                if (indexes !== undefined) indexes = fncs.stringifyAny(indexes).toUpperCase();
-                                if (indexes === "PRIMARY" || indexes === "KEY") {
-                                    indexes = "PRIMARY KEY"
-                                } else if (indexes === "FULL") {
+                                if (indexes !== undefined) { indexes = fncs.stringifyAny(indexes).toUpperCase(); }
+                                else if (indexes === "PRIMARY") { indexes = "PRIMARY KEY" }
+                                else if (indexes === "FULL") {
                                     indexes = "FULLTEXT";
                                 }
                                 /**
@@ -387,12 +401,31 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  * NULL
                                  * Null
                                  */
-                                if (deepColumn.hasOwnProperty("null")) {
-                                    nulls = deepColumn.null;
-                                } else if (deepColumn.hasOwnProperty("NULL")) {
-                                    nulls = deepColumn.NULL;
-                                } else if (deepColumn.hasOwnProperty("Null")) {
-                                    nulls = deepColumn.Null;
+                                const nullkeys = ['null', 'nulls', 'nullable', 'optional', 'isnulable', 'allownull', 'canbenull'];
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (nullkeys.includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            nulls = true;
+                                            break;
+                                        } else if (falsers.includes(deepColumn[item])) {
+                                            nulls = false;
+                                            break;
+                                        } else {
+                                            nulls = true;
+                                            break;
+                                        }
+                                    } else if (['notnull', 'not_null', 'nonnullable', 'notnullable', 'required', 'disallownull', 'non_nullable', 'not_nullable', 'disallow_null'].includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            nulls = false;
+                                            break;
+                                        } else if (falsers.includes(deepColumn[item])) {
+                                            nulls = true;
+                                            break;
+                                        } else {
+                                            nulls = true;
+                                            break;
+                                        }
+                                    }
                                 }
                                 if (truers.includes(nulls)) {
                                     nulls = true;
@@ -407,93 +440,64 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     );
                                 }
                                 /**
-                                 * comment
                                  * COMMENT
-                                 * Comment
                                  */
-                                if (deepColumn.hasOwnProperty("comment")) {
-                                    comment = deepColumn.comment;
-                                } else if (deepColumn.hasOwnProperty("COMMENT")) {
-                                    comment = deepColumn.COMMENT;
-                                } else if (deepColumn.hasOwnProperty("Comment")) {
-                                    comment = deepColumn.Comment;
+                                const commentkeys = ['comment', 'comments', 'columncomment', 'column_comment', 'description', 'label', 'helptext', 'hint', 'note'];
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (commentkeys.includes(item.toLowerCase())) {
+                                        comment = deepColumn[item];
+                                        break;
+                                    }
                                 }
                                 /**
-                                 * unsigned
                                  * UNSIGNED
-                                 * Unsigned
-                                 * signed
-                                 * Signed
-                                 * SIGNED
                                  */
-
+                                const unsignekey = ['numericunsigned', 'numeric_unsigned', 'unsigned', 'isunsigned'];
                                 let signed = undefined;
-                                if (deepColumn.hasOwnProperty("unsigned")) {
-                                    unsigned = deepColumn.unsigned;
-                                } else if (deepColumn.hasOwnProperty("UNSIGNED")) {
-                                    unsigned = deepColumn.UNSIGNED;
-                                } else if (deepColumn.hasOwnProperty("Unsigned")) {
-                                    unsigned = deepColumn.Unsigned;
-                                } else if (deepColumn.hasOwnProperty("signed")) {
-                                    signed = deepColumn.signed;
-                                } else if (deepColumn.hasOwnProperty("Signed")) {
-                                    signed = deepColumn.Signed;
-                                } else if (deepColumn.hasOwnProperty("SIGNED")) {
-                                    signed = deepColumn.SIGNED;
-                                }
-                                if (unsigned !== undefined) {
-                                    if (truers.includes(unsigned)) {
-                                        unsigned = true;
-                                    } else if (falsers.includes(unsigned)) {
-                                        unsigned = false;
-                                    } else if (unsigned === undefined) {
-                                        unsigned = undefined;
-                                    } else {
-                                        unsigned = null;
-                                    }
-                                } else if (signed !== undefined) {
-                                    if (truers.includes(signed)) {
-                                        unsigned = false;
-                                    } else if (falsers.includes(signed)) {
-                                        unsigned = true;
-                                    } else if (signed === undefined) {
-                                        unsigned = undefined;
-                                    } else {
-                                        unsigned = null;
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (unsignekey.includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            unsigned = true;
+                                            break;
+                                        } else if (falsers.includes(deepColumn[item])) {
+                                            unsigned = false;
+                                            break;
+                                        } else {
+                                            unsigned = null;
+                                            break;
+                                        }
+                                    } else if (['signed', 'issigned'].includes(item.toLowerCase())) {
+                                        if (truers.includes(deepColumn[item])) {
+                                            unsigned = false;
+                                            break;
+                                        } else if (falsers.includes(deepColumn[item])) {
+                                            unsigned = true;
+                                            break;
+                                        } else {
+                                            unsigned = null;
+                                            break;
+                                        }
                                     }
                                 }
                                 /**
-                                 * default
                                  * DEFAULT
-                                 * Default
                                  */
-                                if (deepColumn.hasOwnProperty("default")) {
-                                    defaults = deepColumn.default;
-                                } else if (deepColumn.hasOwnProperty("DEFAULT")) {
-                                    defaults = deepColumn.DEFAULT;
-                                } else if (deepColumn.hasOwnProperty("Default")) {
-                                    defaults = deepColumn.Default;
+                                const defaultkeys = ['default', 'defaults', 'defaultvalue', 'default_value', 'example', 'sample', 'columndefault', 'column_default'];
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (defaultkeys.includes(item.toLowerCase())) {
+                                        defaults = deepColumn[item];
+                                        break;
+                                    }
                                 }
                                 /**
-                                 * zerofill
-                                 * ZeroFill
-                                 * Zerofill
                                  * ZEROFILL
-                                 * zero_fill
-                                 * Zero_Fill
                                  */
-                                if (deepColumn.hasOwnProperty("zerofill")) {
-                                    zerofill = deepColumn.zerofill;
-                                } else if (deepColumn.hasOwnProperty("ZeroFill")) {
-                                    zerofill = deepColumn.ZeroFill;
-                                } else if (deepColumn.hasOwnProperty("Zerofill")) {
-                                    zerofill = deepColumn.Zerofill;
-                                } else if (deepColumn.hasOwnProperty("ZEROFILL")) {
-                                    zerofill = deepColumn.ZEROFILL;
-                                } else if (deepColumn.hasOwnProperty("zero_fill")) {
-                                    zerofill = deepColumn.zero_fill;
-                                } else if (deepColumn.hasOwnProperty("Zero_Fill")) {
-                                    zerofill = deepColumn.Zero_Fill;
+                                const zerofkeys = ['zerofill', 'zero_fill', 'iszerofill', 'zerofillup'];
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (zerofkeys.includes(item.toLowerCase())) {
+                                        zerofill = deepColumn[item];
+                                        break;
+                                    }
                                 }
                                 if (truers.includes(zerofill)) {
                                     zerofill = true;
@@ -898,9 +902,9 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 let fktable = undefined;
                                 let fkcolumn = undefined;
                                 let foreign_key = {};
-                                const fk_variations = ["fk", "Fk", "FK", "foreign_key", "foreign_Key", "Foreign_Key", "FOREIGN_KEY", "foreignkey", "foreignKey", "ForeignKey", "FOREIGNKEY"];
-                                for (const item of fk_variations) {
-                                    if (deepColumn.hasOwnProperty(item)) {
+                                const fk_variations = ["fk", "foreign_key", "foreignkey"];
+                                for (const item of Object.keys(deepColumn)) {
+                                    if (fk_variations.includes(item.toLowerCase())) {
                                         foreign_key = deepColumn[item];
                                         break;
                                     }
