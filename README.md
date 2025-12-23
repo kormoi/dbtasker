@@ -468,24 +468,27 @@ Property
 "table", "fktable", "fk_table", "foreignkeytable", "foreign_key_table"
 ```
 Referenced table name
-column
+
+**column**
 ```js
 "column", "fkcolumn", "fk_column", "foreignkeycolumn", "foreign_key_column"
 ```
 Referenced column name
-delete
+
+**delete**
 ```js
 "delete", "ondelete", "on_delete", "when_Delete", "whenDelete", 'ifdelete', 'if_delete'
 ```
 ON DELETE CASCADE behavior
 
-update
+**update**
 ```js
 "update", "onupdate", "on_update", "ifupdate", "if_update", "when_update", "whenupdate"
 ```
 ON UPDATE CASCADE behavior
 
 You can use value of delete and update option as:
+**values**
 ```js
 null, "NULL", "SET NULL", true, "DL", "DEL", "DELETE", "CASCADE", "DEFAULT", "SET DEFAULT", "RESTRICT", "NO ACTION"
 ```
