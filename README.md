@@ -104,9 +104,8 @@ removedb, removedatabase, remove_db, remove_database
 dropdb: true
 ```
 
-Drop Table
-
-### Aliases:
+### Drop Table
+**Aliases:**
 ```js
 droptable, deletetable, drop_table, delete_table,
 removetable, remove_table,
@@ -122,9 +121,9 @@ drop_database_table, delete_database_table, remove_database_table
 droptable: true
 ```
 
-Drop Column
 
-### Aliases:
+### Drop Column
+**Aliases:**
 ```js
 dropcol, dropcolumn, deletecol, deletecolumn,
 removecol, removecolumn,
@@ -138,8 +137,7 @@ remove_col, remove_column
 dropcol: false
 ```
 
-Protect Databases from Deletion
-
+**Protect Databases from Deletion**
 If you want to prevent certain databases from being dropped when dropdb is enabled, you can specify an array of database names under any of the aliases below:
 ```js
 donttouch, donottouch, donttouchdb, donottouchdb,
@@ -158,12 +156,11 @@ reserveddb, reserved_db
 donttouch: ["production_db", "legacy_db"]
 ```
 
-Separator Option
+### Separator Option
 
 You can define a custom separator for internal operations:
 
-### Aliases:
-
+**Aliases:**
 sep, seperator
 
 
@@ -193,6 +190,146 @@ This configuration will:
 - Preserve "production_db" and "analytics_db"
 - Avoid dropping columns
 - Use _ as a separator internally
+
+## Installation
+
+DbTasker is available via npm.
+
+Install it using either of the following commands:
+```js
+npm install dbtasker
+```
+
+or
+```js
+npm i dbtasker
+```
+Usage
+
+DbTasker is designed to be simple and declarative. You provide:
+
+1. A configuration object (database credentials + behavior options)
+
+2.  A JSON schema object (database, tables, columns)
+
+DbTasker handles the rest.
+
+#### Step 1: Import DbTasker
+
+Create a JavaScript file (for example: index.js) and import DbTasker.
+```js
+Using require (CommonJS)
+const DbTasker = require("dbtasker");
+
+Using import (ES Module)
+import DbTasker from "dbtasker";
+```
+
+#### Step 2: Create a Configuration Object
+
+This object defines how DbTasker connects to the database and how it behaves.
+```js
+const config = {
+  host: "localhost",
+  user: "root",
+  password: "password",
+  port: 3306
+};
+```
+
+You can later extend this config with options like:
+
+- Drop database
+- Drop tables
+- Drop columns
+- Reserved / protected databases
+
+#### Step 3: Define Your Schema JSON Object
+
+Your schema is defined declaratively using a nested JSON structure:
+```js
+const schema = {
+  MyDatabase: {
+    users: {
+      id: {
+        type: "int",
+        autoincrement: true,
+        primarykey: true
+      },
+      email: {
+        type: "varchar",
+        length: 255,
+        required: true,
+        unique: true
+      },
+      created_at: {
+        type: "timestamp",
+        defaults: "CURRENT_TIMESTAMP"
+      }
+    }
+  }
+};
+```
+
+DbTasker supports multiple aliases for column keys and is case-insensitive.
+
+#### Step 4: Run DbTasker
+
+Call DbTasker by passing the config first, then the schema object.
+```js
+DbTasker(config, schema);
+```
+
+That’s it.
+
+**DbTasker will:**
+- Connect to MySQL
+- Validate your schema
+- Create or alter databases, tables, and columns
+- Apply indexes, foreign keys, defaults, and constraints
+
+### Full Minimal Example
+```js
+const DbTasker = require("dbtasker");
+
+const config = {
+  host: "localhost",
+  user: "root",
+  password: "password",
+  port: 3306,
+  droptable: true,
+  droptable: true,
+  dropcolumn: true,
+  donotdelete: ['test', 'example']
+};
+
+const schema = {
+  app_db: {
+    users: {
+      id: {
+        type: "int",
+        primarykey: true,
+        autoincrement: true
+      },
+      name: {
+        type: "varchar",
+        length: 100,
+        required: true
+      }
+    }
+  }
+};
+
+DbTasker(config, schema);
+```
+
+**Notes**
+
+### Important:
+- The config object must always come first
+- The schema JSON object must come second
+- All keys are case-insensitive
+- Multiple aliases are supported for maximum flexibility
 
 
 ## Column Key Aliases (Case-Insensitive)
