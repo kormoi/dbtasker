@@ -9,7 +9,7 @@ const checker = require("./validation");
 const moduleName = "dbtasker";
 const truers = [true, 1, "1", "true", "True", "TRUE"];
 
-module.exports = async function(allconfig, table_json) {
+module.exports = async function (allconfig, table_json) {
     try {
         console.log(cstyler.blue("Initializing DBTASKER..."))
         // check if enough database available on table json
@@ -30,6 +30,17 @@ module.exports = async function(allconfig, table_json) {
             'user': allconfig.user,
             'password': allconfig.password,
             'port': allconfig.port
+        }
+        // lets check database type
+        const ifmysqldatabase = await fncs.isMySQLDatabase(config);
+        if (ifmysqldatabase === false) {
+            console.error("My SQL database is required to run ", moduleName, " module. Please install mysql2 to use this module. To install run this code on the terminal > npm install mysql2");
+            return;
+        }
+        const isvalidmysqlversion = await fncs.isMySQL578OrAbove(config);
+        if (isvalidmysqlversion === false) {
+            console.error("My SQL version 5.7.8 or above is required. Please check if you have installed mysql2. To install: npm install mysql2");
+            return;
         }
         // get don't touch database
         let donttouchdb = [];
@@ -97,17 +108,6 @@ module.exports = async function(allconfig, table_json) {
             dropcolumn = true;
         } else {
             dropcolumn = false;
-        }
-        // lets check database type
-        const ifmysqldatabase = await fncs.isMySQLDatabase(config);
-        if (ifmysqldatabase === false) {
-            console.error("My SQL database is required to run ", moduleName, " module. Please install mysql2 to use this module. To install run this code on the terminal > npm install mysql2");
-            return;
-        }
-        const isvalidmysqlversion = await fncs.isMySQL578OrAbove(config);
-        if (isvalidmysqlversion === false) {
-            console.error("My SQL version 5.7.8 or above is required. Please check if you have installed mysql2. To install: npm install mysql2");
-            return;
         }
         console.log(cstyler.bold.underline.yellow("Lets check if the table need an upgrade"))
         // lets check all table name and column name
