@@ -1,10 +1,10 @@
-# dbtasker
+# DBTASKER
 
-DbTasker is a powerful MySQL schema intelligence and query generation module. It allows developers to define database schemas declaratively in JSON. DbTasker automatically validates, normalizes, and generates correct SQL for tables, columns, indexes, defaults, foreign keys, and more.
+DBTASKER is a powerful MySQL schema intelligence and query generation module. It allows developers to define database schemas declaratively in JSON. DBTASKER automatically validates, normalizes, and generates correct SQL for tables, columns, indexes, defaults, foreign keys, and more.
 It is engine-aware, handles MySQL constraints, and is fully compatible with ORMs or other automation tools.
 
 ## Core Concept
-DbTasker uses a schema-first, JSON-driven design:
+DBTASKER uses a schema-first, JSON-driven design:
 ```js 
 Database → Tables → Columns → Column Properties
 ```
@@ -15,7 +15,7 @@ Database → Tables → Columns → Column Properties
 - Properties: Rules, types, defaults, and constraints
 
 
-DbTasker normalizes keys case-insensitively, so multiple naming styles are supported (camelCase, snake_case, uppercase, lowercase).
+DBTASKER normalizes keys case-insensitively, so multiple naming styles are supported (camelCase, snake_case, uppercase, lowercase).
 
 #### JSON Schema Structure
 ```js
@@ -60,7 +60,7 @@ Demo Schema Example
 
 ## Configuration File
 
-DbTasker requires a configuration JSON file to connect to your MySQL database and define runtime behavior. This config file allows you to:
+DBTASKER requires a configuration JSON file to connect to your MySQL database and define runtime behavior. This config file allows you to:
 
 - Set database connection credentials
 - Control whether databases, tables, or columns are dropped
@@ -87,7 +87,7 @@ DbTasker requires a configuration JSON file to connect to your MySQL database an
 8. Drop Column
 9. Database structure as JSON Object
 
-You can control dropping databases, tables, or columns using boolean flags. DbTasker supports multiple aliases for each option.
+You can control dropping databases, tables, or columns using boolean flags. DBTASKER supports multiple aliases for each option.
 
 #### Drop Database
 
@@ -193,41 +193,41 @@ This configuration will:
 
 ## Installation
 
-DbTasker is available via npm.
+DBTASKER is available via npm.
 
 Install it using either of the following commands:
 ```js
-npm install dbtasker
+npm install DBTASKER
 ```
 
 or
 ```js
-npm i dbtasker
+npm i DBTASKER
 ```
 Usage
 
-DbTasker is designed to be simple and declarative. You provide:
+DBTASKER is designed to be simple and declarative. You provide:
 
 1. A configuration object (database credentials + behavior options)
 
 2.  A JSON schema object (database, tables, columns)
 
-DbTasker handles the rest.
+DBTASKER handles the rest.
 
-#### Step 1: Import DbTasker
+#### Step 1: Import DBTASKER
 
-Create a JavaScript file (for example: index.js) and import DbTasker.
+Create a JavaScript file (for example: index.js) and import DBTASKER.
 ```js
 Using require (CommonJS)
-const DbTasker = require("dbtasker");
+const DBTASKER = require("DBTASKER");
 
 Using import (ES Module)
-import DbTasker from "dbtasker";
+import DBTASKER from "DBTASKER";
 ```
 
 #### Step 2: Create a Configuration Object
 
-This object defines how DbTasker connects to the database and how it behaves.
+This object defines how DBTASKER connects to the database and how it behaves.
 ```js
 const config = {
   host: "localhost",
@@ -271,18 +271,18 @@ const schema = {
 };
 ```
 
-DbTasker supports multiple aliases for column keys and is case-insensitive.
+DBTASKER supports multiple aliases for column keys and is case-insensitive.
 
-#### Step 4: Run DbTasker
+#### Step 4: Run DBTASKER
 
-Call DbTasker by passing the config first, then the schema object.
+Call DBTASKER by passing the config first, then the schema object.
 ```js
-DbTasker(config, schema);
+DBTASKER(config, schema);
 ```
 
 That’s it.
 
-**DbTasker will:**
+**DBTASKER will:**
 - Connect to MySQL
 - Validate your schema
 - Create or alter databases, tables, and columns
@@ -290,7 +290,7 @@ That’s it.
 
 ### Full Minimal Example
 ```js
-const DbTasker = require("dbtasker");
+const DBTASKER = require("DBTASKER");
 
 const config = {
   host: "localhost",
@@ -320,7 +320,7 @@ const schema = {
   }
 };
 
-DbTasker(config, schema);
+DBTASKER(config, schema);
 ```
 
 **Notes**
@@ -333,7 +333,7 @@ DbTasker(config, schema);
 
 
 ## Column Key Aliases (Case-Insensitive)
-DbTasker allows multiple aliases for each column property. Keys are normalized internally.
+DBTASKER allows multiple aliases for each column property. Keys are normalized internally.
 
 **Zerofill**
 ```js
@@ -408,7 +408,7 @@ foreign_key: {
 }
 ```
 ## Foreign Key Aliases (Case-Insensitive)
-DbTasker accepts:
+DBTASKER accepts:
 ```js
 "fk", "foreign_key", "foreignkey"
 ```
@@ -432,7 +432,7 @@ ON UPDATE CASCADE behavior
 
 Notes:
 
----DbTasker automatically normalizes all keys internally.
+---DBTASKER automatically normalizes all keys internally.
 
 
 Foreign key constraints are generated safely and include necessary indexes automatically.
@@ -452,10 +452,10 @@ ORM-only: "applyOnlyInORM": true → used only in runtime
 
 ORM Context
 An ORM (Object-Relational Mapping) maps database tables to programming language objects.
-DbTasker is schema-driven, not a full ORM, but can complement ORMs.
+DBTASKER is schema-driven, not a full ORM, but can complement ORMs.
 
 
-DbTasker JSON can map directly to ORM objects (Sequelize, TypeORM, Prisma, etc.)
+DBTASKER JSON can map directly to ORM objects (Sequelize, TypeORM, Prisma, etc.)
 
 
 Example ORM object:
@@ -472,7 +472,7 @@ Example ORM object:
 
 
 Engine Awareness
-DbTasker supports MySQL engines and handles constraints accordingly:
+DBTASKER supports MySQL engines and handles constraints accordingly:
 
 - InnoDB
 - MyISAM
