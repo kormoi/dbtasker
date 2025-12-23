@@ -3,6 +3,37 @@
 DBTASKER is a powerful MySQL schema intelligence and query generation module. It allows developers to define database schemas declaratively in JSON. DBTASKER automatically validates, normalizes, and generates correct SQL for tables, columns, indexes, defaults, foreign keys, and more.
 It is engine-aware, handles MySQL constraints, and is fully compatible with ORMs or other automation tools.
 
+#### Engine Awareness
+DBTASKER supports MySQL engines and handles constraints accordingly:
+
+- InnoDB
+- MyISAM
+- MEMORY
+- CSV
+- ARCHIVE
+- BLACKHOLE
+- FEDERATED
+- NDB / NDBCLUSTER
+- MRG_MYISAM
+- Spider
+- RocksDB
+- TokuDB
+
+
+#### Design Philosophy
+
+- Schema-first, declarative JSON
+- Validation before SQL generation
+- Engine-aware and safe migrations
+- Flexible key aliases and metadata support
+- Supports both SQL-level and ORM-level annotations
+
+
+#### Compatibility
+- Node.js 16+
+- MySQL 5.7+ / 8+
+
+
 ## Core Concept
 DBTASKER uses a schema-first, JSON-driven design:
 ```js 
@@ -471,34 +502,6 @@ Example ORM object:
 ```
 
 
-Engine Awareness
-DBTASKER supports MySQL engines and handles constraints accordingly:
-
-- InnoDB
-- MyISAM
-- MEMORY
-- CSV
-- ARCHIVE
-- BLACKHOLE
-- FEDERATED
-- NDB / NDBCLUSTER
-- MRG_MYISAM
-- Spider
-- RocksDB
-- TokuDB
-
-
-
-#### Design Philosophy
-
-- Schema-first, declarative JSON
-- Validation before SQL generation
-- Engine-aware and safe migrations
-- Flexible key aliases and metadata support
-- Supports both SQL-level and ORM-level annotations
-
-
-
 #### Use Cases
 Schema builders and migration tools
 
@@ -506,10 +509,6 @@ Schema builders and migration tools
 #### Admin dashboards
 Low-code / no-code backends
 
-
-#### Compatibility
-- Node.js 16+
-- MySQL 5.7+ / 8+
 
 
 #### License
