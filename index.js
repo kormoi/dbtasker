@@ -29,9 +29,7 @@ module.exports = async function(allconfig, table_json) {
             'host': allconfig.host,
             'user': allconfig.user,
             'password': allconfig.password,
-            'port': allconfig.port,
-            'waitForConnections': true,
-            'connectionLimit': 100
+            'port': allconfig.port
         }
         // get don't touch database
         let donttouchdb = [];
@@ -54,9 +52,9 @@ module.exports = async function(allconfig, table_json) {
         }
         // Declare seperator
         let seperator = "_";
-        const sepkeys = ['sep', 'Sep', 'Seperator', 'seperator'];
-        for (const item of sepkeys) {
-            if (allconfig.hasOwnProperty(item)) {
+        const sepkeys = ['sep', 'seperator'];
+        for (const item of Object.keys(allconfig)) {
+            if (sepkeys.includes(item.toLowerCase())) {
                 seperator = allconfig[item];
                 break;
             }
@@ -77,7 +75,7 @@ module.exports = async function(allconfig, table_json) {
             dropdatabase = false;
         }
         let droptable;
-        const droptablekeys = ['droptable', 'deletetable', 'drop_table', 'delete_table', 'removetable', 'remove_table', 'dropdbtable', 'deletedbtable', 'removedbtable', 'dropdatabasetable', 'deletedatabasetable', 'removedatabasetable', 'drop_db_table', 'delete_db_table', 'remove_db_table', 'drop_database_table', 'delete_database_table', 'remove_database_table',];
+        const droptablekeys = ['droptable', 'deletetable', 'drop_table', 'delete_table', 'removetable', 'remove_table', 'dropdbtable', 'deletedbtable', 'removedbtable', 'dropdatabasetable', 'deletedatabasetable', 'removedatabasetable', 'drop_db_table', 'delete_db_table', 'remove_db_table', 'drop_database_table', 'delete_database_table', 'remove_database_table'];
         for (const item of Object.keys(allconfig)) {
             if (droptablekeys.includes(item.toLowerCase())) {
                 droptable = allconfig[item];
@@ -89,7 +87,7 @@ module.exports = async function(allconfig, table_json) {
             droptable = false;
         }
         let dropcolumn;
-        const dropcolkeys = ['dropcol', 'dropcolumn', 'deletecol', 'deletecolumn', 'removecol', 'removecolumn', 'drop_col', 'drop_column', 'delete_col', 'delete_column', 'remove_col', 'remove_column',];
+        const dropcolkeys = ['dropcol', 'dropcolumn', 'deletecol', 'deletecolumn', 'removecol', 'removecolumn', 'drop_col', 'drop_column', 'delete_col', 'delete_column', 'remove_col', 'remove_column'];
         for (const item of Object.keys(allconfig)) {
             if (dropcolkeys.includes(item.toLowerCase())) {
                 dropcolumn = allconfig[item];

@@ -1,10 +1,10 @@
 # dbtasker
 
-DbTasker
+# H1 DbTasker
 DbTasker is a powerful MySQL schema intelligence and query generation module. It allows developers to define database schemas declaratively in JSON. DbTasker automatically validates, normalizes, and generates correct SQL for tables, columns, indexes, defaults, foreign keys, and more.
 It is engine-aware, handles MySQL constraints, and is fully compatible with ORMs or other automation tools.
 
-Core Concept
+## H2 Core Concept
 DbTasker uses a schema-first, JSON-driven design:
 Database → Tables → Columns → Column Properties
 
@@ -60,8 +60,142 @@ Demo Schema Example
   }
 }
 
+## H2 Configuration File
 
-Column Key Aliases (Case-Insensitive)
+DbTasker requires a configuration JSON file to connect to your MySQL database and define runtime behavior. This config file allows you to:
+
+Set database connection credentials
+
+Control whether databases, tables, or columns are dropped
+
+Protect specific databases from accidental deletion
+
+Customize separators or other runtime options
+
+Basic Database Configuration
+{
+  user: "root",
+  password: "password123",
+  host: "localhost",
+  port: 3306
+}
+
+
+user: MySQL username
+
+password: MySQL password
+
+host: MySQL host
+
+port: MySQL port
+
+Drop / Delete Behavior
+
+You can control dropping databases, tables, or columns using boolean flags. DbTasker supports multiple aliases for each option.
+
+Drop Database
+
+Aliases:
+
+dropdb, dropdatabase, deletedb, deletedatabase,
+drop_db, drop_database, delete_db, delete_database,
+removedb, removedatabase, remove_db, remove_database
+
+
+Example:
+
+dropdb: true
+
+Drop Table
+
+Aliases:
+
+droptable, deletetable, drop_table, delete_table,
+removetable, remove_table,
+dropdbtable, deletedbtable, removedbtable,
+dropdatabasetable, deletedatabasetable, removedatabasetable,
+drop_db_table, delete_db_table, remove_db_table,
+drop_database_table, delete_database_table, remove_database_table
+
+
+Example:
+
+droptable: true
+
+Drop Column
+
+Aliases:
+
+dropcol, dropcolumn, deletecol, deletecolumn,
+removecol, removecolumn,
+drop_col, drop_column, delete_col, delete_column,
+remove_col, remove_column
+
+
+Example:
+
+dropcol: false
+
+Protect Databases from Deletion
+
+If you want to prevent certain databases from being dropped when dropdb is enabled, you can specify an array of database names under any of the aliases below:
+
+donttouch, donottouch, donttouchdb, donottouchdb,
+donttouchdatabase, donottouchdatabase,
+dontdelete, donotdelete, dontdeletedb, donotdeletedb,
+dontdeletedatabase, donotdeletedatabase,
+dont_touch, do_not_touch, dont_touch_db, do_not_touch_db,
+dont_touch_database, do_not_touch_database,
+dont_delete, do_not_delete, dont_delete_db, do_not_delete_db,
+dont_delete_database, do_not_delete_database,
+reserveddb, reserved_db
+
+
+Example:
+
+donttouch: ["production_db", "legacy_db"]
+
+Separator Option
+
+You can define a custom separator for internal operations:
+
+Aliases:
+
+sep, seperator
+
+
+Example:
+
+sep: "_"
+
+Full Example Config File
+{
+  user: "root",
+  password: "password123",
+  host: "localhost",
+  port: 3306,
+  dropdb: true,
+  droptable: true,
+  dropcol: false,
+  donttouch: ["production_db", "analytics_db"],
+  sep: "_"
+}
+
+
+This configuration will:
+
+Connect to MySQL using the given credentials
+
+Drop databases and tables if they exist
+
+Preserve "production_db" and "analytics_db"
+
+Avoid dropping columns
+
+Use _ as a separator internally
+
+
+## H2 Column Key Aliases (Case-Insensitive)
 DbTasker allows multiple aliases for each column property. Keys are normalized internally.
 Zerofill
 zerofill, zero_fill, iszerofill, zerofillup
