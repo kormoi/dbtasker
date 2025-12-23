@@ -496,41 +496,8 @@ null, "NULL", "SET NULL", true, "DL", "DEL", "DELETE", "CASCADE", "DEFAULT", "SE
 > Notes:
 > DBTASKER automatically normalizes all keys internally.
 
+Foreign key constraints are generated safely and include necessary values automatically.
 
-Foreign key constraints are generated safely and include necessary indexes automatically.
-
-
-
-Defaults (Advanced Usage)
-Standard SQL: "defaults": "value" → DEFAULT 'value'
-
-Computed / Expressions: "defaults": () => "CURRENT_TIMESTAMP" → SQL expression
-
-JSON / Array: "defaults": [] → JSON default
-
-ORM-only: "applyOnlyInORM": true → used only in runtime
-
-
-
-ORM Context
-An ORM (Object-Relational Mapping) maps database tables to programming language objects.
-DBTASKER is schema-driven, not a full ORM, but can complement ORMs.
-
-
-DBTASKER JSON can map directly to ORM objects (Sequelize, TypeORM, Prisma, etc.)
-
-
-Example ORM object:
-
-
-```js
-{
-  id: 1,
-  name: "Alice",
-  email: "alice@example.com",
-  isActive: true
-}
-```
 
 
 #### Use Cases
