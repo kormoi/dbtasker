@@ -518,6 +518,7 @@ MIT
 
 #### Author
 Md Nasiruddin Ahmed (Manik)
+
 ---Designed for safe, flexible, and high-quality MySQL schema automation.
 
 
