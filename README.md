@@ -249,7 +249,7 @@ foreign_key: {
   update: true
 }
 
-Foreign Key Aliases (Case-Insensitive)
+## H2 Foreign Key Aliases (Case-Insensitive)
 DbTasker accepts:
 "fk", "foreign_key", "foreignkey"
 
