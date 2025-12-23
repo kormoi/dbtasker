@@ -1,10 +1,10 @@
 # dbtasker
 
-# H1 DbTasker
+# DbTasker
 DbTasker is a powerful MySQL schema intelligence and query generation module. It allows developers to define database schemas declaratively in JSON. DbTasker automatically validates, normalizes, and generates correct SQL for tables, columns, indexes, defaults, foreign keys, and more.
 It is engine-aware, handles MySQL constraints, and is fully compatible with ORMs or other automation tools.
 
-## H2 Core Concept
+## Core Concept
 DbTasker uses a schema-first, JSON-driven design:
 Database → Tables → Columns → Column Properties
 
@@ -60,7 +60,7 @@ Demo Schema Example
   }
 }
 
-## H2 Configuration File
+## Configuration File
 
 DbTasker requires a configuration JSON file to connect to your MySQL database and define runtime behavior. This config file allows you to:
 
@@ -195,7 +195,7 @@ Avoid dropping columns
 Use _ as a separator internally
 
 
-## H2 Column Key Aliases (Case-Insensitive)
+## Column Key Aliases (Case-Insensitive)
 DbTasker allows multiple aliases for each column property. Keys are normalized internally.
 Zerofill
 zerofill, zero_fill, iszerofill, zerofillup
@@ -249,7 +249,7 @@ foreign_key: {
   update: true
 }
 
-## H2 Foreign Key Aliases (Case-Insensitive)
+## Foreign Key Aliases (Case-Insensitive)
 DbTasker accepts:
 "fk", "foreign_key", "foreignkey"
 
