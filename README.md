@@ -35,7 +35,7 @@ DBTASKER supports MySQL engines and handles constraints accordingly:
 
 
 ## Core Concept
-DBTASKER uses a schema-first, JSON-driven design:
+DBTASKER uses a JSON-driven design:
 ```js 
 Database → Tables → Columns → Column Properties
 ```
