@@ -16,7 +16,7 @@ DbTasker uses a schema-first, JSON-driven design:
 
 DbTasker normalizes keys case-insensitively, so multiple naming styles are supported (camelCase, snake_case, uppercase, lowercase).
 
-JSON Schema Structure
+#### JSON Schema Structure
 ```js
 {
   DatabaseName: {
@@ -27,8 +27,9 @@ JSON Schema Structure
     }
   }
 }
-
+```
 Demo Schema Example
+```js
 {
   DatabaseName: {
     TableName: {
@@ -60,51 +61,47 @@ Demo Schema Example
 
 DbTasker requires a configuration JSON file to connect to your MySQL database and define runtime behavior. This config file allows you to:
 
-Set database connection credentials
+- Set database connection credentials
+- Control whether databases, tables, or columns are dropped
+- Protect specific databases from accidental deletion
+- Customize separators or other runtime options
 
-Control whether databases, tables, or columns are dropped
-
-Protect specific databases from accidental deletion
-
-Customize separators or other runtime options
-
-Basic Database Configuration
+**Basic Database Configuration**
+```js
 {
   user: "root",
   password: "password123",
   host: "localhost",
   port: 3306
 }
+```
 
-
-user: MySQL username
-
-password: MySQL password
-
-host: MySQL host
-
-port: MySQL port
-
-Drop / Delete Behavior
+1. user: MySQL username
+2. password: MySQL password
+3. host: MySQL host
+4. port: MySQL port
+5. Drop / Delete Behavior
+6. Database structure as JSON Object
 
 You can control dropping databases, tables, or columns using boolean flags. DbTasker supports multiple aliases for each option.
 
-Drop Database
+#### Drop Database
 
-Aliases:
+### Aliases:
 
 dropdb, dropdatabase, deletedb, deletedatabase,
 drop_db, drop_database, delete_db, delete_database,
 removedb, removedatabase, remove_db, remove_database
 
 
-Example:
-
+**Example:**
+```js
 dropdb: true
+```
 
 Drop Table
 
-Aliases:
+### Aliases:
 
 droptable, deletetable, drop_table, delete_table,
 removetable, remove_table,
@@ -114,13 +111,14 @@ drop_db_table, delete_db_table, remove_db_table,
 drop_database_table, delete_database_table, remove_database_table
 
 
-Example:
-
+**Example:**
+```js
 droptable: true
+```
 
 Drop Column
 
-Aliases:
+### Aliases:
 
 dropcol, dropcolumn, deletecol, deletecolumn,
 removecol, removecolumn,
@@ -128,14 +126,15 @@ drop_col, drop_column, delete_col, delete_column,
 remove_col, remove_column
 
 
-Example:
-
+**Example:**
+```js
 dropcol: false
+```
 
 Protect Databases from Deletion
 
 If you want to prevent certain databases from being dropped when dropdb is enabled, you can specify an array of database names under any of the aliases below:
-
+```js
 donttouch, donottouch, donttouchdb, donottouchdb,
 donttouchdatabase, donottouchdatabase,
 dontdelete, donotdelete, dontdeletedb, donotdeletedb,
@@ -145,26 +144,28 @@ dont_touch_database, do_not_touch_database,
 dont_delete, do_not_delete, dont_delete_db, do_not_delete_db,
 dont_delete_database, do_not_delete_database,
 reserveddb, reserved_db
+```
 
-
-Example:
-
+**Example:**
+```js
 donttouch: ["production_db", "legacy_db"]
+```
 
 Separator Option
 
 You can define a custom separator for internal operations:
 
-Aliases:
+### Aliases:
 
 sep, seperator
 
 
-Example:
-
+**Example:**
+```js
 sep: "_"
-
+```
 Full Example Config File
+```js
 {
   user: "root",
   password: "password123",
@@ -176,75 +177,79 @@ Full Example Config File
   donttouch: ["production_db", "analytics_db"],
   sep: "_"
 }
-
+```
 
 This configuration will:
 
-Connect to MySQL using the given credentials
-
-Drop databases and tables if they exist
-
-Preserve "production_db" and "analytics_db"
-
-Avoid dropping columns
-
-Use _ as a separator internally
+- Connect to MySQL using the given credentials
+- Drop databases and tables if they exist
+- Preserve "production_db" and "analytics_db"
+- Avoid dropping columns
+- Use _ as a separator internally
 
 
 ## Column Key Aliases (Case-Insensitive)
 DbTasker allows multiple aliases for each column property. Keys are normalized internally.
-Zerofill
+**Zerofill**
 zerofill, zero_fill, iszerofill, zerofillup
 
-Defaults / Default Value
+**Defaults / Default Value**
 default, defaults, defaultvalue, default_value,
 example, sample, columndefault, column_default
 
-Signed / Unsigned
+**Signed / Unsigned**
 signed, issigned, numericunsigned, numeric_unsigned,
 unsigned, isunsigned
 
-Comments / Description / Notes
+**Comments / Description / Notes**
 comment, comments, columncomment, column_comment,
 description, label, helptext, hint, note
 
-Null / Not Null
+**Null / Not Null**
 Disallow NULL / Required
 notnull, not_null, nonnullable, notnullable,
 required, disallownull, non_nullable, not_nullable, disallow_null
 
-Allow NULL / Optional
-null, nulls, nullable, optional, isnulable, allownull, canbenull
+**Allow NULL / Optional**
+--- null, nulls, nullable, optional, isnulable, allownull, canbenull
 
-Index / Key
+**Index / Key**
+```js
 index, spatial, isspatial, fulltext, isfulltext,
 isunique, isuniquekey, uniqueindex, uniquekey,
 unique_index, unique_key,
 primarykey, primary_key, primary, isprimary, isprimarykey,
 indexkey, index_key, indexing
+```
 
-Auto Increment / Identity
+**Auto Increment / Identity**
+```js
 autoincrement, auto_increment, increment,
 serial, generated, isidentity, identity
+```
 
-Length / Size / Precision
+**Length / Size / Precision**
+```js
 lengthvalue, length_value, size, scale, lengths,
 length, value, values, range, maxlength, max_length, precision
+```
 
-Column Type / Data Type
+**Column Type / Data Type**
+```js
 type, columntype, column_type,
 datatype, data_type, typename, type_name
-
+```
 
 Foreign Key Definition
 Foreign keys are defined inline to reference another table’s column:
+```js
 foreign_key: {
   table: "user",
   column: "id",
   delete: true,
   update: true
 }
-
+```
 ## Foreign Key Aliases (Case-Insensitive)
 DbTasker accepts:
 "fk", "foreign_key", "foreignkey"
