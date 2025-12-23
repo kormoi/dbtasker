@@ -933,28 +933,3 @@ module.exports = {
     },
   },
 };
-
-let x = {
-  DatabaseName: {
-    TableName: {
-      ColumnName:{
-        ColumnType: "varchar",
-        lengthvalue: 255,
-        Null: true,
-        defaults: "This is default value"
-      }, 
-      ColumnTwo: {
-        type: "int",
-        zerofill: true,
-        index: "key",
-        Null: false,
-        foreign_key: {
-          table: "user",
-          column: "id",
-          delete: true,
-          update: true
-        }
-      }
-    }
-  }
-}

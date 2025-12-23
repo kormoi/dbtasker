@@ -51,7 +51,7 @@ function alterColumnQuery(columndata, columnName, tableName) {
         if (columndata.autoincrement === true) {
             queryText += "AUTO_INCREMENT ";
         }
-
+        if(columndata.index) queryText += `${columndata.index} `
         if (columndata._charset_) queryText += `CHARACTER SET ${columndata._charset_} `;
         if (columndata._collate_) queryText += `COLLATE ${columndata._collate_} `;
 
