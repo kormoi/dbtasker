@@ -123,6 +123,7 @@ You can control dropping databases, tables, or columns using boolean flags. DBTA
 #### Drop Database
 
 ### Aliases:
+You can use these as key when declearing on config JSON object without caring for case sensitivity.
 ```js
 dropdb, dropdatabase, deletedb, deletedatabase,
 drop_db, drop_database, delete_db, delete_database,
@@ -137,6 +138,7 @@ dropdb: true
 
 ### Drop Table
 **Aliases:**
+You can use these as key when declearing on config JSON object without caring for case sensitivity.
 ```js
 droptable, deletetable, drop_table, delete_table,
 removetable, remove_table,
@@ -155,6 +157,7 @@ droptable: true
 
 ### Drop Column
 **Aliases:**
+You can use these as key when declearing on config JSON object without caring for case sensitivity.
 ```js
 dropcol, dropcolumn, deletecol, deletecolumn,
 removecol, removecolumn,
@@ -170,6 +173,7 @@ dropcol: false
 
 **Protect Databases from Deletion**
 If you want to prevent certain databases from being dropped when dropdb is enabled, you can specify an array of database names under any of the aliases below:
+You can use these as key when declearing on config JSON object without caring for case sensitivity.
 ```js
 donttouch, donottouch, donttouchdb, donottouchdb,
 donttouchdatabase, donottouchdatabase,
@@ -192,6 +196,7 @@ donttouch: ["production_db", "legacy_db"]
 You can define a custom separator for internal operations:
 
 **Aliases:**
+You can use these as key when declearing on config JSON object without caring for case sensitivity.
 sep, seperator
 
 
@@ -241,7 +246,7 @@ DBTASKER is designed to be simple and declarative. You provide:
 
 1. A configuration object (database credentials + behavior options)
 
-2.  A JSON schema object (database, tables, columns)
+2. A JSON schema object (database, tables, columns)
 
 DBTASKER handles the rest.
 
@@ -366,30 +371,49 @@ DBTASKER(config, schema);
 ## Column Key Aliases (Case-Insensitive)
 DBTASKER allows multiple aliases for each column property. Keys are normalized internally.
 
+**Length / Size / Precision**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
+```js
+lengthvalue, length_value, size, scale, lengths,
+length, value, values, range, maxlength, max_length, precision
+```
+
+**Column Type / Data Type**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
+```js
+type, columntype, column_type,
+datatype, data_type, typename, type_name
+```
+
 **Zerofill**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
 ```js
 zerofill, zero_fill, iszerofill, zerofillup
 ```
 
-**Defaults / Default Value**
+**Auto Increment / Identity**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
 ```js
-default, defaults, defaultvalue, default_value,
-example, sample, columndefault, column_default
+autoincrement, auto_increment, increment,
+serial, generated, isidentity, identity
 ```
 
 **Signed / Unsigned**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
 ```js
 signed, issigned, numericunsigned, numeric_unsigned,
 unsigned, isunsigned
 ```
 
-**Comments / Description / Notes**
+**Defaults / Default Value**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
 ```js
-comment, comments, columncomment, column_comment,
-description, label, helptext, hint, note
+default, defaults, defaultvalue, default_value,
+example, sample, columndefault, column_default
 ```
 
 **Null / Not Null**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
 Disallow NULL / Required
 ```js
 notnull, not_null, nonnullable, notnullable,
@@ -402,6 +426,7 @@ null, nulls, nullable, optional, isnulable, allownull, canbenull
 ```
 
 **Index / Key**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
 ```js
 index, spatial, isspatial, fulltext, isfulltext,
 isunique, isuniquekey, uniqueindex, uniquekey,
@@ -410,25 +435,15 @@ primarykey, primary_key, primary, isprimary, isprimarykey,
 indexkey, index_key, indexing
 ```
 
-**Auto Increment / Identity**
+**Comments / Description / Notes**
+You can use these as key when declearing column property inside table object inside JSON object without caring for case sensitivity.
 ```js
-autoincrement, auto_increment, increment,
-serial, generated, isidentity, identity
+comment, comments, columncomment, column_comment,
+description, label, helptext, hint, note
 ```
 
-**Length / Size / Precision**
-```js
-lengthvalue, length_value, size, scale, lengths,
-length, value, values, range, maxlength, max_length, precision
-```
 
-**Column Type / Data Type**
-```js
-type, columntype, column_type,
-datatype, data_type, typename, type_name
-```
-
-Foreign Key Definition
+**Foreign Key Definition**
 Foreign keys are defined inline to reference another table’s column:
 ```js
 foreign_key: {
@@ -447,23 +462,36 @@ DBTASKER accepts:
 Foreign Key Properties & Aliases
 Property
 ### Alias Options
-Purpose
-table
-table, Table, TABLE, refTable, referenceTable
+#### Purpose
+**Table**
+```js
+"table", "fktable", "fk_table", "foreignkeytable", "foreign_key_table"
+```
 Referenced table name
 column
-column, Column, COLUMN, refColumn, referenceColumn
+```js
+"column", "fkcolumn", "fk_column", "foreignkeycolumn", "foreign_key_column"
+```
 Referenced column name
 delete
-delete, Delete, onDelete, on_delete
+```js
+"delete", "ondelete", "on_delete", "when_Delete", "whenDelete", 'ifdelete', 'if_delete'
+```
 ON DELETE CASCADE behavior
+
 update
-update, Update, onUpdate, on_update
+```js
+"update", "onupdate", "on_update", "ifupdate", "if_update", "when_update", "whenupdate"
+```
 ON UPDATE CASCADE behavior
 
-Notes:
+You can use value of delete and update option as:
+```js
+null, "NULL", "SET NULL", true, "DL", "DEL", "DELETE", "CASCADE", "DEFAULT", "SET DEFAULT", "RESTRICT", "NO ACTION"
+```
 
----DBTASKER automatically normalizes all keys internally.
+> Notes:
+> DBTASKER automatically normalizes all keys internally.
 
 
 Foreign key constraints are generated safely and include necessary indexes automatically.

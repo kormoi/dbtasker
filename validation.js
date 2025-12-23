@@ -918,9 +918,9 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                      * RESTRICT:	    Prevents update if any matching child exists.
                                      * NO ACTION:	    Like RESTRICT (timing differences in some DB engines).
                                      */
-                                    const deleteVariations = ["delete", "Delete", "DELETE", "ondelete", "OnDelete", "onDelete", "ONDELETE", "on_delete", "ON_DELETE", "On_Delete", "on_Delete"]
-                                    for (const item of deleteVariations) {
-                                        if (foreign_key.hasOwnProperty(item)) {
+                                    const deleteVariations = ["delete", "ondelete", "on_delete", "when_Delete", "whenDelete", 'ifdelete', 'if_delete']
+                                    for (const item of Object.keys(foreign_key)) {
+                                        if (deleteVariations.includes(item.toLowerCase())) {
                                             deleteOption = foreign_key[item];
                                             if (typeof deleteOption === "string") {
                                                 deleteOption = deleteOption.toUpperCase();
@@ -929,9 +929,9 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                         }
                                     }
                                     // Lets get update options
-                                    const onupdatevariations = ["update", "Update", "UPDATE", "onupdate", "OnUpdate", "onUpdate", "ONUPDATE", "on_update", "ON_UPDATE", "On_Update", "on_Update"];
-                                    for (const item of onupdatevariations) {
-                                        if (foreign_key.hasOwnProperty(item)) {
+                                    const onupdatevariations = ["update", "onupdate", "on_update", "ifupdate", "if_update", "when_update", "whenupdate"];
+                                    for (const item of Object.keys(foreign_key)) {
+                                        if (onupdatevariations.includes(item.toLowerCase())) {
                                             updateOption = foreign_key[item];
                                             if (typeof updateOption === "string") {
                                                 updateOption = updateOption.toUpperCase();
@@ -1010,17 +1010,17 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     }
                                     // check reference table and column
                                     // lets add foreign key table to variable
-                                    const tableKeyVariation = ["table", "Table", "TABLE", "fktable", "fkTable", "fkTABLE", "Fktable", "FkTable", "FkTABLE", "FKTable", "FKTABLE", "fk_table", "fk_Table", "fk_TABLE", "Fk_table", "Fk_Table", "Fk_TABLE", "FK_Table", "FK_TABLE", "foreignkeytable", "foreignKeyTable", "ForeignKeyTable", "FOREIGNKEYTABLE", "foreign_key_table", "foreign_Key_Table", "FOREIGN_KEY_TABLE", "Foreign_Key_Table"]
-                                    for (const item of tableKeyVariation) {
-                                        if (foreign_key.hasOwnProperty(item)) {
+                                    const tableKeyVariation = ["table", "fktable", "fk_table", "foreignkeytable", "foreign_key_table"]
+                                    for (const item of Object.keys(foreign_key)) {
+                                        if (tableKeyVariation.includes(item.toLowerCase())) {
                                             fktable = foreign_key[item];
                                             break;
                                         }
                                     }
                                     // lets add foreign key column to variable
-                                    const columnKeyVariation = ["column", "Column", "COLUMN", "fkcolumn", "fkColumn", "fkCOLUMN", "Fkcolumn", "FkColumn", "FkCOLUMN", "FKColumn", "FKCOLUMN", "fk_column", "fk_Column", "fk_COLUMN", "Fk_column", "Fk_Column", "Fk_COLUMN", "FK_Column", "FK_COLUMN", "foreignkeycolumn", "foreignKeyColumn", "ForeignKeyColumn", "FOREIGNKEYCOLUMN", "foreign_key_column", "foreign_Key_Column", "FOREIGN_KEY_COLUMN", "Foreign_Key_Column"]
-                                    for (const item of (columnKeyVariation)) {
-                                        if (foreign_key.hasOwnProperty(item)) {
+                                    const columnKeyVariation = ["column", "fkcolumn", "fk_column", "foreignkeycolumn", "foreign_key_column"]
+                                    for (const item of Object.keys(foreign_key)) {
+                                        if (columnKeyVariation.includes(item.toLowerCase())) {
                                             fkcolumn = foreign_key[item];
                                             break;
                                         }
