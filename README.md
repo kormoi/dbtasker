@@ -88,10 +88,11 @@ You can control dropping databases, tables, or columns using boolean flags. DbTa
 #### Drop Database
 
 ### Aliases:
-
+```js
 dropdb, dropdatabase, deletedb, deletedatabase,
 drop_db, drop_database, delete_db, delete_database,
 removedb, removedatabase, remove_db, remove_database
+```
 
 
 **Example:**
@@ -102,13 +103,14 @@ dropdb: true
 Drop Table
 
 ### Aliases:
-
+```js
 droptable, deletetable, drop_table, delete_table,
 removetable, remove_table,
 dropdbtable, deletedbtable, removedbtable,
 dropdatabasetable, deletedatabasetable, removedatabasetable,
 drop_db_table, delete_db_table, remove_db_table,
 drop_database_table, delete_database_table, remove_database_table
+```
 
 
 **Example:**
@@ -119,11 +121,12 @@ droptable: true
 Drop Column
 
 ### Aliases:
-
+```js
 dropcol, dropcolumn, deletecol, deletecolumn,
 removecol, removecolumn,
 drop_col, drop_column, delete_col, delete_column,
 remove_col, remove_column
+```
 
 
 **Example:**
