@@ -81,8 +81,11 @@ DbTasker requires a configuration JSON file to connect to your MySQL database an
 2. password: MySQL password
 3. host: MySQL host
 4. port: MySQL port
-5. Drop / Delete Behavior
-6. Database structure as JSON Object
+5. Drop database
+6. Do not delete database Array = []
+7. Drop Table
+8. Drop Column
+9. Database structure as JSON Object
 
 You can control dropping databases, tables, or columns using boolean flags. DbTasker supports multiple aliases for each option.
 
