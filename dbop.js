@@ -155,7 +155,7 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
             }
             if (avldblist.includes(data.name)) {
                 // Let's Alter database if needed
-                console.log(cstyler.purple("Database Name: "), cstyler.blue(data.name), cstyler.green(" is exist. Checking for charactar set and collate configuration"));
+                console.log(cstyler.purple("Database Name: "), cstyler.blue(data.name), " is exist. Checking for charactar set and collate configuration");
                 const dbdetails = await fncs.getDatabaseCharsetAndCollation(config, data.name);
                 if (!fncs.isJsonObject(dbdetails)) {
                     console.error(cstyler.bold("Having problem getting database character set and collate."));

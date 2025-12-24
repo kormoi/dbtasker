@@ -681,7 +681,7 @@ module.exports = {
         default: "none",
       },
       accoutn_badges: { type: "JSON", null: true, comment: "List of badges" },
-      overall_rating: { type: "FLOAT", null: true },
+      overall_rating: { type: "FLOAT", primarykey: true, null: true },
       avg_response_time: {
         type: "INT",
         null: false,
@@ -899,11 +899,11 @@ module.exports = {
         index: "PRIMARY KEY",
       },
       user_id: {
-        type: "BIGINT",
+        type: "float",
         null: true,
         foreign_key: {
           table: "users",
-          column: "id",
+          column: "overall_rating",
           delete: true
         },
       },

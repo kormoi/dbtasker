@@ -98,25 +98,25 @@ async function getCharsetAndCollations(config) {
   }
 }
 async function isCharsetCollationValid(config, charset, collation) {
-    let connection;
+  let connection;
 
-    try {
-        connection = await mysql.createConnection(config);
+  try {
+    connection = await mysql.createConnection(config);
 
-        const [rows] = await connection.execute(`
+    const [rows] = await connection.execute(`
             SELECT 1
             FROM information_schema.COLLATIONS
             WHERE COLLATION_NAME = ?
               AND CHARACTER_SET_NAME = ?
         `, [collation, charset]);
 
-        return rows.length > 0;
+    return rows.length > 0;
 
-    } catch (err) {
-        return null;
-    } finally {
-        if (connection) await connection.end();
-    }
+  } catch (err) {
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
 }
 async function getMySQLEngines(config) {
   let connection;
@@ -946,7 +946,6 @@ async function getColumnDetails(config, dbName, tableName, columnName) {
         IS_NULLABLE,
         COLUMN_DEFAULT,
         EXTRA,
-        COLUMN_KEY,
         CHARACTER_SET_NAME,
         COLLATION_NAME,
         COLUMN_COMMENT
@@ -961,32 +960,41 @@ async function getColumnDetails(config, dbName, tableName, columnName) {
     if (!cols.length) return false;
     const c = cols[0];
 
-    // 2. Parse ENUM / SET
+    // 2. Parse ENUM / SET / lengths
     let length_value = null;
-    // DECIMAL / FLOAT / DOUBLE ONLY
     if (["decimal", "float", "double"].includes(c.DATA_TYPE)) {
       length_value =
         c.NUMERIC_SCALE !== null
           ? [c.NUMERIC_PRECISION, c.NUMERIC_SCALE]
           : c.NUMERIC_PRECISION;
-    }
-
-    // INTEGER TYPES → no length_value
-    else if (
-      ["tinyint", "smallint", "mediumint", "int", "bigint"].includes(c.DATA_TYPE)
-    ) {
+    } else if (["tinyint", "smallint", "mediumint", "int", "bigint"].includes(c.DATA_TYPE)) {
       length_value = null;
-    }
-    else if (c.DATA_TYPE === "enum" || c.DATA_TYPE === "set") {
+    } else if (c.DATA_TYPE === "enum" || c.DATA_TYPE === "set") {
       length_value = c.COLUMN_TYPE
         .slice(c.DATA_TYPE.length + 1, -1)
         .split(",")
         .map(v => v.trim().replace(/^'(.*)'$/, "$1"));
-    }
-    // CHAR / VARCHAR
-    else if (c.CHARACTER_MAXIMUM_LENGTH !== null) {
+    } else if (c.CHARACTER_MAXIMUM_LENGTH !== null) {
       length_value = c.CHARACTER_MAXIMUM_LENGTH;
     }
+
+    // 3. Index metadata from STATISTICS
+    const [idx] = await connection.execute(
+      `
+      SELECT INDEX_NAME, NON_UNIQUE, SEQ_IN_INDEX
+      FROM INFORMATION_SCHEMA.STATISTICS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
+        AND COLUMN_NAME = ?
+      ORDER BY INDEX_NAME, SEQ_IN_INDEX
+      `,
+      [dbName, tableName, columnName]
+    );
+
+    let index = "";
+    if (idx.some(i => i.INDEX_NAME === "PRIMARY")) index = "PRIMARY KEY";
+    else if (idx.some(i => i.NON_UNIQUE === 0)) index = "UNIQUE";
+    else if (idx.length) index = "KEY";
 
     return {
       columntype: c.DATA_TYPE.toUpperCase(),
@@ -996,10 +1004,7 @@ async function getColumnDetails(config, dbName, tableName, columnName) {
       nulls: c.IS_NULLABLE === "YES",
       defaults: c.COLUMN_DEFAULT,
       autoincrement: c.EXTRA.includes("auto_increment"),
-      index:
-        c.COLUMN_KEY === "PRI" ? "PRIMARY KEY" :
-          c.COLUMN_KEY === "UNI" ? "UNIQUE" :
-            c.COLUMN_KEY === "MUL" ? "KEY" : "",
+      index,
       _charset_: c.CHARACTER_SET_NAME,
       _collate_: c.COLLATION_NAME,
       comment: c.COLUMN_COMMENT
@@ -1377,6 +1382,7 @@ async function runQuery(config, databaseName, queryText) {
   let connection;
   try {
     if (!queryText || typeof queryText !== "string") return null;
+    console.log("Database:", cstyler.blue(databaseName), "Running query: ", cstyler.green(queryText));
 
     connection = await mysql.createConnection({
       ...config,

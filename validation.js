@@ -313,7 +313,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 }
                                 if (typeof columntype !== "string" && columntype !== undefined) {
                                     columntype = null;
-                                }
+                                } else if(typeof columntype === "string") columntype = columntype.toUpperCase();
                                 /**
                                  * Length_Value
                                  */
@@ -348,34 +348,37 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  * INDEX
                                  * Index
                                  */
-                                let indexvalue = undefined;
                                 const indexkey = ["index", 'indexkey', 'index_key', 'indexing'];
+                                const indprimarykey = ['primarykey', 'primary_key', 'primary', 'isprimary', 'isprimarykey'];
+                                const induniquekey = ['isunique', 'isuniquekey', 'uniqueindex', 'uniquekey', 'unique_index', 'unique_key'];
+                                const indfulltextkey = ['fulltext', 'fulltextindex', 'isfulltextkey', 'fulltextkey', 'fulltext_key', 'isfulltext'];
+                                const indspacialkey = ['spatial', 'spatialindex', 'isspatialkey', 'spatialkey', 'spatial_key', 'isspatial'];
                                 for (const item of Object.keys(deepColumn)) {
                                     if (indexkey.includes(item.toLowerCase())) {
                                         indexes = deepColumn[item];
                                         break;
-                                    } else if (['primarykey', 'primary_key', 'primary', 'isprimary', 'isprimarykey'].includes(item.toLowerCase())) {
+                                    } else if (indprimarykey.includes(item.toLowerCase())) {
                                         if (truers.includes(deepColumn[item])) {
                                             indexes = "PRIMARY KEY";
                                             break;
                                         } else {
                                             indexes = undefined;
                                         }
-                                    } else if (['isunique', 'isuniquekey', 'uniqueindex', 'uniquekey', 'unique_index', 'unique_key'].includes(item.toLowerCase())) {
+                                    } else if (induniquekey.includes(item.toLowerCase())) {
                                         if (truers.includes(deepColumn[item])) {
                                             indexes = "UNIQUE";
                                             break;
                                         } else {
                                             indexes = undefined;
                                         }
-                                    } else if (['fulltext', 'isfulltext'].includes(item.toLowerCase())) {
+                                    } else if (indfulltextkey.includes(item.toLowerCase())) {
                                         if (truers.includes(deepColumn[item])) {
                                             indexes = "FULLTEXT";
                                             break;
                                         } else {
                                             indexes = undefined;
                                         }
-                                    } else if (['spatial', 'isspatial'].includes(item.toLowerCase())) {
+                                    } else if (indspacialkey.includes(item.toLowerCase())) {
                                         if (truers.includes(deepColumn[item])) {
                                             indexes = "SPATIAL";
                                             break;
@@ -402,6 +405,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  * Null
                                  */
                                 const nullkeys = ['null', 'nulls', 'nullable', 'optional', 'isnulable', 'allownull', 'canbenull'];
+                                const notnullkeys = ['notnull', 'not_null', 'nonnullable', 'notnullable', 'required', 'disallownull', 'non_nullable', 'not_nullable', 'disallow_null'];
                                 for (const item of Object.keys(deepColumn)) {
                                     if (nullkeys.includes(item.toLowerCase())) {
                                         if (truers.includes(deepColumn[item])) {
@@ -414,7 +418,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                             nulls = true;
                                             break;
                                         }
-                                    } else if (['notnull', 'not_null', 'nonnullable', 'notnullable', 'required', 'disallownull', 'non_nullable', 'not_nullable', 'disallow_null'].includes(item.toLowerCase())) {
+                                    } else if (notnullkeys.includes(item.toLowerCase())) {
                                         if (truers.includes(deepColumn[item])) {
                                             nulls = false;
                                             break;
@@ -452,10 +456,10 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 /**
                                  * UNSIGNED
                                  */
-                                const unsignekey = ['numericunsigned', 'numeric_unsigned', 'unsigned', 'isunsigned'];
-                                let signed = undefined;
+                                const unsignedkey = ['numericunsigned', 'numeric_unsigned', 'unsigned', 'isunsigned'];
+                                const signedkey = ['numericsigned', 'numeric_signed', 'signed', 'issigned'];
                                 for (const item of Object.keys(deepColumn)) {
-                                    if (unsignekey.includes(item.toLowerCase())) {
+                                    if (unsignedkey.includes(item.toLowerCase())) {
                                         if (truers.includes(deepColumn[item])) {
                                             unsigned = true;
                                             break;
@@ -466,7 +470,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                             unsigned = null;
                                             break;
                                         }
-                                    } else if (['signed', 'issigned'].includes(item.toLowerCase())) {
+                                    } else if (signedkey.includes(item.toLowerCase())) {
                                         if (truers.includes(deepColumn[item])) {
                                             unsigned = false;
                                             break;
@@ -1035,6 +1039,113 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                                     `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
                                                     `${cstyler.purple('foreign_key > references > table > column -')} ${cstyler.yellow.underline(fkcolumn)} ${cstyler.red('do not exist')}`
                                                 );
+                                            } else {
+                                                const fkcolumndata = table_json[databaseName][fktable][fkcolumn];
+                                                let coltype;
+                                                let collength;
+                                                let colunsigned;
+                                                let colcarset;
+                                                let colcollate;
+                                                let colindex;
+                                                for (const item of Object.keys(fkcolumndata)) {
+                                                    if (coltypekeys.includes(item.toLowerCase())) {
+                                                        coltype = fkcolumndata[item];
+                                                    }
+                                                    if (legnthkeys.includes(item.toLowerCase())) {
+                                                        collength = fkcolumndata[item];
+                                                    }
+                                                    // get unsigned
+                                                    if (unsignedkey.includes(item.toLowerCase())) {
+                                                        if (truers.includes(fkcolumndata[item])) {
+                                                            colunsigned = true;
+                                                        } else if (falsers.includes(fkcolumndata[item])) {
+                                                            colunsigned = false;
+                                                        } else {
+                                                            colunsigned = null;
+                                                        }
+                                                    } else if (signedkey.includes(item.toLowerCase())) {
+                                                        if (truers.includes(fkcolumndata[item])) {
+                                                            colunsigned = false;
+                                                        } else if (falsers.includes(fkcolumndata[item])) {
+                                                            colunsigned = true;
+                                                        } else {
+                                                            colunsigned = null;
+                                                        }
+                                                    }
+                                                    //get characterset and collate
+                                                    if (charactersetkeys.includes(item.toLowerCase())) {
+                                                        colcarset = fkcolumndata[item];
+                                                    }
+                                                    if (collationkeys.includes(item.toLowerCase())) {
+                                                        colcollate = fkcolumndata[item];
+                                                    }
+                                                    // get index
+                                                    if (indexkey.includes(item.toLowerCase())) {
+                                                        colindex = fkcolumndata[item];
+                                                        break;
+                                                    } else if (indprimarykey.includes(item.toLowerCase())) {
+                                                        if (truers.includes(fkcolumndata[item])) {
+                                                            colindex = "PRIMARY KEY";
+                                                            break;
+                                                        } else {
+                                                            colindex = undefined;
+                                                        }
+                                                    } else if (induniquekey.includes(item.toLowerCase())) {
+                                                        if (truers.includes(fkcolumndata[item])) {
+                                                            colindex = "UNIQUE";
+                                                            break;
+                                                        } else {
+                                                            colindex = undefined;
+                                                        }
+                                                    } else if (indfulltextkey.includes(item.toLowerCase())) {
+                                                        if (truers.includes(fkcolumndata[item])) {
+                                                            colindex = "FULLTEXT";
+                                                            break;
+                                                        } else {
+                                                            colindex = undefined;
+                                                        }
+                                                    } else if (indspacialkey.includes(item.toLowerCase())) {
+                                                        if (truers.includes(fkcolumndata[item])) {
+                                                            colindex = "SPATIAL";
+                                                            break;
+                                                        } else {
+                                                            colindex = undefined;
+                                                        }
+                                                    } else if (['index'].includes(item.toLowerCase())) {
+                                                        if (truers.includes(fkcolumndata[item])) {
+                                                            colindex = "INDEX";
+                                                            break;
+                                                        } else {
+                                                            colindex = undefined;
+                                                        }
+                                                    }
+
+                                                    if (colindex !== undefined) { colindex = fncs.stringifyAny(indexes).toUpperCase(); }
+                                                    else if (colindex === "PRIMARY") { colindex = "PRIMARY KEY" }
+                                                    else if (colindex === "FULL") {
+                                                        colindex = "FULLTEXT";
+                                                    }
+                                                }
+                                                // lets check
+                                                if(typeof coltype === "string") coltype = coltype.toUpperCase();
+                                                if(coltype !== columntype){
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- type need to match to be FK-capable')}`);
+                                                }
+                                                if(collength !== length_value){
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- length value need to match to be FK-capable')}`);
+                                                }
+                                                if(colunsigned !== unsigned){
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- unsigned value need to match to be FK-capable')}`);
+                                                }
+                                                if(!["PRIMARY KEY", "UNIQUE"].includes(colindex)){
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- must have PRIMARY KEY or a UNIQUE index to be FK-capable')}`);
+                                                }
+                                                if(colcarset !== _charset_){
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- characterset value need to match to be FK-capable')}`);
+                                                }
+                                                if(colcollate !== _collate_){
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- collation value need to match to be FK-capable')}`);
+                                                }
                                             }
                                         } else {
                                             badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} - ${cstyler.red('do not exist')}`)

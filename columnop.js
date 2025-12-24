@@ -51,7 +51,7 @@ function alterColumnQuery(columndata, columnName, tableName) {
         if (columndata.autoincrement === true) {
             queryText += "AUTO_INCREMENT ";
         }
-        if(columndata.index) queryText += `${columndata.index} `
+        if (columndata.index) queryText += `${columndata.index} `
         if (columndata._charset_) queryText += `CHARACTER SET ${columndata._charset_} `;
         if (columndata._collate_) queryText += `COLLATE ${columndata._collate_} `;
 
@@ -264,6 +264,7 @@ function isColumnDataSame(columnData, columndetails, fkdetails, tableName, colum
     if (idxA !== idxB && !realfk) {
         console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
         console.log(cstyler.red("Index are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.index), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.index),);
+        console.log("fk exist:", fkdetails)
         return false;
     }
 
@@ -301,7 +302,6 @@ function isColumnDataSame(columnData, columndetails, fkdetails, tableName, colum
 
     return true;
 }
-
 async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn = false) {
     try {
         let queries = [];
@@ -326,6 +326,8 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
             if (fncs.isJsonObject(columndetails)) {
                 // alter column query
                 if (!isColumnDataSame(columnData, columndetails, fkdetails, tableName, columnName)) {
+                    console.log("Server details:\n", columndetails);
+                    console.log("JSON OBJ details:\n", columnData);
                     if (fkdetails) {
                         const removefk = await fncs.removeForeignKeyFromColumn(config, dbName, tableName, columnName);
                         if (removefk === null) {
@@ -465,7 +467,7 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
         }
         // lets arrange all the query
         for (const item of queries) {
-            console.log("Running query: ", cstyler.green(item));
+            console.log("Running query");
             const runquery = await fncs.runQuery(config, dbName, item);
             if (runquery === null) {
                 console.error("Having problem running query. Please check database connection.");
@@ -474,7 +476,7 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
             console.log(cstyler.blue("Successful"));
         }
         for (const item of idxkey) {
-            console.log("Running query of idxkey: ", cstyler.green(item));
+            console.log("Running query of idxkey");
             const runquery = await fncs.runQuery(config, dbName, item);
             if (runquery === null) {
                 return null;
@@ -484,7 +486,7 @@ async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn 
             console.log(cstyler.blue("Successful"));
         }
         for (const item of foreignkeys) {
-            console.log("Running query of foreignkey: ", cstyler.green(item));
+            console.log("Running query of foreignkey");
             const runquery = await fncs.runQuery(config, dbName, item);
             if (runquery === null) {
                 return null;
