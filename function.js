@@ -17,32 +17,32 @@ function isNumber(str) {
   }
   return !isNaN(str) && str.trim() !== "";
 }
-function getDateTime(seperator = "/") {
+function getDateTime(separator = "/") {
   const today = new Date();
   const formattedDateTime =
     today.getFullYear() +
-    seperator +
+    separator +
     (today.getMonth() + 1).toString().padStart(2, "0") +
-    seperator +
+    separator +
     today.getDate().toString().padStart(2, "0") +
     " " +
     today.getHours().toString().padStart(2, "0") +
-    seperator +
+    separator +
     today.getMinutes().toString().padStart(2, "0") +
-    seperator +
+    separator +
     today.getSeconds().toString().padStart(2, "0");
 
   const formatedDate =
     today.getFullYear() +
-    seperator +
+    separator +
     (today.getMonth() + 1).toString().padStart(2, "0") +
-    seperator +
+    separator +
     today.getDate().toString().padStart(2, "0");
   const formatedTime =
     today.getHours().toString().padStart(2, "0") +
-    seperator +
+    separator +
     today.getMinutes().toString().padStart(2, "0") +
-    seperator +
+    separator +
     today.getSeconds().toString().padStart(2, "0");
   return {
     year: today.getFullYear(),
@@ -209,6 +209,7 @@ async function dropDatabase(config, databaseName) {
   try {
     // Connect to server without specifying database
     connection = await mysql.createConnection({
+      port: config.port,
       host: config.host,
       user: config.user,
       password: config.password
@@ -223,13 +224,11 @@ async function dropDatabase(config, databaseName) {
     );
 
     if (rows.length === 0) {
-      console.log(`Database '${databaseName}' does not exist.`);
       return false;
     }
 
     // Drop the database
     await connection.query(`DROP DATABASE \`${databaseName}\``);
-    console.log(`Database '${databaseName}' dropped successfully.`);
     return true;
   } catch (err) {
     console.error("Error dropping database:", err.message);
@@ -460,19 +459,19 @@ function isValidColumnName(name) {
 
   return true;
 }
-function createloopname(text, seperator = "_") {
+function createloopname(text, separator = "_") {
   if (!isJsonObject(text)) {
     return null;
   }
-  seperator = seperator.toString();
+  separator = separator.toString();
   if (text.loop === null) {
     return text.name;
   } else if (['year', 'years'].includes(text.loop)) {
-    return text.name + seperator + getDateTime().year + seperator;
+    return text.name + separator + getDateTime().year + separator;
   } else if (['month', 'months'].includes(text.loop)) {
-    return text.name + seperator + getDateTime().year + seperator + getDateTime().month + seperator;
+    return text.name + separator + getDateTime().year + separator + getDateTime().month + separator;
   } else if (['day', 'days'].includes(text.loop)) {
-    return text.name + seperator + getDateTime().year + seperator + getDateTime().month + seperator + getDateTime().day + seperator;
+    return text.name + separator + getDateTime().year + separator + getDateTime().month + separator + getDateTime().day + separator;
   } else {
     return false;
   }
@@ -497,7 +496,7 @@ function getloop(text) {
     return { name: text, loop: null }
   }
 }
-function perseTableNameWithLoop(text, seperator = "_") {
+function perseTableNameWithLoop(text, separator = "_") {
   if (typeof text !== 'string') return null;
   text = text.trim();
   let gtlp = getloop(text);
@@ -511,7 +510,7 @@ function perseTableNameWithLoop(text, seperator = "_") {
   } else if (gtlp === null) {
     return false;
   } else {
-    const loopname = createloopname(gtlp, seperator);
+    const loopname = createloopname(gtlp, separator);
     if (isValidTableName(loopname)) {
       return { name: gtlp.name, loop: gtlp.loop, loopname: loopname }
     } else {
@@ -519,7 +518,7 @@ function perseTableNameWithLoop(text, seperator = "_") {
     }
   }
 }
-function perseDatabaseNameWithLoop(text, seperator = "_") {
+function perseDatabaseNameWithLoop(text, separator = "_") {
   if (typeof text !== 'string') return false;
   text = text.trim();
   let gtlp = getloop(text);
@@ -533,7 +532,7 @@ function perseDatabaseNameWithLoop(text, seperator = "_") {
   } else if (gtlp === null) {
     return false;
   } else {
-    const loopname = createloopname(gtlp, seperator);
+    const loopname = createloopname(gtlp, separator);
     if (isValidDatabaseName(loopname)) {
       return { name: gtlp.name, loop: gtlp.loop, loopname: loopname }
     } else {
@@ -543,50 +542,46 @@ function perseDatabaseNameWithLoop(text, seperator = "_") {
 }
 function reverseLoopName(text) {
   if (typeof text !== "string") return text;
-  let a = text.split(text[text.length - 1]);
-  while (a.includes("")) {
-    a = fncs.removefromarray(a);
+
+  const parts = text.split("_").filter(Boolean);
+  if (parts.length < 2) return text;
+
+  const nowYear = new Date().getFullYear();
+
+  const isYear = y =>
+    /^\d{4}$/.test(y) && Number(y) <= nowYear;
+
+  const isMonth = m =>
+    /^\d{2}$/.test(m) && Number(m) >= 1 && Number(m) <= 12;
+
+  const isDay = d =>
+    /^\d{2}$/.test(d) && Number(d) >= 1 && Number(d) <= 31;
+
+  const last = parts[parts.length - 1];
+  const secondLast = parts[parts.length - 2];
+  const thirdLast = parts[parts.length - 3];
+
+  // YYYY_MM_DD
+  if (isDay(last) && isMonth(secondLast) && isYear(thirdLast)) {
+    const base = parts.slice(0, -3).join("_") + "_";
+    return [base + "(day)", base + "(days)"];
   }
-  if (fncs.isNumber(a[a.length - 1])) {
-    if (a[a.length - 1].length === 2 && Number(a[a.length - 1]) <= 31) {
-      if (a[a.length - 2].length === 2 && Number(a[a.length - 2]) <= 12) {
-        if (a[a.length - 3].length === 4) {
-          const year = new Date().getFullYear();
-          if (Number(a[a.length - 3]) <= year && Number(a[a.length - 2]) <= 12 && Number(a[a.length - 1]) <= 31) {
-            let y = "";
-            for (let i = 0; i < text.length - 12; i++) {
-              y += text[i];
-            }
-            return [y + "(day)", y + "(days)"];
-          }
-          return text;
-        }
-      } else if (a[a.length - 2].length === 4) {
-        const year = new Date().getFullYear();
-        if (Number(a[a.length - 2]) <= year && Number(a[a.length - 1]) <= 12) {
-          let y = "";
-          for (let i = 0; i < text.length - 9; i++) {
-            y += text[i];
-          }
-          return [y + "(month)", y + "(months)"];
-        }
-        return text;
-      }
-    } else if (a[a.length - 1].length === 4) {
-      const year = new Date().getFullYear();
-      if (Number(a[a.length - 1]) <= year) {
-        let y = "";
-        for (let i = 0; i < text.length - 6; i++) {
-          y += text[i];
-        }
-        return [y + "(year)", y + "(years)"];
-      }
-      return text;
-    }
-    return text;
+
+  // YYYY_MM
+  if (isMonth(last) && isYear(secondLast)) {
+    const base = parts.slice(0, -2).join("_") + "_";
+    return [base + "(month)", base + "(months)"];
   }
+
+  // YYYY
+  if (isYear(last)) {
+    const base = parts.slice(0, -1).join("_") + "_";
+    return [base + "(year)", base + "(years)"];
+  }
+
   return text;
 }
+
 
 
 
@@ -1017,6 +1012,267 @@ async function getColumnDetails(config, dbName, tableName, columnName) {
     if (connection) await connection.end();
   }
 }
+async function inspectColumnConstraint(config, database, table, column, options = {}) {
+  const loose = options.loose !== false; // default true: include composite constraints that contain the column
+
+  if (!database || !table || !column) {
+    throw new Error('database, table and column are required');
+  }
+
+  // simple identifier checks to avoid injection via identifiers
+  const validIdent = s => typeof s === 'string' && /^[A-Za-z0-9$_]+$/.test(s);
+  if (!validIdent(database) || !validIdent(table) || !validIdent(column)) {
+    throw new Error('Invalid database/table/column name');
+  }
+
+  const conn = await mysql.createConnection(config);
+  try {
+    // 1) Find constraints (from KEY_COLUMN_USAGE) that include the specific column in this table
+    const [kcuRows] = await conn.execute(
+      `SELECT CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_SCHEMA, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME, ORDINAL_POSITION
+       FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+       ORDER BY CONSTRAINT_NAME, ORDINAL_POSITION`,
+      [database, table, column]
+    );
+
+    // If no constraint rows found, constraints list is empty
+    const constraints = [];
+    const constraintNames = Array.from(new Set(kcuRows.map(r => r.CONSTRAINT_NAME)));
+
+    if (constraintNames.length > 0) {
+      // Build constraint -> columns and referenced columns
+      const consMap = new Map();
+      for (const r of kcuRows) {
+        const name = r.CONSTRAINT_NAME;
+        if (!consMap.has(name)) {
+          consMap.set(name, {
+            constraintName: name,
+            columns: [],
+            referencedTableSchema: r.REFERENCED_TABLE_SCHEMA || null,
+            referencedTable: r.REFERENCED_TABLE_NAME || null,
+            referencedColumns: []
+          });
+        }
+        const entry = consMap.get(name);
+        entry.columns.push(r.COLUMN_NAME);
+        if (r.REFERENCED_COLUMN_NAME) entry.referencedColumns.push(r.REFERENCED_COLUMN_NAME);
+      }
+
+      // Get constraint types for these constraint names
+      const placeholders = constraintNames.map(() => '?').join(',');
+      const [tcRows] = await conn.execute(
+        `SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE
+         FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME IN (${placeholders})`,
+        [database, table, ...constraintNames]
+      );
+      const typeByName = new Map(tcRows.map(r => [r.CONSTRAINT_NAME, r.CONSTRAINT_TYPE]));
+
+      // If there are foreign keys, fetch their ON DELETE/ON UPDATE rules
+      const fkNames = tcRows.filter(r => r.CONSTRAINT_TYPE === 'FOREIGN KEY').map(r => r.CONSTRAINT_NAME);
+      const fkRules = new Map();
+      if (fkNames.length > 0) {
+        const fkPlaceholders = fkNames.map(() => '?').join(',');
+        const [rcRows] = await conn.execute(
+          `SELECT CONSTRAINT_NAME, DELETE_RULE, UPDATE_RULE
+           FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
+           WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_NAME IN (${fkPlaceholders})`,
+          [database, ...fkNames]
+        );
+        for (const r of rcRows) fkRules.set(r.CONSTRAINT_NAME, { deleteRule: r.DELETE_RULE, updateRule: r.UPDATE_RULE });
+      }
+
+      // Compose final constraint objects
+      for (const [name, info] of consMap.entries()) {
+        const ctype = typeByName.get(name) || null; // could be null for some implicitly created indexes
+        const isPrimary = ctype === 'PRIMARY KEY';
+        const isUnique = ctype === 'UNIQUE' || isPrimary;
+        const isForeignKey = ctype === 'FOREIGN KEY';
+        const rule = isForeignKey ? fkRules.get(name) || {} : {};
+
+        // Apply strict/loose filtering:
+        if (loose || (info.columns.length === 1 && info.columns[0] === column)) {
+          constraints.push({
+            constraintName: name,
+            constraintType: ctype,
+            columns: info.columns,
+            isPrimary,
+            isUnique,
+            isForeignKey,
+            referencedTableSchema: info.referencedTableSchema,
+            referencedTable: info.referencedTable,
+            referencedColumns: info.referencedColumns,
+            deleteRule: rule.deleteRule || null,
+            updateRule: rule.updateRule || null
+          });
+        }
+      }
+    }
+
+    // 2) Indexes: find index names that include the column, then assemble full column lists for those indexes
+    const [idxNameRows] = await conn.execute(
+      `SELECT DISTINCT INDEX_NAME
+       FROM INFORMATION_SCHEMA.STATISTICS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+      [database, table, column]
+    );
+
+    const indexes = [];
+    if (idxNameRows.length > 0) {
+      const idxNames = idxNameRows.map(r => r.INDEX_NAME);
+      const placeholders2 = idxNames.map(() => '?').join(',');
+      // fetch full index definitions for those indexes
+      const [idxRows] = await conn.execute(
+        `SELECT INDEX_NAME, NON_UNIQUE, COLUMN_NAME, SEQ_IN_INDEX
+         FROM INFORMATION_SCHEMA.STATISTICS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME IN (${placeholders2})
+         ORDER BY INDEX_NAME, SEQ_IN_INDEX`,
+        [database, table, ...idxNames]
+      );
+
+      const idxMap = new Map();
+      for (const r of idxRows) {
+        const iname = r.INDEX_NAME;
+        if (!idxMap.has(iname)) {
+          idxMap.set(iname, { indexName: iname, nonUnique: Number(r.NON_UNIQUE), indexColumns: [] });
+        }
+        idxMap.get(iname).indexColumns.push(r.COLUMN_NAME);
+      }
+      // filter by loose/strict: if strict, only include indexes where column list is exactly [column]
+      for (const idx of Array.from(idxMap.values())) {
+        if (loose || (idx.indexColumns.length === 1 && idx.indexColumns[0] === column)) {
+          indexes.push(idx);
+        }
+      }
+    }
+
+    // 3) CHECK constraints: search check clauses for the column (only checks defined on this table)
+    const [checkRows] = await conn.execute(
+      `SELECT tc.CONSTRAINT_NAME, cc.CHECK_CLAUSE
+       FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+       JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
+         ON tc.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA
+         AND tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+       WHERE tc.TABLE_SCHEMA = ? AND tc.TABLE_NAME = ? AND tc.CONSTRAINT_TYPE = 'CHECK'`,
+      [database, table]
+    );
+
+    const checks = [];
+    if (checkRows.length > 0) {
+      // simple text search to see if check clause mentions the column (best-effort)
+      const colPattern = new RegExp('(^|[^A-Za-z0-9_`])' + column.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1') + '($|[^A-Za-z0-9_`])', 'i');
+      for (const r of checkRows) {
+        const clause = r.CHECK_CLAUSE || '';
+        if (loose) {
+          if (colPattern.test(clause) || clause.includes('`' + column + '`')) {
+            checks.push({ constraintName: r.CONSTRAINT_NAME, checkClause: clause });
+          }
+        } else {
+          // strict: only include if the clause explicitly mentions the exact column token (best-effort)
+          if (clause.includes('`' + column + '`') || colPattern.test(clause)) {
+            checks.push({ constraintName: r.CONSTRAINT_NAME, checkClause: clause });
+          }
+        }
+      }
+    }
+
+    const found = constraints.length > 0 || indexes.length > 0 || checks.length > 0;
+    return { found, constraints, indexes, checks };
+  } catch (err) {
+    console.error(err.message);
+    return null;
+  } finally {
+    await conn.end();
+  }
+}
+async function _fetchIndexes(conn, database, tableName) {
+  const sql = `
+    SELECT INDEX_NAME, SEQ_IN_INDEX, COLUMN_NAME, NON_UNIQUE
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+    ORDER BY INDEX_NAME, SEQ_IN_INDEX
+  `;
+  const [rows] = await conn.execute(sql, [database, tableName]);
+
+  const map = new Map();
+  for (const r of rows) {
+    const name = r.INDEX_NAME;
+    if (!map.has(name)) map.set(name, { indexName: name, columns: [], nonUnique: Boolean(r.NON_UNIQUE) });
+    map.get(name).columns.push(r.COLUMN_NAME);
+  }
+
+  return Array.from(map.values());
+}
+async function checkIndexExists(config, database, tableName, indexKey) {
+  if (!config || !database || !tableName || indexKey === undefined || indexKey === null) {
+    throw new Error('config, database, tableName and indexKey are required');
+  }
+
+  const conn = await mysql.createConnection(config);
+  try {
+    const indexes = await _fetchIndexes(conn, database, tableName);
+    if (!indexes.length) {
+      return { found: false, matches: [] };
+    }
+
+    // Normalize input
+    let wantIndexName = null;
+    let wantCols = null;
+
+    if (Array.isArray(indexKey)) {
+      wantCols = indexKey.map(c => String(c).trim()).filter(Boolean);
+    } else if (typeof indexKey === 'string') {
+      const s = indexKey.trim();
+      if (s.indexOf(',') !== -1) {
+        wantCols = s.split(',').map(x => x.replace(/`/g, '').trim()).filter(Boolean);
+      } else {
+        // try index name first, but also allow single-column match
+        wantIndexName = s.replace(/`/g, '');
+        wantCols = [s.replace(/`/g, '')];
+      }
+    } else {
+      wantCols = [String(indexKey)];
+    }
+
+    const lowerWantName = wantIndexName ? wantIndexName.toLowerCase() : null;
+    const lowerWantCols = wantCols ? wantCols.map(c => c.toLowerCase()) : null;
+
+    const matches = [];
+
+    for (const idx of indexes) {
+      const idxNameLower = String(idx.indexName).toLowerCase();
+      const idxColsLower = idx.columns.map(c => String(c).toLowerCase());
+
+      // If user provided an index name and it matches exactly -> match
+      if (lowerWantName && idxNameLower === lowerWantName) {
+        matches.push({ indexName: idx.indexName, columns: idx.columns.slice(), nonUnique: idx.nonUnique });
+        continue;
+      }
+
+      // Otherwise check leftmost-prefix column match (only if wantCols provided)
+      if (lowerWantCols && lowerWantCols.length > 0) {
+        if (idxColsLower.length >= lowerWantCols.length) {
+          let ok = true;
+          for (let i = 0; i < lowerWantCols.length; i++) {
+            if (idxColsLower[i] !== lowerWantCols[i]) { ok = false; break; }
+          }
+          if (ok) {
+            matches.push({ indexName: idx.indexName, columns: idx.columns.slice(), nonUnique: idx.nonUnique });
+            continue;
+          }
+        }
+      }
+    }
+
+    return { found: matches.length > 0, matches };
+  } catch(err){
+    console.error("Error in checkIndexExists:", err.message);
+    return null;
+  } finally {
+    await conn.end();
+  }
+}
 async function columnHasKey(config, databaseName, tableName, columnName) {
   let connection;
   try {
@@ -1145,6 +1401,123 @@ async function getAllForeignKeyDetails(config, databaseName, tableName) {
     return null;
   } finally {
     if (connection) await connection.end();
+  }
+}
+async function findReferencingFromColumns(config, database, parentTable, parentColumn) {
+  const conn = await mysql.createConnection(config);
+  try {
+    // Build KEY_COLUMN_USAGE query. If parentColumn is provided, include it in filter.
+    let kcuSql = `
+      SELECT
+        kcu.CONSTRAINT_SCHEMA AS constraint_schema,
+        kcu.TABLE_SCHEMA AS child_schema,
+        kcu.TABLE_NAME AS child_table,
+        kcu.CONSTRAINT_NAME AS fk_name,
+        kcu.COLUMN_NAME AS child_column,
+        kcu.ORDINAL_POSITION AS ordinal_position,
+        kcu.REFERENCED_TABLE_SCHEMA AS referenced_schema,
+        kcu.REFERENCED_TABLE_NAME AS referenced_table,
+        kcu.REFERENCED_COLUMN_NAME AS referenced_column
+      FROM information_schema.KEY_COLUMN_USAGE kcu
+      WHERE kcu.REFERENCED_TABLE_SCHEMA = ?
+        AND kcu.REFERENCED_TABLE_NAME = ?
+    `;
+    const params = [database, parentTable];
+    if (parentColumn) {
+      kcuSql += ` AND kcu.REFERENCED_COLUMN_NAME = ?`;
+      params.push(parentColumn);
+    }
+    kcuSql += ` ORDER BY kcu.CONSTRAINT_NAME, kcu.ORDINAL_POSITION;`;
+
+    const [kcuRows] = await conn.execute(kcuSql, params);
+
+    if (!kcuRows.length) return [];
+
+    // Get update/delete rules for the involved constraints from REFERENTIAL_CONSTRAINTS
+    // Build list of unique (constraint_schema, constraint_name) pairs
+    const uniqueKeys = new Set();
+    for (const r of kcuRows) {
+      uniqueKeys.add(`${r.constraint_schema}||${r.fk_name}`);
+    }
+    // Prepare placeholders and params for referential constraints query
+    const rcWhereParts = [];
+    const rcParams = [];
+    for (const key of uniqueKeys) {
+      const [schema, name] = key.split('||');
+      rcWhereParts.push('(CONSTRAINT_SCHEMA = ? AND CONSTRAINT_NAME = ?)');
+      rcParams.push(schema, name);
+    }
+    const rcSql = `
+      SELECT CONSTRAINT_SCHEMA, CONSTRAINT_NAME, UPDATE_RULE, DELETE_RULE
+      FROM information_schema.REFERENTIAL_CONSTRAINTS
+      WHERE ${rcWhereParts.join(' OR ')};
+    `;
+    const [rcRows] = rcParams.length ? await conn.execute(rcSql, rcParams) : [[]];
+
+    // Map rc by schema+name
+    const rcMap = new Map();
+    for (const rc of rcRows) {
+      rcMap.set(`${rc.CONSTRAINT_SCHEMA}||${rc.CONSTRAINT_NAME}`, {
+        update_rule: rc.UPDATE_RULE,
+        delete_rule: rc.DELETE_RULE
+      });
+    }
+
+    // Group kcuRows by constraint (schema + fk_name + child_table) and collect ordered columns
+    const grouped = new Map();
+    for (const row of kcuRows) {
+      const key = `${row.child_schema}||${row.child_table}||${row.fk_name}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          fk_name: row.fk_name,
+          child_schema: row.child_schema,
+          child_table: row.child_table,
+          child_columns: [],
+          referenced_schema: row.referenced_schema,
+          referenced_table: row.referenced_table,
+          referenced_columns: [],
+          ordinal_positions: []
+        });
+      }
+      const g = grouped.get(key);
+      g.child_columns.push(row.child_column);
+      g.referenced_columns.push(row.referenced_column);
+      g.ordinal_positions.push(row.ordinal_position);
+    }
+
+    // Build final array and attach update/delete rules if available.
+    const result = [];
+    for (const [key, g] of grouped.entries()) {
+      const [schema, , fk_name] = key.split('||');
+      const rcKey = `${schema}||${fk_name}`;
+      const rc = rcMap.get(rcKey) || {};
+      // Ensure columns are ordered by ordinal_position (we already fetched in order,
+      // but let's be defensive and sort if needed)
+      // (we'll build an array of tuples and sort)
+      const tuples = g.ordinal_positions.map((ord, i) => ({ ord: Number(ord), child: g.child_columns[i], ref: g.referenced_columns[i] }));
+      tuples.sort((a, b) => a.ord - b.ord);
+      const child_columns = tuples.map(t => t.child);
+      const referenced_columns = tuples.map(t => t.ref);
+
+      result.push({
+        fk_name: g.fk_name,
+        child_schema: g.child_schema,
+        child_table: g.child_table,
+        child_columns,
+        referenced_schema: g.referenced_schema,
+        referenced_table: g.referenced_table,
+        referenced_columns,
+        update_rule: rc.update_rule || null,
+        delete_rule: rc.delete_rule || null
+      });
+    }
+
+    return result;
+  } catch (err) {
+    console.error("Error in findReferencingColumns:", err.message);
+    return null;
+  } finally {
+    await conn.end();
   }
 }
 async function addForeignKeyWithIndex(config, dbname, tableName, columnName, refTable, refColumn, options = {}) {
@@ -1434,9 +1807,12 @@ module.exports = {
   getColumnNames,
   getDatabaseCharsetAndCollation,
   getColumnDetails,
+  inspectColumnConstraint,
+  checkIndexExists,
   columnHasKey,
   getForeignKeyDetails,
   getAllForeignKeyDetails,
+  findReferencingFromColumns,
   addForeignKeyWithIndex,
   removeForeignKeyFromColumn,
   removeForeignKeyConstraintFromColumn,

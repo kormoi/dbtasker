@@ -204,7 +204,7 @@ function validateDefault(columnType, defaultValue, length_value, nullable = fals
 }
 
 
-async function JSONchecker(table_json, config, seperator = "_") {
+async function JSONchecker(table_json, config, separator = "_") {
     // lets check all table name and column name
     let baddatabaseName = [];
     let badTableNames = [];
@@ -250,7 +250,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
     if (fncs.isJsonObject(table_json)) {
         // lets loop databases
         for (const databaseName of Object.keys(table_json)) {
-            if (fncs.perseDatabaseNameWithLoop(databaseName, seperator) === false) {
+            if (fncs.perseDatabaseNameWithLoop(databaseName, separator) === false) {
                 baddatabaseName.push(
                     `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                     `${cstyler.red('- database name is not valid.')}`
@@ -268,7 +268,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                         }
                     }
                     if (fncs.isJsonObject(table_json[databaseName][tableName])) {
-                        if (fncs.perseTableNameWithLoop(tableName, seperator) === false) {
+                        if (fncs.perseTableNameWithLoop(tableName, separator) === false) {
                             badTableNames.push(
                                 `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
                                 `${cstyler.purple('of table:')} ${cstyler.blue(tableName)} ` +
@@ -313,7 +313,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                 }
                                 if (typeof columntype !== "string" && columntype !== undefined) {
                                     columntype = null;
-                                } else if(typeof columntype === "string") columntype = columntype.toUpperCase();
+                                } else if (typeof columntype === "string") columntype = columntype.toUpperCase();
                                 /**
                                  * Length_Value
                                  */
@@ -350,7 +350,7 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                  */
                                 const indexkey = ["index", 'indexkey', 'index_key', 'indexing'];
                                 const indprimarykey = ['primarykey', 'primary_key', 'primary', 'isprimary', 'isprimarykey'];
-                                const induniquekey = ['isunique', 'isuniquekey', 'uniqueindex', 'uniquekey', 'unique_index', 'unique_key'];
+                                const induniquekey = ['unique', 'isunique', 'isuniquekey', 'uniqueindex', 'uniquekey', 'unique_index', 'unique_key'];
                                 const indfulltextkey = ['fulltext', 'fulltextindex', 'isfulltextkey', 'fulltextkey', 'fulltext_key', 'isfulltext'];
                                 const indspacialkey = ['spatial', 'spatialindex', 'isspatialkey', 'spatialkey', 'spatial_key', 'isspatial'];
                                 for (const item of Object.keys(deepColumn)) {
@@ -833,11 +833,15 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                     let doubblePrimary = [];
                                     for (const column of Object.keys(table_json[databaseName][tableName])) {
                                         const doubleDeepColumn = table_json[databaseName][tableName][column];
-                                        for (const item of indexkey) {
-                                            if (doubleDeepColumn.hasOwnProperty(item)) {
-                                                if (doubleDeepColumn[item].toUpperCase() === "KEY" || doubleDeepColumn[item].toUpperCase() === "PRIMARY KEY")
+                                        for (const item of Object.keys(doubleDeepColumn)) {
+                                            if (indexkey.includes(item.toLowerCase())) {
+                                                if (doubleDeepColumn[item].toUpperCase() === "PRIMARY KEY")
                                                     doubblePrimary.push(doubleDeepColumn[item]);
                                                 break;
+                                            } else if (indprimarykey.includes(item.toLowerCase())) {
+                                                if (truers.includes(doubleDeepColumn[item])) {
+                                                    doubblePrimary.push(doubleDeepColumn[item]);
+                                                }
                                             }
                                         }
                                     }
@@ -1079,72 +1083,23 @@ async function JSONchecker(table_json, config, seperator = "_") {
                                                     if (collationkeys.includes(item.toLowerCase())) {
                                                         colcollate = fkcolumndata[item];
                                                     }
-                                                    // get index
-                                                    if (indexkey.includes(item.toLowerCase())) {
-                                                        colindex = fkcolumndata[item];
-                                                        break;
-                                                    } else if (indprimarykey.includes(item.toLowerCase())) {
-                                                        if (truers.includes(fkcolumndata[item])) {
-                                                            colindex = "PRIMARY KEY";
-                                                            break;
-                                                        } else {
-                                                            colindex = undefined;
-                                                        }
-                                                    } else if (induniquekey.includes(item.toLowerCase())) {
-                                                        if (truers.includes(fkcolumndata[item])) {
-                                                            colindex = "UNIQUE";
-                                                            break;
-                                                        } else {
-                                                            colindex = undefined;
-                                                        }
-                                                    } else if (indfulltextkey.includes(item.toLowerCase())) {
-                                                        if (truers.includes(fkcolumndata[item])) {
-                                                            colindex = "FULLTEXT";
-                                                            break;
-                                                        } else {
-                                                            colindex = undefined;
-                                                        }
-                                                    } else if (indspacialkey.includes(item.toLowerCase())) {
-                                                        if (truers.includes(fkcolumndata[item])) {
-                                                            colindex = "SPATIAL";
-                                                            break;
-                                                        } else {
-                                                            colindex = undefined;
-                                                        }
-                                                    } else if (['index'].includes(item.toLowerCase())) {
-                                                        if (truers.includes(fkcolumndata[item])) {
-                                                            colindex = "INDEX";
-                                                            break;
-                                                        } else {
-                                                            colindex = undefined;
-                                                        }
-                                                    }
-
-                                                    if (colindex !== undefined) { colindex = fncs.stringifyAny(indexes).toUpperCase(); }
-                                                    else if (colindex === "PRIMARY") { colindex = "PRIMARY KEY" }
-                                                    else if (colindex === "FULL") {
-                                                        colindex = "FULLTEXT";
-                                                    }
                                                 }
                                                 // lets check
-                                                if(typeof coltype === "string") coltype = coltype.toUpperCase();
-                                                if(coltype !== columntype){
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- type need to match to be FK-capable')}`);
+                                                if (typeof coltype === "string") coltype = coltype.toUpperCase();
+                                                if (coltype !== columntype) {
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- type need to match to be Foreign Key-capable')}`);
                                                 }
-                                                if(collength !== length_value){
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- length value need to match to be FK-capable')}`);
+                                                if (collength !== length_value) {
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- length value need to match to be Foreign Key-capable')}`);
                                                 }
-                                                if(colunsigned !== unsigned){
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- unsigned value need to match to be FK-capable')}`);
+                                                if (colunsigned !== unsigned) {
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- unsigned value need to match to be Foreign Key-capable')}`);
                                                 }
-                                                if(!["PRIMARY KEY", "UNIQUE"].includes(colindex)){
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- must have PRIMARY KEY or a UNIQUE index to be FK-capable')}`);
+                                                if (colcarset !== _charset_) {
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- characterset value need to match to be Foreign Key-capable')}`);
                                                 }
-                                                if(colcarset !== _charset_){
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- characterset value need to match to be FK-capable')}`);
-                                                }
-                                                if(colcollate !== _collate_){
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} ${cstyler.purple('Column:')} ${cstyler.underline.yellow(fkcolumn)} - ${cstyler.red('- collation value need to match to be FK-capable')}`);
+                                                if (colcollate !== _collate_) {
+                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- collation value need to match to be Foreign Key-capable')}`);
                                                 }
                                             }
                                         } else {

@@ -85,40 +85,8 @@ async function createDatabase(config, databaseName, characterSet = null, collate
         if (connection) await connection.end();
     }
 }
-async function dropTable(config, json_data, seperator = "_") {
-    try {
-        console.log("Starting dropping the table.");
-        for (const jsondb of Object.keys(json_data)) {
-            let dbname = fncs.perseDatabaseNameWithLoop(jsondb, seperator);
-            if (dbname === false) {
-                console.error("There must be some mistake. Please re install the module.");
-            }
-            const alltables = await fncs.getTableNames(config, dbname.loopname);
-            if (alltables === null) {
-                console.error("Having problem getting all the table name of the Database: ", cstyler.yellow(dbname.loopname), ". Please re-install the module.");
-                return null;
-            }
-            let tables = {};
-            for (const tableName of (alltables)) {
-                const revlpnm = fncs.reverseLoopName(tableName);
-                if (!Object.keys(json_data[jsondb]).includes(revlpnm[0]) && !Object.keys(json_data[jsondb]).includes(revlpnm[1])) {
-                    const droptable = await fncs.dropTable(config, dbname.loopname, tableName);
-                    if (droptable === null) {
-                        console.error("Having problem dropping table. Please check database connection.");
-                        return null;
-                    }
-                    console.log(cstyler.purple("Database: "), cstyler.blue(dbname.loopname), cstyler.purple("Table: "), cstyler.blue(tableName), "- has dropped successfully.")
-                }
-            }
-            console.log(cstyler.green("Successfully dropped all unlisted tables."));
-            return true;
-        }
-    } catch (err) {
-        console.error(err.message);
-        return null;
-    }
-}
-async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, donttouchdb = [], seperator = "_") {
+
+async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, donttouchdb = [], separator = "_") {
     try {
         // lets add databases and drop databases
         let config;
@@ -137,7 +105,7 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
         // Lets add databases
         for (const jsondb of jsondbnames) {
             let data = {};
-            data.name = fncs.perseDatabaseNameWithLoop(jsondb, seperator).loopname;
+            data.name = fncs.perseDatabaseNameWithLoop(jsondb, separator).loopname;
             if (fncs.isJsonObject(jsondata[jsondb])) {
                 if (jsondata[jsondb].hasOwnProperty("_collate_")) {
                     data.collate = jsondata[jsondb]._collate_;
@@ -197,6 +165,7 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
         // Lets drop database
         if (dropdb) {
             // Lets get all database name
+            console.log(cstyler.bold.yellow("Initiating dropping the databases"));
             const avldblist = await fncs.getAllDatabaseNames(config);
             if (!Array.isArray(avldblist)) {
                 console.error(cstyler.red.bold("There is a problem connecting to the database. Please check database info or connection."));
@@ -205,22 +174,42 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
             // Let's arrange database names
             let arrngdbnms = {};
             for (const dbnms of avldblist) {
-                if ([...defaultdb, ...donttouchdb].includes(dbnms)) { continue }
+                if ([...defaultdb, ...donttouchdb].includes(dbnms)) {
+                    continue;
+                }
                 const getrev = fncs.reverseLoopName(dbnms);
-                if (arrngdbnms.hasOwnProperty(getrev)[0]) {
-                    arrngdbnms[getrev[0]].push(dbnms);
-                } else if (arrngdbnms.hasOwnProperty(getrev)[1]) {
-                    arrngdbnms[getrev[1]].push(dbnms);
+                if (Array.isArray(getrev)) {
+                    if (getrev[0] && arrngdbnms.hasOwnProperty(getrev[0])) {
+                        arrngdbnms[getrev[0]].push(dbnms);
+                    } else if (getrev[1] && arrngdbnms.hasOwnProperty(getrev[1])) {
+                        arrngdbnms[getrev[1]].push(dbnms);
+                    }
                 } else {
                     arrngdbnms[getrev] = [dbnms];
                 }
             }
+            console.log("Lets start dropping");
+            let count = 0;
             for (const databaseName of Object.keys(arrngdbnms)) {
                 if (!jsondbnames.includes(databaseName)) {
                     for (const items of arrngdbnms[databaseName]) {
-                        await fncs.dropDatabase(config, items);
+                        console.log('dropping now', items);
+                        const isdropdb = await fncs.dropDatabase(config, items);
+                        if (isdropdb) {
+                            count += 1;
+                            console.log(`${cstyler.purple('Database')} '${cstyler.yellow(databaseName)}' ${cstyler.red('dropped')} ${cstyler.green('successfully.')}`);
+                        } else if (isdropdb === false) {
+                            console.log(`${cstyler.purple('Database')} '${cstyler.blue(databaseName)}' does not exist.`);
+                        } else if (isdropdb === null) {
+                            return null;
+                        }
                     }
                 }
+            }
+            if (count > 0) {
+                console.log(cstyler.green("All useless database have dropped"));
+            } else {
+                console.log(cstyler.green("No database found to be dropped"));
             }
         }
         return true;
@@ -231,6 +220,5 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
 }
 
 module.exports = {
-    databaseAddDeleteAlter,
-    dropTable
+    databaseAddDeleteAlter
 }

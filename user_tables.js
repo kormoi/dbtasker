@@ -1,4 +1,4 @@
-const { updateRecord } = require("../../kormoi/server/services/functions");
+
 
 module.exports = {
   main: {
@@ -72,6 +72,15 @@ module.exports = {
         index: "PRIMARY KEY",
       },
       user_id: {
+        type: "BIGINT",
+        null: false,
+        foreign_key: {
+          table: "users",
+          column: "id",
+          delete: true,
+        },
+      },
+      p_user_id: {
         type: "BIGINT",
         null: false,
         foreign_key: {
@@ -640,7 +649,7 @@ module.exports = {
     _charset_: "utf8mb4",
     _collate_: "utf8mb4_zh_0900_as_cs"
   },
-  finance: {
+  fm: {
     users: {
       id: {
         type: "BIGINT",
@@ -681,7 +690,6 @@ module.exports = {
         default: "none",
       },
       accoutn_badges: { type: "JSON", null: true, comment: "List of badges" },
-      overall_rating: { type: "FLOAT", primarykey: true, null: true },
       avg_response_time: {
         type: "INT",
         null: false,
@@ -899,13 +907,8 @@ module.exports = {
         index: "PRIMARY KEY",
       },
       user_id: {
-        type: "float",
-        null: true,
-        foreign_key: {
-          table: "users",
-          column: "overall_rating",
-          delete: true
-        },
+        type: "bigint",
+        null: true
       },
       currency: {
         type: "VARCHAR",

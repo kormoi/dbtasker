@@ -1,5 +1,5 @@
 const fncs = require("./function");
-const recordedjson = require("./tables");
+const recordedjson = require("./tableop");
 const cstyler = require("cstyler");
 const checker = require("./validation");
 
@@ -8,6 +8,7 @@ const checker = require("./validation");
 
 const moduleName = "dbtasker";
 const truers = [true, 1, "1", "true", "True", "TRUE"];
+const falsers = [false, 0, "0", "false", "False", "FALSE"];
 
 module.exports = async function (allconfig, table_json) {
     try {
@@ -42,6 +43,18 @@ module.exports = async function (allconfig, table_json) {
             console.error("My SQL version 5.7.8 or above is required. Please check if you have installed mysql2. To install: npm install mysql2");
             return;
         }
+        // Declare separator
+        let separator = "_";
+        const sepkeys = ['sep', 'separator'];
+        for (const item of Object.keys(allconfig)) {
+            if (sepkeys.includes(item.toLowerCase())) {
+                separator = allconfig[item];
+                break;
+            }
+        }
+        if (!fncs.isValidMySQLIdentifier(separator)) {
+            separator = "_";
+        }
         // get don't touch database
         let donttouchdb = [];
         const donttouchkeys = ['donttouch', 'donottouch', 'donttouchdb', 'donottouchdb', 'donttouchdatabase', 'donottouchdatabase', 'dontdelete', 'donotdelete', 'dontdeletedb', 'donotdeletedb', 'dontdeletedatabase', 'donotdeletedatabase', 'dont_touch', 'do_not_touch', 'dont_touch_db', 'do_not_touch_db', 'dont_touch_database', 'do_not_touch_database', 'dont_delete', 'do_not_delete', 'dont_delete_db', 'do_not_delete_db', 'dont_delete_database', 'do_not_delete_database', 'reserveddb', 'reserved_db'];
@@ -60,18 +73,6 @@ module.exports = async function (allconfig, table_json) {
                     return;
                 }
             }
-        }
-        // Declare seperator
-        let seperator = "_";
-        const sepkeys = ['sep', 'seperator'];
-        for (const item of Object.keys(allconfig)) {
-            if (sepkeys.includes(item.toLowerCase())) {
-                seperator = allconfig[item];
-                break;
-            }
-        }
-        if (!fncs.isValidMySQLIdentifier(seperator)) {
-            seperator = "_";
         }
         let dropdatabase;
         const dropdbkeys = ['dropdb', 'dropdatabase', 'deletedb', 'deletedatabase', 'drop_db', 'drop_database', 'delete_db', 'delete_database', 'removedb', 'removedatabase', 'remove_db', 'remove_database'];
@@ -106,12 +107,42 @@ module.exports = async function (allconfig, table_json) {
         }
         if (truers.includes(dropcolumn)) {
             dropcolumn = true;
-        } else {
+        } else if (falsers.includes(dropcolumn)) {
             dropcolumn = false;
+        } else {
+            dropcolumn = true;
+        }
+        let forcedropcolumn;
+        const frocedropcolkey = ['forcedropcol', 'forcedropcolumn', 'forcedeletecol', 'forcedeletecolumn', 'forceremovecol', 'forceremovecolumn', 'force_drop_col', 'force_drop_column', 'force_delete_col', 'force_delete_column', 'force_remove_col', 'force_remove_column'];
+        for (const item of Object.keys(allconfig)) {
+            if (frocedropcolkey.includes(item.toLowerCase())) {
+                forcedropcolumn = allconfig[item];
+            }
+        }
+        if (truers.includes(forcedropcolumn)) {
+            forcedropcolumn = true;
+        } else if (falsers.includes(forcedropcolumn)) {
+            forcedropcolumn = false;
+        } else {
+            forcedropcolumn = false;
+        }
+        let forceupdatecolumn;
+        const forceupdatecolkey = ['forceupdatecol', 'forcemodifycol', 'forceupdatecolumn', 'forcemodifycolumn', 'force_update_col', 'force_modify_col', 'force_update_column', 'force_modify_column', 'forcealtercol', 'forcealtercolumn', 'force_alter_col', 'force_alter_column'];
+        for (const item of Object.keys(allconfig)) {
+            if (forceupdatecolkey.includes(item.toLowerCase())) {
+                forceupdatecolumn = allconfig[item];
+            }
+        }
+        if (truers.includes(forceupdatecolumn)) {
+            forceupdatecolumn = true;
+        } else if (falsers.includes(forceupdatecolumn)) {
+            forceupdatecolumn = false;
+        } else {
+            forceupdatecolumn = false;
         }
         console.log(cstyler.bold.underline.yellow("Lets check if the table need an upgrade"))
         // lets check all table name and column name
-        const checking = await checker.JSONchecker(table_json, config, seperator);
+        const checking = await checker.JSONchecker(table_json, config, separator);
         if (checking.status === false) {
             console.log(cstyler.bold.underline.red("Please correct those information and try again."))
             return;
@@ -119,25 +150,60 @@ module.exports = async function (allconfig, table_json) {
         const jsondata = checking.data;
         console.log(cstyler.bold.purple("Lets start operation on databases."));
         const dbop = require("./dbop");
-        const databaseop = await dbop.databaseAddDeleteAlter(config, jsondata, dropdatabase, donttouchdb, seperator);
+        const databaseop = await dbop.databaseAddDeleteAlter(config, jsondata, dropdatabase, donttouchdb, separator);
         if (databaseop === null) {
+            console.log(cstyler.bold.underline.red("Error occurred during database operation."));
+            return;
+        }
+        // lets create tables if needed
+        const tableop = require("./tableop");
+        const createtable = await tableop.createTable(config, jsondata, separator);
+        if (createtable === null) {
+            console.log(cstyler.bold.underline.red("Error occurred during creating tables."));
             return;
         }
         // Drop tables
         if (droptable) {
             console.log(cstyler.bold.purple("Lets drop unlisted table if needed."));
-            const droptableifneeded = await dbop.dropTable(config, jsondata, seperator);
+            const droptableifneeded = await tableop.dropTable(config, jsondata, separator);
             if (droptableifneeded === null) {
+                console.log(cstyler.bold.underline.red("Error occurred during dropping tables."));
                 return;
             }
         }
-
         console.log(cstyler.bold.purple("Lets start working on columns"));
-        const colop = require("./columnop");
-        const columnop = await colop.columnAddDeleteAlter(config, jsondata, dropcolumn, seperator);
-        if (columnop === null) {
+        const colop = require("./dropcolumn");
+
+        // lets drop columns if needed
+        console.log(cstyler.bold.purple("Lets drop unlisted columns if needed."));
+        if (dropcolumn) {
+            const dropcolifneeded = await colop.dropcolumn(config, jsondata, forcedropcolumn, forceupdatecolumn, separator);
+            if (dropcolifneeded === null) {
+                console.log(cstyler.bold.underline.red("Error occurred during dropping columns."));
+                return;
+            }
+        }
+        // lets add columns if needed
+        const addcolumn = require("./addcolumn");
+        console.log(cstyler.bold.purple("Lets add columns if needed."));
+        const addcolifneeded = await addcolumn.addColumnIfNeeded(config, jsondata, separator);
+        if (addcolifneeded === null) {
+            console.log(cstyler.bold.underline.red("Error occurred during adding columns."));
             return;
         }
+        // lets alter columns if needed
+        const altercolop = require("./altercolumn");
+        console.log(cstyler.bold.purple("Lets alter columns if needed."));
+        const altercolifneeded = await altercolop.alterColumnIfNeeded(config, jsondata, separator);
+        if (altercolifneeded === null) {
+            console.log(cstyler.bold.underline.red("Error occurred during altering columns."));
+            return;
+        }
+
+
+
+
+
         console.log(cstyler.bold.underline.green("<<<All database work is done perfectly>>>"));
     } catch (err) {
         console.error(err.message);
