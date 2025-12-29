@@ -246,12 +246,12 @@ DBTASKER is available via npm.
 
 Install it using either of the following commands:
 ```js
-npm install DBTASKER
+npm install dbtasker
 ```
 
 or
 ```js
-npm i DBTASKER
+npm i dbtasker
 ```
 Usage
 
@@ -268,10 +268,10 @@ DBTASKER handles the rest.
 Create a JavaScript file (for example: index.js) and import DBTASKER.
 ```js
 Using require (CommonJS)
-const DBTASKER = require("DBTASKER");
+const dbtasker = require("dbtasker");
 
 Using import (ES Module)
-import DBTASKER from "DBTASKER";
+import dbtasker from "dbtasker";
 ```
 
 #### Step 2: Create a Configuration Object
@@ -326,7 +326,7 @@ DBTASKER supports multiple aliases for column keys and is case-insensitive.
 
 Call DBTASKER by passing the config first, then the schema object.
 ```js
-DBTASKER(config, schema);
+dbtasker(config, schema);
 ```
 
 That’s it.
@@ -339,7 +339,7 @@ That’s it.
 
 ### Full Minimal Example
 ```js
-const DBTASKER = require("DBTASKER");
+const DBTASKER = require("dbtasker");
 
 const config = {
   host: "localhost",
