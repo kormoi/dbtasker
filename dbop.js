@@ -33,7 +33,7 @@ async function alterDatabaseCharsetCollate(config, databaseName, characterSet, c
         `;
 
         await connection.query(query);
-        console.log(`${cstyler.purple('Database:')} '${cstyler.blue(databaseName)}' character set changed to '${cstyler.yellow(characterSet)}' and collation to '${cstyler.yellow(collate)}'.`);
+        console.log(`${cstyler.blue('Database:')} '${cstyler.hex("#00d9ffff")(databaseName)}' character set changed to '${cstyler.yellow(characterSet)}' and collation to '${cstyler.yellow(collate)}'.`);
         return true;
     } catch (err) {
         console.error("Error altering database:", err.message);
@@ -73,7 +73,7 @@ async function createDatabase(config, databaseName, characterSet = null, collate
         await connection.query(query);
 
         console.log(
-            `${cstyler.purple('Database:')} '${cstyler.blue(databaseName)}'` +
+            `${cstyler.blue('Database:')} '${cstyler.hex("#00d9ffff")(databaseName)}'` +
             (characterSet ? ` created with CHARACTER SET '${cstyler.yellow(characterSet)}'` : "") +
             (collate ? ` and COLLATE '${cstyler.yellow(collate)}'` : "")
         );
@@ -89,6 +89,7 @@ async function createDatabase(config, databaseName, characterSet = null, collate
 async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, donttouchdb = [], separator = "_") {
     try {
         // lets add databases and drop databases
+        console.log(cstyler.bold.yellow("Starting database add/drop/alter process..."));
         let config;
         if (fncs.isValidMySQLConfig(allconfig)) {
             config = { "port": allconfig.port, "host": allconfig.host, "user": allconfig.user, "password": allconfig.password }
@@ -123,14 +124,14 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
             }
             if (avldblist.includes(data.name)) {
                 // Let's Alter database if needed
-                console.log(cstyler.purple("Database Name: "), cstyler.blue(data.name), " is exist. Checking for charactar set and collate configuration");
+                console.log(cstyler.blue("Database Name: "), cstyler.hex("#00d9ffff")(data.name), " is exist. Checking for charactar set and collate configuration");
                 const dbdetails = await fncs.getDatabaseCharsetAndCollation(config, data.name);
                 if (!fncs.isJsonObject(dbdetails)) {
                     console.error(cstyler.bold("Having problem getting database character set and collate."));
                     return null;
                 } else {
                     if ((data.charset === null || dbdetails.characterSet === data.charset) && (data.collate === null || dbdetails.collation === data.collate)) {
-                        console.log(cstyler.purple("Database: "), cstyler.blue(data.name), " no changes needed.");
+                        console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(data.name), " no changes needed.");
                     } else {
                         // lets alter the database charset and collate
                         if (data.charset === null) {
@@ -148,14 +149,14 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
 
             } else {
                 // Let's Create database
-                console.log(cstyler.purple("Database Name: "), cstyler.blue(data.name), " do not exist.");
+                console.log(cstyler.blue("Database Name: "), cstyler.hex("#00d9ffff")(data.name), " do not exist.");
                 console.log("Lets create Database: ", cstyler.yellow(jsondb));
                 const createdb = await createDatabase(config, data.name, data.charset, data.collate);
                 if (createdb === true) {
-                    console.log(cstyler.purple("Database Name: "), cstyler.blue(jsondb), cstyler.green(" have created successfully"));
+                    console.log(cstyler.blue("Database Name: "), cstyler.hex("#00d9ffff")(jsondb), cstyler.green(" have created successfully"));
                 } else if (createdb === false) {
-                    console.error("Trying to create this ", cstyler.blue(jsondb), " database when it do not exist on the list all existing database. But when creating server says it already exist. There must be a database problem.");
-                    console.log(cstyler.purple("All available Database names are: "), cstyler.blue(avldblist.join(", ")));
+                    console.error("Trying to create this ", cstyler.hex("#00d9ffff")(jsondb), " database when it do not exist on the list all existing database. But when creating server says it already exist. There must be a database problem.");
+                    console.log(cstyler.blue("All available Database names are: "), cstyler.hex("#00d9ffff")(avldblist.join(", ")));
                     return null;
                 } else {
                     return null;
@@ -179,10 +180,11 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
                 }
                 const getrev = fncs.reverseLoopName(dbnms);
                 if (Array.isArray(getrev)) {
-                    if (getrev[0] && arrngdbnms.hasOwnProperty(getrev[0])) {
-                        arrngdbnms[getrev[0]].push(dbnms);
-                    } else if (getrev[1] && arrngdbnms.hasOwnProperty(getrev[1])) {
-                        arrngdbnms[getrev[1]].push(dbnms);
+                    for(const item of getrev) {
+                        if(arrngdbnms.hasOwnProperty(item)) {
+                            arrngdbnms[item].push(dbnms);
+                            break;
+                        }
                     }
                 } else {
                     arrngdbnms[getrev] = [dbnms];
@@ -197,9 +199,9 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
                         const isdropdb = await fncs.dropDatabase(config, items);
                         if (isdropdb) {
                             count += 1;
-                            console.log(`${cstyler.purple('Database')} '${cstyler.yellow(databaseName)}' ${cstyler.red('dropped')} ${cstyler.green('successfully.')}`);
+                            console.log(`${cstyler.blue('Database')} '${cstyler.yellow(databaseName)}' ${cstyler.red('dropped')} ${cstyler.green('successfully.')}`);
                         } else if (isdropdb === false) {
-                            console.log(`${cstyler.purple('Database')} '${cstyler.blue(databaseName)}' does not exist.`);
+                            console.log(`${cstyler.blue('Database')} '${cstyler.hex("#00d9ffff")(databaseName)}' does not exist.`);
                         } else if (isdropdb === null) {
                             return null;
                         }

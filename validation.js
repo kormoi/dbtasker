@@ -252,7 +252,7 @@ async function JSONchecker(table_json, config, separator = "_") {
         for (const databaseName of Object.keys(table_json)) {
             if (fncs.perseDatabaseNameWithLoop(databaseName, separator) === false) {
                 baddatabaseName.push(
-                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
+                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
                     `${cstyler.red('- database name is not valid.')}`
                 )
             }
@@ -270,8 +270,8 @@ async function JSONchecker(table_json, config, separator = "_") {
                     if (fncs.isJsonObject(table_json[databaseName][tableName])) {
                         if (fncs.perseTableNameWithLoop(tableName, separator) === false) {
                             badTableNames.push(
-                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                `${cstyler.purple('of table:')} ${cstyler.blue(tableName)} ` +
+                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                `${cstyler.blue('of table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
                                 `${cstyler.red('- table name is not valid.')}`
                             );
                         }
@@ -440,7 +440,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 } else {
                                     // lets check bad null
                                     badnulls.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ${cstyler.yellow('NULL')} ${cstyler.red('- must be true or false')}`
+                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} > ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} > ${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.yellow('NULL')} ${cstyler.red('- must be true or false')}`
                                     );
                                 }
                                 /**
@@ -532,9 +532,9 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 // lets check column names
                                 if (!fncs.isValidColumnName(columnName.toLowerCase())) {
                                     badColumnNames.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                        `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                        `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                         `${cstyler.red('- column name is not valid.')}`
                                     );
                                 }
@@ -542,9 +542,9 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 const allMySQLColumnTypes = Object.keys(mysqlTypeMetadata);
                                 if (typeof columntype !== "string") {
                                     badtype.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                        `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                        `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                         `${cstyler.red('- must have type.')}`
                                     );
                                     columntype = null;
@@ -552,20 +552,20 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     if (engine !== undefined) {
                                         if (!eng.isColumnTypeAllowed(engine, columntype.toUpperCase())) {
                                             badengine.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                                `${cstyler.purple('> Type:')} ${cstyler.blue(columntype.toUpperCase())} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Engine:')} ${cstyler.hex("#00d9ffff")(engine)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                `${cstyler.blue('> Type:')} ${cstyler.hex("#00d9ffff")(columntype.toUpperCase())} ` +
                                                 `${cstyler.red('> type is not supported by engine.')}`
                                             )
                                         }
                                     }
                                     if (!allMySQLColumnTypes.includes(columntype.toUpperCase())) {
                                         badtype.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                             `${cstyler.red('> type - must have valid column type.')}`
                                         );
                                         columntype = null;
@@ -577,7 +577,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     // Check if length is required but missing
                                     if (typeInfo.required && length_value === undefined) {
                                         badlength.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('requires length but none provided.')}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red('requires length but none provided.')}`
                                         );
                                     } else if (length_value !== undefined) {
                                         let lenVals = length_value;
@@ -587,14 +587,14 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         if (typeInfo.lengthType === "int") {
                                             if (!Number.isInteger(lenVals)) {
                                                 badlength.push(
-                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have a valid integer length')}`
+                                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red('should have a valid integer length')}`
                                                 );
                                             }
                                         } else if (typeInfo.lengthType === "two-int") {
                                             const parsed = parseQuotedListSafely(lenVals);
                                             if (parsed.length !== 2) {
                                                 badlength.push(
-                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have two integer values [precision, scale]')}`
+                                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red('should have two integer values [precision, scale]')}`
                                                 );
                                             } else {
                                                 const [precision, scale] = parsed;
@@ -603,7 +603,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                                     !Number.isInteger(scale) || scale < 0 || scale > precision
                                                 ) {
                                                     badlength.push(
-                                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('has invalid precision or scale')}`
+                                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red('has invalid precision or scale')}`
                                                     );
                                                 }
                                             }
@@ -611,7 +611,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             const parsed = parseQuotedListSafely(lenVals);
                                             if (parsed.length === 0) {
                                                 badlength.push(
-                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red('should have a valid list of options')}`
+                                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red('should have a valid list of options')}`
                                                 );
                                             }
                                         }
@@ -622,9 +622,9 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     if (typeof indexes === "string") {
                                         if (typeInfo.dataType !== "numeric" || !['PRIMARY KEY', 'UNIQUE'].includes(indexes) || nulls === true || defaults !== undefined) {
                                             badautoincrement.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red('column must be')} ${cstyler.yellow('integer')} ${cstyler.red('type, should be')} ${cstyler.yellow('primary key')} ${cstyler.red('or')} ${cstyler.yellow('unique indexed')}, ` +
                                                 `${cstyler.red('should be')} ${cstyler.yellow('NOT NULL')}, ` +
                                                 `${cstyler.red('can not have a')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value.')}`
@@ -632,9 +632,9 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         }
                                     } else {
                                         badautoincrement.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                             `${cstyler.red('a valid')} ${cstyler.yellow('index')} ${cstyler.red('value must be ')}` +
                                             `${cstyler.yellow('PRIMARY KEY, UNIQUE')} ${cstyler.red('for autoincrement.')}`
                                         );
@@ -642,10 +642,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     if (engine !== undefined) {
                                         if (!eng.isEngineFeatureAllowed(engine, 'AutoIncrement')) {
                                             badengine.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Engine:')} ${cstyler.hex("#00d9ffff")(engine)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red('> Engine - does not support')}` +
                                                 `${cstyler.yellow(' - Autoincrement')}`
                                             )
@@ -668,17 +668,17 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     }
                                     if (autoincrementcolumnlist.length > 1) {
                                         badautoincrement.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                             `${cstyler.red('- This table has more than one')} ${cstyler.yellow('auto increment')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('auto increment')} ${cstyler.red('column.')}`
                                         );
                                     }
                                 } else if (autoincrement === null) {
                                     badautoincrement.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                        `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                        `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                        `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                        `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                         `${cstyler.red('- must true or false as valid autoincrement value')}`
                                     );
                                 }
@@ -737,9 +737,9 @@ async function JSONchecker(table_json, config, separator = "_") {
 
                                     if (invalids.length) {
                                         badcomment.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                             `${cstyler.red('- Invalid comment:')} ${invalids.join(cstyler.red(' | '))}`
                                         );
                                     }
@@ -757,10 +757,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     if (engine !== undefined) {
                                         if (!eng.isEngineFeatureAllowed(engine, 'ZeroFill')) {
                                             badengine.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Engine:')} ${cstyler.hex("#00d9ffff")(engine)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red('> Engine - does not support')}` +
                                                 `${cstyler.yellow(' - ZeroFill')}`
                                             )
@@ -779,31 +779,31 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     if (typeof indexes === "string") {
                                         if (columntype === "JSON") {
                                             badindex.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red('- is a JSON column which can not have an ')}${cstyler.yellow('index')} ${cstyler.red('property')}`
                                             );
                                         } else if (typeInfo.dataType !== "geometry" && indexes === "SPATIAL" || typeInfo.dataType === "geometry" && indexes !== "SPATIAL") {
                                             badindex.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red(' - ')}${cstyler.yellow('SPATIAL - index')} ${cstyler.red('can only be used with ')}${cstyler.yellow('GEOMETRY')} ${cstyler.red('data type and ')}${cstyler.yellow('GEOMETRY')} ${cstyler.red('can only be used with ')}${cstyler.yellow('SPATIAL - index')}`
                                             );
                                         } else if (indexes === "FULLTEXT" && typeInfo.dataType !== "string") {
                                             badindex.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red(' - ')}${cstyler.yellow('FULLTEXT - index')} ${cstyler.red('can only be used with ')}${cstyler.yellow('CHAR, VARCHAR, TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT')} ${cstyler.red('column types which are string.')}`
                                             );
                                         } else if (!validIndexValues.includes(indexes)) {
                                             console.log(indexes);
                                             badindex.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red('- has unsupported index value.')} ` +
                                                 `${cstyler.red('Value must be')} ${cstyler.yellow(validIndexValues.join(', '))}`
                                             );
@@ -812,10 +812,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         if (engine !== undefined) {
                                             if (!eng.isEngineFeatureAllowed(engine, 'Index')) {
                                                 badengine.push(
-                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                    `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                    `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
-                                                    `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                    `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                    `${cstyler.blue('> Engine:')} ${cstyler.hex("#00d9ffff")(engine)} ` +
+                                                    `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                     `${cstyler.red('> Engine - does not support')}` +
                                                     `${cstyler.yellow(' - Index')}`
                                                 )
@@ -823,9 +823,9 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         }
                                     } else {
                                         badindex.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                             `${cstyler.red('- ')}${cstyler.yellow('index')} ${cstyler.red('value must be text or string.')}`
                                         );
                                     }
@@ -847,9 +847,9 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     }
                                     if (doubblePrimary.length > 1) {
                                         badindex.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                             `${cstyler.red('- This table has more than one')} ${cstyler.yellow('PRIMARY KEY')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('PRIMARY KEY')} ${cstyler.red('column.')}`
                                         );
                                     }
@@ -860,11 +860,11 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         contentObj[databaseName][tableName][columnName]._charset_ = _charset_;
                                     } else if (!['text', 'string'].includes(typeInfo.dataType)) {
                                         badcharacterset.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.purple("> column type:")} ${cstyler.blue(columntype)} ${cstyler.red('can not accept character set and must be a type that accept TEXT or STRING to set a')} ${cstyler.yellow("character set")}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.blue("> column type:")} ${cstyler.hex("#00d9ffff")(columntype)} ${cstyler.red('can not accept character set and must be a type that accept TEXT or STRING to set a')} ${cstyler.yellow("character set")}`
                                         );
                                     } else {
                                         badcharacterset.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.yellow("character set")} ${cstyler.red('value must have a valid value')}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.yellow("character set")} ${cstyler.red('value must have a valid value')}`
                                         );
                                     }
                                 }
@@ -873,11 +873,11 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         contentObj[databaseName][tableName][columnName]._collate_ = _collate_;
                                     } else if (!['text', 'string'].includes(typeInfo.dataType)) {
                                         badcollation.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.purple("> column type:")} ${cstyler.blue(columntype)} ${cstyler.red('can not accept collate and must be a type that accept TEXT or STRING to set a')} ${cstyler.yellow("collate")}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.blue("> column type:")} ${cstyler.hex("#00d9ffff")(columntype)} ${cstyler.red('can not accept collate and must be a type that accept TEXT or STRING to set a')} ${cstyler.yellow("collate")}`
                                         );
                                     } else {
                                         badcollation.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.yellow("collate")} ${cstyler.red('value must have a valid value')}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.yellow("collate")} ${cstyler.red('value must have a valid value')}`
                                         );
                                     }
                                 }
@@ -885,11 +885,11 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     const isvalid = await fncs.isCharsetCollationValid(config, contentObj[databaseName][tableName][columnName]._charset_, contentObj[databaseName][tableName][columnName]._collate_);
                                     if (isvalid === false) {
                                         badcarcol.push(
-                                            `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple("Table:")} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple("Column:")} ${cstyler.blue(columnName)} ` +
-                                            `${cstyler.purple("> Character set:")} ${cstyler.blue(contentObj[databaseName][tableName][columnName]._charset_)} ` +
-                                            `${cstyler.purple("> Collate:")} ${cstyler.blue(contentObj[databaseName][tableName][columnName]._collate_)} ` +
+                                            `${cstyler.blue("Database:")} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue("Table:")} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue("Column:")} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                            `${cstyler.blue("> Character set:")} ${cstyler.hex("#00d9ffff")(contentObj[databaseName][tableName][columnName]._charset_)} ` +
+                                            `${cstyler.blue("> Collate:")} ${cstyler.hex("#00d9ffff")(contentObj[databaseName][tableName][columnName]._collate_)} ` +
                                             `${cstyler.red("- is invalid combination")} `
                                         )
                                     }
@@ -899,9 +899,9 @@ async function JSONchecker(table_json, config, separator = "_") {
 
                                 if (!result.valid) {
                                     baddefaults.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ` +
-                                        `${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ` +
-                                        `${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ${cstyler.red(result.message)}`
+                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} > ` +
+                                        `${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} > ` +
+                                        `${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red(result.message)}`
                                     );
                                 }
                                 // lets check bad foreign_key delete and update options
@@ -910,7 +910,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 let fktable = undefined;
                                 let fkcolumn = undefined;
                                 let foreign_key = {};
-                                const fk_variations = ["fk", "foreign_key", "foreignkey"];
+                                const fk_variations = ["fk", "fuck", "foreign_key", "foreignkey"];
                                 for (const item of Object.keys(deepColumn)) {
                                     if (fk_variations.includes(item.toLowerCase())) {
                                         foreign_key = deepColumn[item];
@@ -949,10 +949,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     }
                                     if (!validFKSetOption.has(deleteOption)) {
                                         badforeighkey.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ` +
-                                            `${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ` +
-                                            `${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ` +
-                                            `${cstyler.blue('foreign_key > delete')} ` +
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} > ` +
+                                            `${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} > ` +
+                                            `${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                            `${cstyler.hex("#00d9ffff")('foreign_key > delete')} ` +
                                             `${cstyler.red('must be one of:')} ` +
                                             `${cstyler.yellow('[true, "DELETE"] > work as > CASCADE, "CASCADE", [null, "NULL"] > work as > "SET NULL", "DEFAULT" > work as > "SET DEFAULT", "RESTRICT", "NO ACTION"')}, ` +
                                             `${cstyler.red(". You can use lowercase too.")}`
@@ -961,20 +961,20 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         // If DELETE is null (SET NULL), column must allow NULLs
                                         if ([null, "SET NULL", "NULL"].includes(deleteOption) && nulls !== true) {
                                             badforeighkey.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ` +
-                                                `${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ` +
-                                                `${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ` +
-                                                `${cstyler.blue('foreign_key >')} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} > ` +
+                                                `${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} > ` +
+                                                `${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                `${cstyler.hex("#00d9ffff")('foreign_key >')} ` +
                                                 `${cstyler.yellow('delete')} === ${cstyler.yellow('null')} - then column ${cstyler.red('NULL must be true')}`
                                             );
                                         }
                                         // If DELETE is 'set default', column must have a DEFAULT value
                                         else if (["DEFAULT", "SET DEFAULT"].includes(deleteOption) && defaults === undefined) {
                                             badforeighkey.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                                `${cstyler.blue('foreign_key >')} ${cstyler.red("delete === 'set default'")} - then column ${cstyler.red('DEFAULT must be defined')}`
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                `${cstyler.hex("#00d9ffff")('foreign_key >')} ${cstyler.red("delete === 'set default'")} - then column ${cstyler.red('DEFAULT must be defined')}`
                                             );
                                         }
                                     }
@@ -983,10 +983,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     if (updateOption !== undefined) {
                                         if (!validFKSetOption.has(updateOption)) {
                                             badforeighkey.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ` +
-                                                `${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ` +
-                                                `${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ` +
-                                                `${cstyler.blue('foreign_key > ONUPDATE')} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} > ` +
+                                                `${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} > ` +
+                                                `${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                `${cstyler.hex("#00d9ffff")('foreign_key > ONUPDATE')} ` +
                                                 `${cstyler.red('must be one of:')} ` +
                                                 `${cstyler.yellow('[true, "DELETE"] > work as > CASCADE, "CASCADE", [null, "NULL"] > work as > "SET NULL", "DEFAULT" > work as > "SET DEFAULT", "RESTRICT", "NO ACTION"')}, ` +
                                                 `${cstyler.red(". You can use lowercase too.")}`
@@ -996,10 +996,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             // If ONUPDATE is null (SET NULL), column must allow NULLs
                                             if ([null, "SET NULL", "NULL"].includes(updateOption) && nulls !== true) {
                                                 badforeighkey.push(
-                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} > ` +
-                                                    `${cstyler.purple('Table:')} ${cstyler.blue(tableName)} > ` +
-                                                    `${cstyler.purple('Column:')} ${cstyler.blue(columnName)} ` +
-                                                    `${cstyler.blue('foreign_key >')} ` +
+                                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} > ` +
+                                                    `${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} > ` +
+                                                    `${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                    `${cstyler.hex("#00d9ffff")('foreign_key >')} ` +
                                                     `${cstyler.yellow('update set to')} ${cstyler.yellow('null')} - then column ${cstyler.red('must be null true')}`
                                                 );
                                             }
@@ -1007,10 +1007,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             // If DELETE is 'set default', column must have a DEFAULT value
                                             else if (["DEFAULT", "SET DEFAULT"].includes(updateOption) && defaults === undefined) {
                                                 badforeighkey.push(
-                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                    `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                    `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                                    `${cstyler.blue('foreign_key >')} ${cstyler.red("update === 'set default'")} - then column ${cstyler.red('DEFAULT must be defined')}`
+                                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                    `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                    `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                    `${cstyler.hex("#00d9ffff")('foreign_key >')} ${cstyler.red("update === 'set default'")} - then column ${cstyler.red('DEFAULT must be defined')}`
                                                 );
 
                                             }
@@ -1038,10 +1038,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         if (table_json[databaseName].hasOwnProperty(fktable)) {
                                             if (!table_json[databaseName][fktable].hasOwnProperty(fkcolumn)) {
                                                 badforeighkey.push(
-                                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                    `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                    `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                                    `${cstyler.purple('foreign_key > references > table > column -')} ${cstyler.yellow.underline(fkcolumn)} ${cstyler.red('do not exist')}`
+                                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                    `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                    `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                    `${cstyler.blue('foreign_key > references > table > column -')} ${cstyler.yellow.underline(fkcolumn)} ${cstyler.red('do not exist')}`
                                                 );
                                             } else {
                                                 const fkcolumndata = table_json[databaseName][fktable][fkcolumn];
@@ -1050,7 +1050,6 @@ async function JSONchecker(table_json, config, separator = "_") {
                                                 let colunsigned;
                                                 let colcarset;
                                                 let colcollate;
-                                                let colindex;
                                                 for (const item of Object.keys(fkcolumndata)) {
                                                     if (coltypekeys.includes(item.toLowerCase())) {
                                                         coltype = fkcolumndata[item];
@@ -1087,30 +1086,30 @@ async function JSONchecker(table_json, config, separator = "_") {
                                                 // lets check
                                                 if (typeof coltype === "string") coltype = coltype.toUpperCase();
                                                 if (coltype !== columntype) {
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- type need to match to be Foreign Key-capable')}`);
+                                                    badforeighkey.push(`${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(fktable)} ${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(fkcolumn)} - ${cstyler.red('- type need to match to be Foreign Key-capable')}`);
                                                 }
                                                 if (collength !== length_value) {
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- length value need to match to be Foreign Key-capable')}`);
+                                                    badforeighkey.push(`${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(fktable)} ${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(fkcolumn)} - ${cstyler.red('- length value need to match to be Foreign Key-capable')}`);
                                                 }
                                                 if (colunsigned !== unsigned) {
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- unsigned value need to match to be Foreign Key-capable')}`);
+                                                    badforeighkey.push(`${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(fktable)} ${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(fkcolumn)} - ${cstyler.red('- unsigned value need to match to be Foreign Key-capable')}`);
                                                 }
                                                 if (colcarset !== _charset_) {
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- characterset value need to match to be Foreign Key-capable')}`);
+                                                    badforeighkey.push(`${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(fktable)} ${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(fkcolumn)} - ${cstyler.red('- characterset value need to match to be Foreign Key-capable')}`);
                                                 }
                                                 if (colcollate !== _collate_) {
-                                                    badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.blue(fktable)} ${cstyler.purple('Column:')} ${cstyler.blue(fkcolumn)} - ${cstyler.red('- collation value need to match to be Foreign Key-capable')}`);
+                                                    badforeighkey.push(`${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red(`> foreign_key > references >`)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(fktable)} ${cstyler.blue('Column:')} ${cstyler.hex("#00d9ffff")(fkcolumn)} - ${cstyler.red('- collation value need to match to be Foreign Key-capable')}`);
                                                 }
                                             }
                                         } else {
-                                            badforeighkey.push(`${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Column:')} ${cstyler.blue(`${columnName} > foreign_key > references >`)} ${cstyler.purple('Table:')} ${cstyler.underline.yellow(fktable)} - ${cstyler.red('do not exist')}`)
+                                            badforeighkey.push(`${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(`${columnName} > foreign_key > references >`)} ${cstyler.blue('Table:')} ${cstyler.underline.yellow(fktable)} - ${cstyler.red('do not exist')}`)
                                         }
                                     } else {
                                         badforeighkey.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
-                                            `${cstyler.blue('foreign_key > references -')} ${cstyler.red('must have a table and column property referancing to referance table column')}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                            `${cstyler.hex("#00d9ffff")('foreign_key > references -')} ${cstyler.red('must have a table and column property referancing to referance table column')}`
                                         );
                                     }
 
@@ -1138,10 +1137,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     if (engine !== undefined) {
                                         if (!eng.isEngineFeatureAllowed(engine, 'Null')) {
                                             badengine.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Engine:')} ${cstyler.hex("#00d9ffff")(engine)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red('> Engine - does not support')}` +
                                                 `${cstyler.yellow(' - Null')}`
                                             )
@@ -1154,10 +1153,10 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     if (engine !== undefined) {
                                         if (!eng.isEngineFeatureAllowed(engine, 'Default')) {
                                             badengine.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ` +
-                                                `${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ` +
-                                                `${cstyler.purple('> Engine:')} ${cstyler.blue(engine)} ` +
-                                                `${cstyler.purple('> Column:')} ${cstyler.blue(columnName)} ` +
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Engine:')} ${cstyler.hex("#00d9ffff")(engine)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                                 `${cstyler.red('> Engine - does not support')}` +
                                                 `${cstyler.yellow(' - Default')}`
                                             )
@@ -1207,7 +1206,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         contentObj[databaseName][tableName]._charset_ = charvalue;
                                     } else {
                                         badcharacterset.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> character set key:')} ${cstyler.blue(columnName)}  ${cstyler.red('must have a valid character set value')}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> character set key:')} ${cstyler.hex("#00d9ffff")(columnName)}  ${cstyler.red('must have a valid character set value')}`
                                         );
                                     }
                                 } else if (collationkeys.includes(columnName.toLowerCase())) {
@@ -1216,7 +1215,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         contentObj[databaseName][tableName]._collate_ = colvalue;
                                     } else {
                                         badcollation.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(columnName)}  ${cstyler.red('must have a valid collate value')}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> collate key:')} ${cstyler.hex("#00d9ffff")(columnName)}  ${cstyler.red('must have a valid collate value')}`
                                         );
                                     }
                                 } else if (enginekey.includes(columnName.toLowerCase())) {
@@ -1226,38 +1225,38 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             contentObj[databaseName][tableName]._engine_ = engvalue;
                                         } else {
                                             badengine.push(
-                                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Engine key:')} ${cstyler.blue(columnName)} ${cstyler.purple("Engine name: ")} ${cstyler.blue(engvalue)} ${cstyler.red('- The storage engine exists in MySQL source code but is not available on this server.')}`
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Engine key:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.blue("Engine name: ")} ${cstyler.hex("#00d9ffff")(engvalue)} ${cstyler.red('- The storage engine exists in MySQL source code but is not available on this server.')}`
                                             );
                                         }
                                     } else {
                                         badengine.push(
-                                            `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> Engine key:')} ${cstyler.blue(columnName)} ${cstyler.purple("Engine name:")} ${cstyler.blue(engvalue)} ${cstyler.red('- must have a valid engine value')}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Engine key:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.blue("Engine name:")} ${cstyler.hex("#00d9ffff")(engvalue)} ${cstyler.red('- must have a valid engine value')}`
                                         );
                                     }
                                 } else if (commetnkey.includes(columnName.toLowerCase())) {
                                     const commentval = table_json[databaseName][tableName][columnName];
                                     if (!validateMySQLComment(commentval).valid) {
                                         badcomment.push(
-                                            `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple("> Table:")} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple("> Table comment:")} ${cstyler.blue(columnName)} ` +
+                                            `${cstyler.blue("Database:")} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue("> Table:")} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue("> Table comment:")} ${cstyler.hex("#00d9ffff")(columnName)} ` +
                                             `${cstyler.red("- Invalid comment:")} ` +
                                             result.errors.map(e => cstyler.red(e)).join(", ")
                                         )
                                     }
                                 } else {
                                     badColumnNames.push(
-                                        `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.purple('> columnName:')} ${cstyler.blue(columnName)}  ${cstyler.red('- That column name have some problem with its value')}`
+                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> columnName:')} ${cstyler.hex("#00d9ffff")(columnName)}  ${cstyler.red('- That column name have some problem with its value')}`
                                     )
                                 }
                                 if (contentObj[databaseName][tableName].hasOwnProperty("_collate_") && contentObj[databaseName][tableName].hasOwnProperty("_charset_")) {
                                     const isvalid = await fncs.isCharsetCollationValid(config, contentObj[databaseName][tableName]._charset_, contentObj[databaseName][tableName]._collate_);
                                     if (isvalid === false) {
                                         badcarcol.push(
-                                            `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
-                                            `${cstyler.purple("Table:")} ${cstyler.blue(tableName)} ` +
-                                            `${cstyler.purple("> Character set:")} ${cstyler.blue(contentObj[databaseName][tableName]._charset_)} ` +
-                                            `${cstyler.purple("> Collate:")} ${cstyler.blue(contentObj[databaseName][tableName]._collate_)} ` +
+                                            `${cstyler.blue("Database:")} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue("Table:")} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue("> Character set:")} ${cstyler.hex("#00d9ffff")(contentObj[databaseName][tableName]._charset_)} ` +
+                                            `${cstyler.blue("> Collate:")} ${cstyler.hex("#00d9ffff")(contentObj[databaseName][tableName]._collate_)} ` +
                                             `${cstyler.red("- is invalid combination")} `
                                         )
                                     }
@@ -1271,7 +1270,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 contentObj[databaseName]._charset_ = charvalue;
                             } else {
                                 badcharacterset.push(
-                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> character set key:')} ${cstyler.blue(tableName)}  ${cstyler.red('must have a valid character set value')}`
+                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> character set key:')} ${cstyler.hex("#00d9ffff")(tableName)}  ${cstyler.red('must have a valid character set value')}`
                                 );
                             }
                         } else if (collationkeys.includes(tableName.toLowerCase())) {
@@ -1280,7 +1279,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 contentObj[databaseName]._collate_ = colvalue;
                             } else {
                                 badcollation.push(
-                                    `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('> collate key:')} ${cstyler.blue(tableName)}  ${cstyler.red('must have a valid collate value')}`
+                                    `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> collate key:')} ${cstyler.hex("#00d9ffff")(tableName)}  ${cstyler.red('must have a valid collate value')}`
                                 );
                             }
                         } else if (commetnkey.includes(tableName.toLowerCase())) {
@@ -1289,24 +1288,24 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 contentObj[databaseName]._comment_ = commentval;
                             } else {
                                 badcomment.push(
-                                    `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
-                                    `${cstyler.purple("> Database comment:")} ${cstyler.blue(tableName)} ` +
+                                    `${cstyler.blue("Database:")} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                    `${cstyler.blue("> Database comment:")} ${cstyler.hex("#00d9ffff")(tableName)} ` +
                                     `${cstyler.red("- Invalid comment:")} ` +
                                     result.errors.map(e => cstyler.red(e)).join(", ")
                                 )
                             }
                         } else {
                             badTableNames.push(
-                                `${cstyler.purple('Database:')} ${cstyler.blue(databaseName)} ${cstyler.purple('Table:')} ${cstyler.blue(tableName)} ${cstyler.red('- That table may have some problem with its property')}`
+                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.red('- That table may have some problem with its property')}`
                             )
                         }
                         if (contentObj[databaseName].hasOwnProperty("_collate_") && contentObj[databaseName].hasOwnProperty("_charset_")) {
                             const isvalid = await fncs.isCharsetCollationValid(config, contentObj[databaseName]._charset_, contentObj[databaseName]._collate_);
                             if (isvalid === false) {
                                 badcarcol.push(
-                                    `${cstyler.purple("Database:")} ${cstyler.blue(databaseName)} ` +
-                                    `${cstyler.purple("> Character set:")} ${cstyler.blue(contentObj[databaseName]._charset_)} ` +
-                                    `${cstyler.purple("> Collate:")} ${cstyler.blue(contentObj[databaseName]._collate_)} ` +
+                                    `${cstyler.blue("Database:")} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                    `${cstyler.blue("> Character set:")} ${cstyler.hex("#00d9ffff")(contentObj[databaseName]._charset_)} ` +
+                                    `${cstyler.blue("> Collate:")} ${cstyler.hex("#00d9ffff")(contentObj[databaseName]._collate_)} ` +
                                     `${cstyler.red("- is invalid combination")} `
                                 )
                             }

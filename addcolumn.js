@@ -3,36 +3,31 @@ const cstyler = require("cstyler");
 
 
 
+async function addForeignKeyWithIndexQuery(config, databaseName, tableName, columnName, refTable, refColumn, options = {}) {
+    const ACTIONS = new Set(["RESTRICT", "CASCADE", "SET NULL", "NO ACTION"]);
 
-
-function addForeignKeyWithIndexQuery(tableName, columnName, refTable, refColumn, options = {}) {
-    const {
-        onDelete = "RESTRICT",
-        onUpdate = "RESTRICT"
-    } = options;
+    const onDelete = ACTIONS.has(options.onDelete) ? options.onDelete : "RESTRICT";
+    const onUpdate = ACTIONS.has(options.onUpdate) ? options.onUpdate : "RESTRICT";
 
     const indexName = `idx_${tableName}_${columnName}`;
+    const constraintName = `fk_${tableName}_${columnName}`;
 
-    const indexQuery = `
-    ALTER TABLE \`${tableName}\`
-    ADD INDEX \`${indexName}\` (\`${columnName}\`)
-  `.trim();
+    // Combine both ADD INDEX and ADD CONSTRAINT into a single statement
+    // Using a comma to separate the actions
+    const combinedQuery = `
+        ALTER TABLE \`${tableName}\`
+        ADD INDEX \`${indexName}\` (\`${columnName}\`),
+        ADD CONSTRAINT \`${constraintName}\`
+            FOREIGN KEY (\`${columnName}\`)
+            REFERENCES \`${refTable}\` (\`${refColumn}\`)
+            ON DELETE ${onDelete}
+            ON UPDATE ${onUpdate}
+    `.trim();
 
-    // Do not provide a constraint name; let MySQL generate it automatically
-    const foreignKeyQuery = `
-    ALTER TABLE \`${tableName}\`
-    ADD FOREIGN KEY (\`${columnName}\`)
-    REFERENCES \`${refTable}\` (\`${refColumn}\`)
-    ON DELETE ${onDelete}
-    ON UPDATE ${onUpdate}
-  `.trim();
-
-    return {
-        indexQuery,
-        foreignKeyQuery
-    };
+    const runquery = await fncs.runQuery(config, databaseName, combinedQuery);
+    return runquery;
 }
-function addColumnQuery(columndata, columnName, tableName) {
+async function addColumnQuery(columndata, columnName, tableName, databaseName, config) {
     try {
         if (!columndata || !columndata.columntype) {
             throw new Error("columntype is required to add a column. Table: " + tableName + " Column name: " + columnName);
@@ -164,7 +159,9 @@ function addColumnQuery(columndata, columnName, tableName) {
 
         queryText += indexClause + ' ';
 
-        return queryText.trim();
+        queryText = queryText.trim();
+        const runquery = await fncs.runQuery(config, databaseName, queryText);
+        return runquery;
     } catch (err) {
         console.error(err && err.message ? err.message : String(err));
         return null;
@@ -172,10 +169,10 @@ function addColumnQuery(columndata, columnName, tableName) {
 }
 async function addColumnIfNeeded(config, jsondata, separator) {
     try {
-        console.log(cstyler.cyan("Let's initiate addColumn to table if needed..."));
+        console.log(cstyler.bold.yellow("Let's initiate addColumn to table if needed..."));
         for (const jsondb of Object.keys(jsondata)) {
             let remainfk = {};
-            const loopdb = fncs.perseTableNameWithLoop(jsondb, separator);
+            const loopdb = fncs.perseDatabaseNameWithLoop(jsondb, separator);
             if (loopdb === false) {
                 console.error("There must be some mistake. Please re install the module.")
             }
@@ -186,6 +183,7 @@ async function addColumnIfNeeded(config, jsondata, separator) {
                 return null;
             }
             for (const jsontable of Object.keys(jsondata[jsondb])) {
+                if (fncs.isJsonObject(jsondata[jsondb][jsontable]) === false) { continue }
                 let queryText = [];
                 let foreignKeyQueries = [];
                 const looptable = fncs.perseTableNameWithLoop(jsontable, separator);
@@ -203,14 +201,17 @@ async function addColumnIfNeeded(config, jsondata, separator) {
                     return null;
                 }
                 for (const jsoncolumn of Object.keys(jsondata[jsondb][jsontable])) {
-                    if (allcols.includes(jsoncolumn)) {
+                    if (allcols.includes(jsoncolumn) || fncs.isJsonObject(jsondata[jsondb][jsontable][jsoncolumn]) === false) {
                         // column exists, skip
                         continue;
                     }
                     // lets add the column
                     const columndata = jsondata[jsondb][jsontable][jsoncolumn];
-                    const addcolquery = addColumnQuery(columndata, jsoncolumn, tableName);
-                    queryText.push(addcolquery);
+                    const addcolquery = await addColumnQuery(columndata, jsoncolumn, tableName, databaseName, config);
+                    if (addcolquery === null) {
+                        console.error(cstyler.red(`Failed to add column ${jsoncolumn} to table ${tableName} in database ${databaseName}. Skipping...`));
+                        return null;
+                    }
                     // check for foreign key
                     if (columndata.hasOwnProperty("foreign_key")) {
                         const fk = columndata.foreign_key;
@@ -224,29 +225,11 @@ async function addColumnIfNeeded(config, jsondata, separator) {
                             remainfk[tableName][jsoncolumn] = fk;
                             continue;
                         }
-                        const fkquery = addForeignKeyWithIndexQuery(tableName, jsoncolumn, fk.table, fk.column, { onDelete: fk.deleteOption, onUpdate: fk.updateOption });
-                        foreignKeyQueries.push(fkquery);
-                    }
-                }
-                // execute all queries for this table
-                for (const qt of queryText) {
-                    const execution = await fncs.runQuery(config, databaseName, qt);
-                    if (execution === null) {
-                        console.error(cstyler.red(`Failed to execute query on table ${tableName} in database ${databaseName}. Query: ${qt}`));
-                        return null;
-                    }
-                    else {
-                        console.log(cstyler.green(`Successfully added column on table ${tableName} in database ${databaseName}. Query: ${qt}`));
-                    }
-                }
-                for (const qt of foreignKeyQueries) {
-                    const execution = await fncs.runQuery(config, databaseName, qt);
-                    if (execution === null) {
-                        console.error(cstyler.red(`Failed to execute query on table ${tableName} in database ${databaseName}. Query: ${qt}`));
-                        return null;
-                    }
-                    else {
-                        console.log(cstyler.green(`Successfully added foreignkey on table ${tableName} in database ${databaseName}. Query: ${qt}`));
+                        const fkquery = await addForeignKeyWithIndexQuery(config, databaseName, tableName, jsoncolumn, fk.table, fk.column, { onDelete: fk.deleteOption, onUpdate: fk.updateOption });
+                        if (fkquery === null) {
+                            console.error(cstyler.red(`Failed to prepare foreign key query for column ${jsoncolumn} on table ${tableName} in database ${databaseName}. Skipping...`));
+                            return null;
+                        }
                     }
                 }
             }
@@ -255,10 +238,8 @@ async function addColumnIfNeeded(config, jsondata, separator) {
             for (const tbl of Object.keys(remainfk)) {
                 for (const col of Object.keys(remainfk[tbl])) {
                     const fk = remainfk[tbl][col];
-                    const fkquery = addForeignKeyWithIndexQuery(tbl, col, fk.table, fk.column, { onDelete: fk.deleteOption, onUpdate: fk.updateOption });
-                    foreignKeyQueries.push(fkquery);
-                    const execution = await fncs.runQuery(config, databaseName, fkquery);
-                    if (execution === null) {
+                    const fkquery = await addForeignKeyWithIndexQuery(config, databaseName, tbl, col, fk.table, fk.column, { onDelete: fk.deleteOption, onUpdate: fk.updateOption });
+                    if (fkquery === null) {
                         console.error(cstyler.red(`Failed to execute query on column ${col} on table ${tbl} in database ${databaseName}. Query: ${fkquery}`));
                         return null;
                     }

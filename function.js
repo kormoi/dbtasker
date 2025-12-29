@@ -541,46 +541,49 @@ function perseDatabaseNameWithLoop(text, separator = "_") {
   }
 }
 function reverseLoopName(text) {
-  if (typeof text !== "string") return text;
-
-  const parts = text.split("_").filter(Boolean);
-  if (parts.length < 2) return text;
+  if (typeof text !== "string" || text.length === 0) return text;
 
   const nowYear = new Date().getFullYear();
+  const sep = text[text.length - 1]; // The separator "_"
+  const core = text.slice(0, -1);    // Remove trailing separator
 
-  const isYear = y =>
-    /^\d{4}$/.test(y) && Number(y) <= nowYear;
+  // This Regex looks for the structure:
+  // [sep] + YEAR + optional([sep]+MONTH) + optional([sep]+DAY)
+  const dateRegex = new RegExp(`[${sep}](\\d{4})(?:[${sep}](\\d{2}))?(?:[${sep}](\\d{2}))?$`);
+  const match = core.match(dateRegex);
 
-  const isMonth = m =>
-    /^\d{2}$/.test(m) && Number(m) >= 1 && Number(m) <= 12;
+  if (!match) return text;
 
-  const isDay = d =>
-    /^\d{2}$/.test(d) && Number(d) >= 1 && Number(d) <= 31;
+  const [fullMatch, year, month, day] = match;
 
-  const last = parts[parts.length - 1];
-  const secondLast = parts[parts.length - 2];
-  const thirdLast = parts[parts.length - 3];
+  // Validate Year
+  if (parseInt(year) > nowYear) return text;
 
-  // YYYY_MM_DD
-  if (isDay(last) && isMonth(secondLast) && isYear(thirdLast)) {
-    const base = parts.slice(0, -3).join("_") + "_";
-    return [base + "(day)", base + "(days)"];
+  // Determine granularity based on what was provided in the string
+  let type = "year";
+  if (day) {
+    type = "day";
+  } else if (month) {
+    type = "month";
   }
 
-  // YYYY_MM
-  if (isMonth(last) && isYear(secondLast)) {
-    const base = parts.slice(0, -2).join("_") + "_";
-    return [base + "(month)", base + "(months)"];
-  }
+  // To get the "previous form":
+  // We take the core and remove the entire date block (fullMatch).
+  // Then we add the separator back to match your "base + _" rule.
+  const basePart = core.slice(0, core.length - fullMatch.length);
+  const baseWithSep = basePart;
 
-  // YYYY
-  if (isYear(last)) {
-    const base = parts.slice(0, -1).join("_") + "_";
-    return [base + "(year)", base + "(years)"];
-  }
-
-  return text;
+  return [
+    `${baseWithSep}(${type})`,
+    `${baseWithSep}(${type}s)`,
+    `(${type})${baseWithSep}`,
+    `(${type}s)${baseWithSep}`
+  ];
 }
+
+
+
+
 
 
 
@@ -775,6 +778,13 @@ function removefromarray(arr, text = "") {
     arr.splice(index, 1);
   }
   return arr
+}
+function isSameArray(arr1, arr2) {
+  if (arr1.length !== arr2.length) return false;
+  for (let i = 0; i < arr1.length; i++) {
+    if (!arr1.includes(arr2[i])) return false;
+  }
+  return true;
 }
 function isJsonObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -1266,7 +1276,7 @@ async function checkIndexExists(config, database, tableName, indexKey) {
     }
 
     return { found: matches.length > 0, matches };
-  } catch(err){
+  } catch (err) {
     console.error("Error in checkIndexExists:", err.message);
     return null;
   } finally {
@@ -1520,7 +1530,7 @@ async function findReferencingFromColumns(config, database, parentTable, parentC
     await conn.end();
   }
 }
-async function addForeignKeyWithIndex(config, dbname, tableName, columnName, refTable, refColumn, options = {}) {
+async function addForeignKeyWithIndex(config, dbName, tableName, columnName, refTable, refColumn, options = {}) {
   const {
     onDelete = "RESTRICT",
     onUpdate = "RESTRICT"
@@ -1530,16 +1540,24 @@ async function addForeignKeyWithIndex(config, dbname, tableName, columnName, ref
   const fkName = `fk_${tableName}_${refTable}_${columnName}`;
 
   let connection;
+
   try {
-    connection = await mysql.createConnection({ ...config, database: dbname });
+    connection = await mysql.createConnection({
+      ...config,
+      database: dbName
+    });
 
-    // 1. Add index if it does not exist
-    await connection.query(`
-      ALTER TABLE \`${tableName}\`
-      ADD INDEX \`${indexName}\` (\`${columnName}\`)
-    `).catch(() => { }); // ignore if index already exists
+    // Add index (ignore if already exists)
+    try {
+      await connection.query(`
+        ALTER TABLE \`${tableName}\`
+        ADD INDEX \`${indexName}\` (\`${columnName}\`)
+      `);
+    } catch (_) {
+      // index probably exists — safe to ignore
+    }
 
-    // 2. Add foreign key
+    // Add foreign key constraint
     await connection.query(`
       ALTER TABLE \`${tableName}\`
       ADD CONSTRAINT \`${fkName}\`
@@ -1551,14 +1569,75 @@ async function addForeignKeyWithIndex(config, dbname, tableName, columnName, ref
 
     return true;
   } catch (err) {
-    const errmess = err.message;
-    console.error("FK add error:", errmess);
-    if (errmess.toLowerCase().includes("duplicate")) {
-      return false;
+    const message = err?.message || "";
+
+    console.error("FK add error:", message);
+
+    if (message.toLowerCase().includes("duplicate")) {
+      return false; // already exists
     }
+
     return null;
   } finally {
-    if (connection) await connection.end();
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+async function addForeignKey(config, data) {
+  const {
+    database,
+    table,
+    column,
+    refTable,
+    refColumn,
+    onDelete = "RESTRICT",
+    onUpdate = "RESTRICT"
+  } = data;
+
+  const connection = await mysql.createConnection({
+    ...config,
+    database
+  });
+
+  try {
+    // 1. Ensure column index exists (required for FK)
+    const [indexes] = await connection.execute(
+      `
+      SHOW INDEX
+      FROM \`${table}\`
+      WHERE Column_name = ?
+      `,
+      [column]
+    );
+
+    if (indexes.length === 0) {
+      await connection.execute(
+        `ALTER TABLE \`${table}\` ADD INDEX (\`${column}\`)`
+      );
+    }
+
+    // 2. Generate constraint name
+    const constraintName = `fk_${table}_${column}_${refTable}_${refColumn}`;
+
+    // 3. Add foreign key
+    const sql = `
+      ALTER TABLE \`${table}\`
+      ADD CONSTRAINT \`${constraintName}\`
+      FOREIGN KEY (\`${column}\`)
+      REFERENCES \`${refTable}\` (\`${refColumn}\`)
+      ON DELETE ${onDelete}
+      ON UPDATE ${onUpdate}
+    `;
+
+    await connection.execute(sql);
+
+    return {
+      success: true,
+      constraint: constraintName
+    };
+  } finally {
+    await connection.end();
   }
 }
 async function removeForeignKeyFromColumn(config, databaseName, tableName, columnName) {
@@ -1755,7 +1834,7 @@ async function runQuery(config, databaseName, queryText) {
   let connection;
   try {
     if (!queryText || typeof queryText !== "string") return null;
-    console.log("Database:", cstyler.blue(databaseName), "Running query: ", cstyler.green(queryText));
+    console.log("Database:", cstyler.hex("#00d9ffff")(databaseName), "Running query: ", cstyler.green(queryText));
 
     connection = await mysql.createConnection({
       ...config,
@@ -1780,6 +1859,7 @@ module.exports = {
   isNumber,
   getDateTime,
   removefromarray,
+  isSameArray,
   getMySQLVersion,
   isMySQL578OrAbove,
   isValidMySQLConfig,
@@ -1814,6 +1894,7 @@ module.exports = {
   getAllForeignKeyDetails,
   findReferencingFromColumns,
   addForeignKeyWithIndex,
+  addForeignKey,
   removeForeignKeyFromColumn,
   removeForeignKeyConstraintFromColumn,
   columnExists,

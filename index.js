@@ -12,7 +12,7 @@ const falsers = [false, 0, "0", "false", "False", "FALSE"];
 
 module.exports = async function (allconfig, table_json) {
     try {
-        console.log(cstyler.blue("Initializing DBTASKER..."))
+        console.log(cstyler.hex("#00d9ffff")("Initializing DBTASKER..."))
         // check if enough database available on table json
         const databaseNames = Object.keys(table_json);
         if (databaseNames.length === 0) {
@@ -138,7 +138,7 @@ module.exports = async function (allconfig, table_json) {
         } else if (falsers.includes(forceupdatecolumn)) {
             forceupdatecolumn = false;
         } else {
-            forceupdatecolumn = false;
+            forceupdatecolumn = true;
         }
         console.log(cstyler.bold.underline.yellow("Lets check if the table need an upgrade"))
         // lets check all table name and column name
@@ -157,7 +157,7 @@ module.exports = async function (allconfig, table_json) {
         }
         // lets create tables if needed
         const tableop = require("./tableop");
-        const createtable = await tableop.createTable(config, jsondata, separator);
+        const createtable = await tableop.createTableifNeeded(config, jsondata, separator);
         if (createtable === null) {
             console.log(cstyler.bold.underline.red("Error occurred during creating tables."));
             return;
@@ -177,7 +177,7 @@ module.exports = async function (allconfig, table_json) {
         // lets drop columns if needed
         console.log(cstyler.bold.purple("Lets drop unlisted columns if needed."));
         if (dropcolumn) {
-            const dropcolifneeded = await colop.dropcolumn(config, jsondata, forcedropcolumn, forceupdatecolumn, separator);
+            const dropcolifneeded = await colop.dropcolumn(config, jsondata, forcedropcolumn, separator);
             if (dropcolifneeded === null) {
                 console.log(cstyler.bold.underline.red("Error occurred during dropping columns."));
                 return;
@@ -194,7 +194,7 @@ module.exports = async function (allconfig, table_json) {
         // lets alter columns if needed
         const altercolop = require("./altercolumn");
         console.log(cstyler.bold.purple("Lets alter columns if needed."));
-        const altercolifneeded = await altercolop.alterColumnIfNeeded(config, jsondata, separator);
+        const altercolifneeded = await altercolop.alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separator);
         if (altercolifneeded === null) {
             console.log(cstyler.bold.underline.red("Error occurred during altering columns."));
             return;

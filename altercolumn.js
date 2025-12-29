@@ -3,7 +3,187 @@ const cstyler = require("cstyler");
 
 
 
+function isValidToBeForeignkey(refColData, columnData) {
+    try {
+        if (refColData.columntype.toUpperCase() !== columnData.columntype.toUpperCase()) {
+            return false;
+        }
+        if (Array.isArray(refColData.length_values) !== Array.isArray(columnData.length_values)) {
+            return false;
+        } else if (Array.isArray(refColData.length_values) && Array.isArray(columnData.length_values)) {
+            if (!fncs.isSameArray(refColData.length_values, columnData.length_values)) {
+                return false;
+            }
+        } else {
+            if (refColData.length_values !== columnData.length_values) {
+                return false;
+            }
+        }
+        if ((refColData.unsigned || false) !== (columnData.unsigned || false)) {
+            return false;
+        }
+        if (["CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET"].includes(refColData.columntype.toUpperCase())) {
+            if ((refColData._charset_ || "") !== (columnData._charset_ || "")) {
+                return false;
+            }
+            if ((refColData._collate_ || "") !== (columnData._collate_ || "")) {
+                return false;
+            }
+        }
+        return true;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+}
+async function isColumnDataSame(config, databaseName, tableName, columnName, columnData, columndetails, fkdetails,) {
+    // 1. Column type
+    if (columnData.columntype !== columndetails.columntype) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Column type do not match"));
+        return false;
+    }
 
+    // 2. Length / precision / enum-set values
+    if (columnData.length_value !== undefined) {
+        const a = columnData.length_value;
+        const b = columndetails.length_value;
+
+        // ENUM / SET → array of strings
+        if (['ENUM', 'SET'].includes(columnData.columntype)) {
+            if (!Array.isArray(a) || !Array.isArray(b)) {
+                console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+                console.log(cstyler.red("ENUM or SET values must be an array"));
+                return false;
+            }
+            if (a.length !== b.length) {
+                console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+                console.log(cstyler.red("ENUM or SET - value length are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                return false;
+            }
+
+            for (let i = 0; i < a.length; i++) {
+                if (!a.includes(b[i])) {
+                    console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+                    console.log(cstyler.red("ENUM or SET - Server and given value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                    return false;
+
+                }
+            }
+        }
+        // DECIMAL(p,s) → [number, number]
+        else if (Array.isArray(a)) {
+            if (!Array.isArray(b) || a.length !== b.length) {
+                console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+                console.log(cstyler.red("Decimal length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                return false;
+            }
+            if (a[0] !== b[0] || a[1] !== b[1]) {
+                console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+                console.log(cstyler.red("Decimal length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                return false;
+            }
+        }
+        // INT, VARCHAR, CHAR, etc. → number
+        else {
+            if (a !== b && a !== undefined) {
+                console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+                console.log(cstyler.red("Length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
+                return false;
+            }
+        }
+    }
+
+    // 3. UNSIGNED
+    if (typeof columnData.unsigned === "boolean" &&
+        columnData.unsigned !== columndetails.unsigned) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Unsigned have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.unsigned), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.unsigned),);
+        return false;
+    }
+
+    // 4. ZEROFILL
+    if (typeof columnData.zerofill === "boolean" &&
+        columnData.zerofill !== columndetails.zerofill) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Zerofill have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.zerofill), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.zerofill),);
+        return false;
+    }
+
+    // 5. NULL / NOT NULL
+    if (typeof columnData.nulls === "boolean" &&
+        columnData.nulls !== columndetails.nulls) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Null have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.nulls), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.nulls),);
+        return false;
+    }
+
+    // 6. DEFAULT
+    const defA = columnData.defaults ?? null;
+    const defB = columndetails.defaults ?? null;
+    if (defA != defB) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Default need some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.defaults), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.defaults),);
+        return false;
+    }
+
+    // 7. INDEX (PRIMARY / UNIQUE / "")
+    const idxA = columnData.index ?? "";
+    const idxB = columndetails.index ?? "";
+    const realfk = idxB === "" && (idxA === "" || idxA === undefined);
+    if ((idxA === "" || idxA === undefined) && idxB === "KEY") {
+        // check if it is a referancing column
+        const getall = await fncs.getForeignKeyDetails(config, databaseName, tableName, columnName);
+        if (getall === null) {
+            console.error("Server error: Having problem finding referencing columns from ", cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(columnName));
+            return null;
+        }
+        if (!fncs.isJsonObject(getall)) {
+            console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+            console.log(cstyler.red("Index need some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.index), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.index),);
+            return false;
+        }
+    } else if (idxA !== idxB && !realfk) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Index are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.index), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.index),);
+        console.log("fk exist:", fkdetails)
+        return false;
+    }
+
+    // 8. AUTO_INCREMENT
+    if ((columnData.autoincrement !== undefined && columnData.autoincrement !== columndetails.autoincrement) || (columnData.autoincrement === undefined && columndetails.autoincrement === true)) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Autoincrement have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.autoincrement), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.autoincrement),);
+        return false;
+    }
+
+    // 9. COMMENT
+    const comA = columnData.comment ?? "";
+    const comB = columndetails.comment ?? "";
+    if (comA !== comB) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Comment have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.comment), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.comment),);
+        return false;
+    }
+
+    // 10. CHARACTER SET
+    if (columnData._charset_ !== undefined &&
+        columnData._charset_ !== columndetails._charset_) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Character set have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData._charset_), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails._charset_),);
+        return false;
+    }
+
+    // 11. COLLATION
+    if (columnData._collate_ !== undefined &&
+        columnData._collate_ !== columndetails._collate_) {
+        console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
+        console.log(cstyler.red("Collate have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData._collate_), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails._collate_),);
+        return false;
+    }
+
+    return true;
+}
 // Identifier validator (letters, digits, underscore, dollar, max 64 chars)
 const validIdent = name => typeof name === 'string' && /^[A-Za-z0-9$_]{1,64}$/.test(name);
 async function alterColumnQuery(dbConfig, columndata, columnName, tableName, database, options = {}) {
@@ -179,380 +359,40 @@ async function alterColumnQuery(dbConfig, columndata, columnName, tableName, dat
 
         // Return single ALTER TABLE statement (no multi-statement)
         const sql = `ALTER TABLE ${quoteId(tableName)} ${actions.join(', ')};`;
-        return sql;
+        const runquery = await fncs.runQuery(dbConfig, database, sql);
+        return runquery;
     } catch (err) {
         console.error('alterColumnQuery error:', err.message);
         return null;
     }
 }
-function addForeignKeyWithIndexQuery(tableName, columnName, refTable, refColumn, options = {}) {
-  const {
-    onDelete = "RESTRICT",
-    onUpdate = "RESTRICT"
-  } = options;
+async function addForeignKeyWithIndexQuery(config, databaseName, tableName, columnName, refTable, refColumn, options = {}) {
+    const {
+        onDelete = "RESTRICT",
+        onUpdate = "RESTRICT"
+    } = options;
 
-  const indexName = `idx_${tableName}_${columnName}`;
+    const indexName = `idx_${tableName}_${columnName}`;
 
-  const indexQuery = `
-    ALTER TABLE \`${tableName}\`
-    ADD INDEX \`${indexName}\` (\`${columnName}\`)
-  `.trim();
+    // Combine both ADD INDEX and ADD FOREIGN KEY into one ALTER TABLE statement
+    // Note: We use a comma to separate multiple actions in one query
+    const combinedQuery = `
+        ALTER TABLE \`${tableName}\`
+        ADD INDEX \`${indexName}\` (\`${columnName}\`),
+        ADD FOREIGN KEY (\`${columnName}\`)
+        REFERENCES \`${refTable}\` (\`${refColumn}\`)
+        ON DELETE ${onDelete}
+        ON UPDATE ${onUpdate}
+    `.trim();
 
-  // Do not provide a constraint name; let MySQL generate it automatically
-  const foreignKeyQuery = `
-    ALTER TABLE \`${tableName}\`
-    ADD FOREIGN KEY (\`${columnName}\`)
-    REFERENCES \`${refTable}\` (\`${refColumn}\`)
-    ON DELETE ${onDelete}
-    ON UPDATE ${onUpdate}
-  `.trim();
-
-  return {
-    indexQuery,
-    foreignKeyQuery
-  };
+    // Now we only send one single command to runQuery
+    const runquery = await fncs.runQuery(config, databaseName, combinedQuery);
+    return runquery;
 }
-function isColumnDataSame(columnData, columndetails, fkdetails, tableName, columnName) {
-    // 1. Column type
-    if (columnData.columntype !== columndetails.columntype) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Column type do not match"));
-        return false;
-    }
-
-    // 2. Length / precision / enum-set values
-    if (columnData.length_value !== undefined) {
-        const a = columnData.length_value;
-        const b = columndetails.length_value;
-
-        // ENUM / SET → array of strings
-        if (['ENUM', 'SET'].includes(columnData.columntype)) {
-            if (!Array.isArray(a) || !Array.isArray(b)) {
-                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-                console.log(cstyler.red("ENUM or SET values must be an array"));
-                return false;
-            }
-            if (a.length !== b.length) {
-                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-                console.log(cstyler.red("ENUM or SET - value length are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
-                return false;
-            }
-
-            for (let i = 0; i < a.length; i++) {
-                if (!a.includes(b[i])) {
-                    console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-                    console.log(cstyler.red("ENUM or SET - Server and given value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
-                    return false;
-
-                }
-            }
-        }
-        // DECIMAL(p,s) → [number, number]
-        else if (Array.isArray(a)) {
-            if (!Array.isArray(b) || a.length !== b.length) {
-                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-                console.log(cstyler.red("Decimal length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
-                return false;
-            }
-            if (a[0] !== b[0] || a[1] !== b[1]) {
-                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-                console.log(cstyler.red("Decimal length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
-                return false;
-            }
-        }
-        // INT, VARCHAR, CHAR, etc. → number
-        else {
-            if (a !== b && a !== undefined) {
-                console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-                console.log(cstyler.red("Length value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(a), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(b),);
-                return false;
-            }
-        }
-    }
-
-    // 3. UNSIGNED
-    if (typeof columnData.unsigned === "boolean" &&
-        columnData.unsigned !== columndetails.unsigned) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Unsigned have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.unsigned), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.unsigned),);
-        return false;
-    }
-
-    // 4. ZEROFILL
-    if (typeof columnData.zerofill === "boolean" &&
-        columnData.zerofill !== columndetails.zerofill) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Zerofill have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.zerofill), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.zerofill),);
-        return false;
-    }
-
-    // 5. NULL / NOT NULL
-    if (typeof columnData.nulls === "boolean" &&
-        columnData.nulls !== columndetails.nulls) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Null have changed"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.nulls), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.nulls),);
-        return false;
-    }
-
-    // 6. DEFAULT
-    const defA = columnData.defaults ?? null;
-    const defB = columndetails.defaults ?? null;
-    if (defA != defB) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Default need some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.defaults), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.defaults),);
-        return false;
-    }
-
-    // 7. INDEX (PRIMARY / UNIQUE / "")
-    const idxA = columnData.index ?? "";
-    const idxB = columndetails.index ?? "";
-
-    const realfk =
-        fncs.isJsonObject(fkdetails) &&
-        idxB === "KEY" &&
-        (idxA === "" || idxA === undefined);
-
-    if (idxA !== idxB && !realfk) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Index are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.index), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.index),);
-        console.log("fk exist:", fkdetails)
-        return false;
-    }
-
-    // 8. AUTO_INCREMENT
-    if ((columnData.autoincrement !== undefined && columnData.autoincrement !== columndetails.autoincrement) || (columnData.autoincrement === undefined && columndetails.autoincrement === true)) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Autoincrement have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.autoincrement), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.autoincrement),);
-        return false;
-    }
-
-    // 9. COMMENT
-    const comA = columnData.comment ?? "";
-    const comB = columndetails.comment ?? "";
-    if (comA !== comB) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Comment have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.comment), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.comment),);
-        return false;
-    }
-
-    // 10. CHARACTER SET
-    if (columnData._charset_ !== undefined &&
-        columnData._charset_ !== columndetails._charset_) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Character set have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData._charset_), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails._charset_),);
-        return false;
-    }
-
-    // 11. COLLATION
-    if (columnData._collate_ !== undefined &&
-        columnData._collate_ !== columndetails._collate_) {
-        console.log(cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-        console.log(cstyler.red("Collate have some changes"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData._collate_), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails._collate_),);
-        return false;
-    }
-
-    return true;
-}
-async function alterTableQuery(config, tabledata, tableName, dbName, dropColumn = false) {
+async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separator) {
     try {
-        let queries = [];
-        let idxkey = [];
-        let foreignkeys = [];
-        let leftfk = [];
-        console.log(cstyler.yellow("Lets check if any changes needed on"), cstyler.purple("Database:"), cstyler.blue(dbName), cstyler.purple("Table:"), cstyler.blue(tableName));
-        for (const columnName of Object.keys(tabledata)) {
-            const columnData = tabledata[columnName];
-            const fkData = columnData.foreign_key;
-            const columndetails = await fncs.getColumnDetails(config, dbName, tableName, columnName);
-            const fkdetails = await fncs.getForeignKeyDetails(config, dbName, tableName, columnName);
-            const constraintexist = await fncs.columnHasKey(config, dbName, tableName, columnName);
-            if (fkdetails === null) {
-                console.error("Server error: Having problem getting foreignkey details of ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                return null;
-            }
-            if (constraintexist === null) {
-                console.error("Server error: Having problem removing foreignkey constraint from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                return null;
-            }
-            if (fncs.isJsonObject(columndetails)) {
-                // alter column query
-                if (!isColumnDataSame(columnData, columndetails, fkdetails, tableName, columnName)) {
-                    console.log("Server details:\n", columndetails);
-                    console.log("Given details:\n", columnData);
-                    const delkey = await fncs.removeForeignKeyConstraintFromColumn(config, dbName, tableName, columnName);
-                    if (delkey === null) {
-                        console.error("Having problem deleting foreign key constraint from column -", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                        return null;
-                    }
-                    const alterquery = await alterColumnQuery(config, columnData, columnName, tableName, dbName);
-                    if (alterquery === null) {
-                        // Not that important
-                        console.error("There was an issue when creating alter column query for", cstyler.purple("Database:"), cstyler.blue(dbName), cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-                        return null;
-                    }
-                    queries.push(alterquery);
-                    // lets work on foreign key
-                    if (columnData.hasOwnProperty("foreign_key")) {
-                        // lets check foreign key table column exist
-                        const fktcexist = await fncs.columnExists(config, dbName, fkData.table, fkData.column);
-                        if (constraintexist)
-                            if (fktcexist === true) {
-                                const fkquery = addForeignKeyWithIndexQuery(tableName, columnName, fkData.table, fkData.column, { onDelete: fkData.deleteOption, onUpdate: fkData.updateOption });
-                                // lets add foreign key quries
-                                idxkey.push(fkquery.indexQuery);
-                                foreignkeys.push(fkquery.foreignKeyQuery);
-                            } else if (fktcexist === false) {
-                                leftfk[columnName] = fkData;
-                            } else {
-                                console.error("Having problem checking foreignkey table column exist or not from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                                return null;
-                            }
-                    }
-                } else {
-                    if (columnData.hasOwnProperty("foreign_key")) {
-                        // is foreignkey same
-                        if (fncs.isJsonObject(fkdetails)) {
-                            let issame = true;
-                            // lets check if foreign keys are same or not
-                            if (fkData.table !== fkdetails.table) issame = false;
-                            if (fkData.column !== fkdetails.column) issame = false;
-                            if (fkData.deleteOption !== fkdetails.deleteOption) issame = false;
-                            if (fkData.updateOption !== undefined && fkData.updateOption !== fkdetails.updateOption) issame = false;
-                            if (issame === false) {
-                                console.log(cstyler.red("Foreign key server and given value are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(fkData), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(fkdetails),);
-                                const dfk = await fncs.removeForeignKeyFromColumn(config, dbName, tableName, columnName);
-                                const delkey = await fncs.removeForeignKeyConstraintFromColumn(config, dbName, tableName, columnName);
-                                if (delkey === null) {
-                                    console.error("Having problem deleting foreign key constraint from column -", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                                    return null;
-                                }
-                                if (dfk === true || dfk === false) {
-                                    const fkquery = addForeignKeyWithIndexQuery(tableName, columnName, fkData.table, fkData.column, { onDelete: fkData.deleteOption, onUpdate: fkData.updateOption });
-                                    // lets add foreign key quries
-                                    idxkey.push(fkquery.indexQuery);
-                                    foreignkeys.push(fkquery.foreignKeyQuery);
-                                } else {
-                                    console.error("Having problem deleting foreign key from column. Please check your database connection.");
-                                }
-                            } else {
-                                console.log(cstyler.bold.green("No changes needed on "), cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName));
-                            }
-                        } else if (fkdetails === false) {
-                            const fktcexist = await fncs.columnExists(config, dbName, fkData.table, fkData.column);
-                            if (fktcexist === true) {
-                                const fkquery = addForeignKeyWithIndexQuery(tableName, columnName, fkData.table, fkData.column, { onDelete: fkData.deleteOption, onUpdate: fkData.updateOption });
-                                // lets add foreign key quries
-                                idxkey.push(fkquery.indexQuery);
-                                foreignkeys.push(fkquery.foreignKeyQuery);
-                            } else if (fktcexist === false) {
-                                leftfk[columnName] = fkData;
-                            } else {
-                                console.error("Having problem checking foreignkey table column exist or not from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                                return null;
-                            }
-                        } else {
-                            console.error("Having problem getting foreignkey details of ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                            return null;
-                        }
-                    } else {
-                        if (constraintexist || fkdetails) {
-                            const dfk = await fncs.removeForeignKeyFromColumn(config, dbName, tableName, columnName);
-                            const delkey = await fncs.removeForeignKeyConstraintFromColumn(config, dbName, tableName, columnName);
-                            if (dfk === null || delkey === null) {
-                                console.error("Having problem removing foreignkey from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                                return null;
-                            }
-                        }
-                    }
-                }
-            } else if (columndetails === false && !['_charset_', '_collate_'].includes(columnName)) {
-                // add column query
-                const columnquery = addColumnQuery(columnData, columnName, tableName);
-                if (columnquery === null) {
-                    console.error("There was an issue when creating column query for", cstyler.purple("Database:"), cstyler.blue(dbName), cstyler.purple("Table:"), cstyler.blue(tableName), cstyler.purple("Column:"), cstyler.blue(columnName));
-                    return null;
-                }
-                queries.push(columnquery);
-                if (columnData.hasOwnProperty("foreign_key")) {
-                    // lets check if column exist or not
-                    const colexist = await fncs.columnExists(config, dbName, fkData.table, fkData.column);
-                    if (colexist === true) {
-                        const fkquery = addForeignKeyWithIndexQuery(tableName, columnName, fkData.table, fkData.column, { onDelete: fkData.deleteOption, onUpdate: fkData.updateOption });
-                        // lets add foreign key quries
-                        idxkey.push(fkquery.indexQuery);
-                        foreignkeys.push(fkquery.foreignKeyQuery);
-                    } else if (colexist === false) {
-                        leftfk[columnName] = fkData;
-                    } else {
-                        console.error("Having problem checking foreignkey table column exist or not from ", cstyler.purple("Database: "), cstyler.blue(dbName), cstyler.purple(" Table: "), cstyler.blue(tableName), cstyler.purple(" Column Name: "), cstyler.blue(columnName));
-                        return null;
-                    }
-                }
-            } else if (['_charset_', '_collate_'].includes(columnName)) {
-                // used for storing characterset and collate data
-                const notacolumn = true;
-            } else {
-                console.error("Having problem getting column details from the database. Please check your database connection.");
-                return null;
-            }
-        }
-        // drop column
-        if (dropColumn) {
-            const allcols = await fncs.getColumnNames(config, dbName, tableName);
-            if (allcols === null) {
-                console.error("Having problem getting all the column names of ", tableName, ". Please check database connection.");
-            }
-            for (const item of allcols) {
-                if (!Object.keys(tabledata).includes(item)) {
-                    // drop column
-                    const dropcol = await fncs.dropColumn(config, dbName, tableName, item);
-                    if (dropcol === null) {
-                        console.error("Haveing problem dropping column. Please check database connection.");
-                        return null;
-                    }
-                }
-            }
-        }
-        // lets arrange all the query
-        for (const item of queries) {
-            console.log("Running query");
-            const runquery = await fncs.runQuery(config, dbName, item);
-            if (runquery === null) {
-                return null;
-            }
-            console.log(cstyler.blue("Successful"));
-        }
-        for (const item of idxkey) {
-            console.log("Running query of idxkey");
-            const runquery = await fncs.runQuery(config, dbName, item);
-            if (runquery === null) {
-                return null;
-            } else if (runquery === false) {
-                return null;
-            }
-            console.log(cstyler.blue("Successful"));
-        }
-        for (const item of foreignkeys) {
-            console.log("Running query of foreignkey");
-            const runquery = await fncs.runQuery(config, dbName, item);
-            if (runquery === null) {
-                return null;
-            }
-            console.log(cstyler.blue("Successful"));
-        }
-        console.log(cstyler.underline.green("All column checking are done for"), cstyler.purple("Database:"), cstyler.blue(dbName), cstyler.purple("Table:"), cstyler.blue(tableName), "Lets go>>>");
-        return leftfk;
-    } catch (err) {
-        console.error(err.message);
-        return null;
-    }
-}
-
-async function alterColumnIfNeeded(config, jsondata, separator) {
-    try {
-        console.log(cstyler.cyan("Let's initiate addColumn to table if needed..."));
+        console.log(cstyler.bold.yellow("Let's initiate Alter Column to table if needed..."));
         for (const jsondb of Object.keys(jsondata)) {
-            let remainfk = {};
             const loopdb = fncs.perseTableNameWithLoop(jsondb, separator);
             if (loopdb === false) {
                 console.error("There must be some mistake. Please re install the module.")
@@ -564,89 +404,185 @@ async function alterColumnIfNeeded(config, jsondata, separator) {
                 return null;
             }
             for (const jsontable of Object.keys(jsondata[jsondb])) {
-                let queryText = [];
-                let foreignKeyQueries = [];
+                if (!fncs.isJsonObject(jsondata[jsondb][jsontable])) { continue; }
+                // parse loop table name
                 const looptable = fncs.perseTableNameWithLoop(jsontable, separator);
                 if (looptable === false) {
                     console.error("There must be some mistake. Please re install the module.")
                 }
                 const tableName = looptable.loopname;
+                // check if table exist
                 if (!getalltable.includes(tableName)) {
                     console.error(cstyler.red(`Table ${tableName} does not exist in database ${databaseName}. Skipping...`));
                     continue;
                 }
+                // get all columns from the table
                 const allcols = await fncs.getColumnNames(config, databaseName, tableName);
                 if (allcols === null) {
                     console.error(cstyler.red(`Failed to get column names for table ${tableName} in database ${databaseName}. Skipping...`));
                     return null;
                 }
                 for (const jsoncolumn of Object.keys(jsondata[jsondb][jsontable])) {
+                    if (!fncs.isJsonObject(jsondata[jsondb][jsontable][jsoncolumn])) { continue; }
                     if (!allcols.includes(jsoncolumn)) {
                         // column does not exist, skip it
+                        console.error(cstyler.red(`Column ${jsoncolumn} does not exist in table ${tableName} of database ${databaseName}. Skipping...`));
                         continue;
                     }
                     // lets add the column
                     const columndata = jsondata[jsondb][jsontable][jsoncolumn];
-                    const addcolquery = addColumnQuery(columndata, jsoncolumn, tableName);
-                    queryText.push(addcolquery);
-                    // check for foreign key
-                    if (columndata.hasOwnProperty("foreign_key")) {
-                        const fk = columndata.foreign_key;
-                        const columnExists = await fncs.columnExists(config, databaseName, tableName, jsoncolumn);
-                        if (columnExists === null) {
-                            console.error(cstyler.red(`Failed to verify existence of column ${jsoncolumn} in table ${tableName}. Skipping foreign key addition.`));
-                            return null;
+                    const serverdata = await fncs.getColumnDetails(config, databaseName, tableName, jsoncolumn);
+                    const fkdetails = await fncs.getForeignKeyDetails(config, databaseName, tableName, jsoncolumn);
+                    const getallrefcol = await fncs.findReferencingFromColumns(config, databaseName, tableName, jsoncolumn);
+                    if (getallrefcol === null) {
+                        console.error("Server error: Having problem finding referencing columns from ", cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
+                        return null;
+                    }
+                    if (serverdata === null || fkdetails === null) {
+                        console.error(cstyler.red(`Failed to get details for column ${jsoncolumn} in table ${tableName} of database ${databaseName}. Skipping...`));
+                        return null;
+                    }
+                    const isColSame = await isColumnDataSame(config, databaseName, tableName, jsoncolumn, columndata, serverdata, fkdetails);
+                    if (isColSame === null) {
+                        return null;
+                    }
+                    if (!isColSame) {
+                        console.log(cstyler.yellow("Column alteration needed for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
+                        if (forceupdatecolumn === true) {
+                            if (getallrefcol.length > 0) {
+                                // there are referencing columns, we need to drop foreign keys from referencing columns first
+                                for (const refcol of getallrefcol) {
+                                    const dropfk = await fncs.removeForeignKeyFromColumn(config, refcol.child_schema, refcol.child_table, refcol.child_columns[0]);
+                                    const delkey = await fncs.removeForeignKeyConstraintFromColumn(config, refcol.child_schema, refcol.child_table, refcol.child_columns[0]);
+                                    if (dropfk === null || delkey === null) {
+                                        console.error("Having problem removing foreign key from ", cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(refcol.child_schema), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(refcol.child_table), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(refcol.child_columns[0]));
+                                        return null;
+                                    }
+                                }
+                            }
+                            // lets update the column now
+                            // first remove foreign key from the column if exist
+                            if (fncs.isJsonObject(fkdetails)) {
+                                const delfk = await fncs.removeForeignKeyFromColumn(config, databaseName, tableName, jsoncolumn);
+                                const delkey = await fncs.removeForeignKeyConstraintFromColumn(config, databaseName, tableName, jsoncolumn);
+                                if (delfk === null || delkey === null) {
+                                    console.error("There was an issue when removing foreign key from", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
+                                    return null;
+                                }
+                            }
+                            // now alter the column
+                            const alterquery = await alterColumnQuery(config, columndata, jsoncolumn, tableName, databaseName);
+                            if (alterquery === null) {
+                                console.error("There was an issue when creating alter column for", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
+                                return null;
+                            }
+                            // now re add foreign key to the column if exist
+                            if (columndata.hasOwnProperty("foreign_key")) {
+                                const fkdata = columndata.foreign_key;
+                                const fkquery = await addForeignKeyWithIndexQuery(config, databaseName, tableName, jsoncolumn, fkdata.table, fkdata.column, {
+                                    onDelete: fkdata.deleteOption,
+                                    onUpdate: fkdata.updateOption
+                                });
+                                if (fkquery === null) {
+                                    console.error("There was an issue when creating foreign key for", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
+                                    return null;
+                                }
+                            }
+                            if (getallrefcol.length > 0) {
+                                // lets re add the foreign keys to referencing columns
+                                for (const refcol of getallrefcol) {
+                                    // Re-add foreign key constraint to referencing columns
+                                    const readdfk = await addForeignKeyWithIndexQuery(config, refcol.child_schema, refcol.child_table, refcol.child_columns[0], refcol.parent_table, refcol.parent_columns[0], {
+                                        onDelete: refcol.delete_rule,
+                                        onUpdate: refcol.update_rule
+                                    });
+                                    if (readdfk === null) {
+                                        console.error("Having problem re adding foreign key to ", cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(refcol.child_schema), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(refcol.child_table), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(refcol.child_columns[0]));
+                                        return null;
+                                    }
+                                }
+                            }
+                        } else {
+                            // lets try to see if there is any referencing foreign key
+                            if (getallrefcol.length > 0) {
+                                console.error(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.red("Column alteration needed but skipped due to forceupdatecolumn set to false and there are referencing foreign keys."));
+                            } else {
+                                // lets alter the column now
+                                if (fncs.isJsonObject(fkdetails)) {
+                                    const delfk = await fncs.removeForeignKeyFromColumn(config, databaseName, tableName, jsoncolumn);
+                                    const delkey = await fncs.removeForeignKeyConstraintFromColumn(config, databaseName, tableName, jsoncolumn);
+                                    if (delfk === null || delkey === null) {
+                                        console.error(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.red("There was an issue when removing foreign key",));
+                                        return null;
+                                    }
+                                }
+                                const alterquery = await alterColumnQuery(config, columndata, jsoncolumn, tableName, databaseName);
+                                if (alterquery === null) {
+                                    console.error(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.red("There was an issue when modifying column",));
+                                    return null;
+                                }
+                                if (columndata.hasOwnProperty("foreign_key")) {
+                                    const fkdata = columndata.foreign_key;
+                                    const fkquery = await addForeignKeyWithIndexQuery(config, databaseName, tableName, jsoncolumn, fkdata.table, fkdata.column, {
+                                        onDelete: fkdata.deleteOption,
+                                        onUpdate: fkdata.updateOption
+                                    });
+                                    if (fkquery === null) {
+                                        console.error(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.red("There was an issue when creating foreign key",));
+                                        return null;
+                                    }
+                                }
+                            }
                         }
-                        if (columnExists === false) {
-                            if (!remainfk.hasOwnProperty(tableName)) remainfk[tableName] = {};
-                            remainfk[tableName][jsoncolumn] = fk;
+                    } else {
+                        console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.yellow("Given column data and server data are same."), "Let's check foreign key now.");
+                        // lets check if foreign key need update
+                        if (fkdetails === false && !columndata.hasOwnProperty("foreign_key")) {
                             continue;
+                        } else if (fkdetails === false && columndata.hasOwnProperty("foreign_key")) {
+                            console.log(cstyler.yellow("Foreign key need to be added for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
+                            // need to add foreign key
+                            const fkdata = columndata.foreign_key;
+                            const addfk = await addForeignKeyWithIndexQuery(config, databaseName, tableName, jsoncolumn, fkdata.table, fkdata.column, {
+                                onDelete: fkdata.deleteOption,
+                                onUpdate: fkdata.updateOption
+                            });
+                            if (addfk === null) {
+                                console.error("There was an issue when creating foreign key for", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
+                                return null;
+                            }
+                        } else if (fncs.isJsonObject(fkdetails) && columndata.hasOwnProperty("foreign_key")) {
+                            // need to check if foreign key details are same
+                            const fkdt = columndata.foreign_key;
+                            if (fkdetails.table === fkdt.table &&
+                                fkdetails.column === fkdt.column &&
+                                fkdetails.deleteOption === fkdt.deleteOption &&
+                                (fkdt.updateOption === undefined ||fkdetails.updateOption === fkdt.updateOption)) {
+                                continue;
+                            }
+                            console.log(cstyler.yellow("Foreign key need to be updated for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
+                            console.log(cstyler.yellow("Foreign key details are different, updating foreign key for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
+                            // need to update foreign key
+                            const dropfk = await fncs.removeForeignKeyFromColumn(config, databaseName, tableName, jsoncolumn);
+                            if (dropfk === null) {
+                                console.error("Having problem removing foreign key from ", cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
+                                return null;
+                            }
+                            const fkdata = columndata.foreign_key;
+                            const addfk = await addForeignKeyWithIndexQuery(config, databaseName, tableName, jsoncolumn, fkdata.table, fkdata.column, {
+                                onDelete: fkdata.deleteOption,
+                                onUpdate: fkdata.updateOption
+                            });
+                            if (addfk === null) {
+                                console.error("There was an issue when creating foreign key for", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
+                                return null;
+                            }
                         }
-                        const fkquery = addForeignKeyWithIndexQuery(tableName, jsoncolumn, fk.table, fk.column, { onDelete: fk.deleteOption, onUpdate: fk.updateOption });
-                        foreignKeyQueries.push(fkquery);
-                    }
-                }
-                // execute all queries for this table
-                for (const qt of queryText) {
-                    const execution = await fncs.runQuery(config, databaseName, qt);
-                    if (execution === null) {
-                        console.error(cstyler.red(`Failed to execute query on table ${tableName} in database ${databaseName}. Query: ${qt}`));
-                        return null;
-                    }
-                    else {
-                        console.log(cstyler.green(`Successfully added column on table ${tableName} in database ${databaseName}. Query: ${qt}`));
-                    }
-                }
-                for (const qt of foreignKeyQueries) {
-                    const execution = await fncs.runQuery(config, databaseName, qt);
-                    if (execution === null) {
-                        console.error(cstyler.red(`Failed to execute query on table ${tableName} in database ${databaseName}. Query: ${qt}`));
-                        return null;
-                    }
-                    else {
-                        console.log(cstyler.green(`Successfully added foreignkey on table ${tableName} in database ${databaseName}. Query: ${qt}`));
-                    }
-                }
-            }
-            // lets add remaining foreign keys
-            let foreignKeyQueries = [];
-            for (const tbl of Object.keys(remainfk)) {
-                for (const col of Object.keys(remainfk[tbl])) {
-                    const fk = remainfk[tbl][col];
-                    const fkquery = addForeignKeyWithIndexQuery(tbl, col, fk.table, fk.column, { onDelete: fk.deleteOption, onUpdate: fk.updateOption });
-                    foreignKeyQueries.push(fkquery);
-                    const execution = await fncs.runQuery(config, databaseName, fkquery);
-                    if (execution === null) {
-                        console.error(cstyler.red(`Failed to execute query on column ${col} on table ${tbl} in database ${databaseName}. Query: ${fkquery}`));
-                        return null;
-                    }
-                    else {
-                        console.log(cstyler.green(`Successfully added foreignkey on column ${col} on table ${tbl} in database ${databaseName}. Query: ${fkquery}`));
                     }
                 }
             }
         }
-        console.log(cstyler.cyan("Adding Column to tables are completed successfully."));
+        console.log(cstyler.cyan("Altering Column to tables are completed successfully."));
         return true;
     } catch (err) {
         console.error(err.message);
@@ -655,7 +591,5 @@ async function alterColumnIfNeeded(config, jsondata, separator) {
 }
 
 module.exports = {
-    alterColumnQuery,
-    alterTableQuery,
     alterColumnIfNeeded
 }

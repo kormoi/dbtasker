@@ -145,7 +145,7 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
         if (runquery === null) {
             return null;
         }
-        console.log(cstyler.green("Successfully created "), cstyler.purple("Table: "), cstyler.blue(tableName), " on ", cstyler.purple("Database: "), cstyler.blue(dbname));
+        console.log(cstyler.green("Successfully created "), cstyler.blue("Table: "), cstyler.hex("#00d9ffff")(tableName), " on ", cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(dbname));
         return foreignkeys;
     } catch (err) {
         console.error(err.message);
@@ -172,16 +172,18 @@ async function createTableifNeeded(config, jsondata, separator) {
                 return null;
             }
             for (const dbtableName of Object.keys(jsondata[jsdb])) {
-                const tableName = fncs.perseTableNameWithLoop(dbtableName, separator, dbname.loopname);
+                // check if table data is json object
+                if (fncs.isJsonObject(jsondata[jsdb][dbtableName]) === false) { continue }
+                const tableName = fncs.perseTableNameWithLoop(dbtableName, separator);
                 if (tableName === false) {
-                    console.error(cstyler.bold.red("There must be some mistake in table name. Please re install the module."));
+                    console.error(cstyler.bold.red("Can not parse table name from json. There must be some mistake in table name. Please re install the module."));
                     return null;
                 }
                 if (getalltables.includes(tableName.loopname)) {
-                    console.log(cstyler.yellow("Table: "), cstyler.blue(tableName.loopname), cstyler.yellow(" already exists in Database: "), cstyler.blue(dbname.loopname), cstyler.yellow(". So, skipping table creation."));
+                    console.log(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(dbname.loopname), cstyler.blue("Table: "), cstyler.hex("#00d9ffff")(tableName.loopname), cstyler.green(" already exists in Database"));
                     continue;
                 }
-                const createtable = await createTableQuery(config, jsondata[jsdb][tableName], tableName.loopname, dbname.loopname);
+                const createtable = await createTableQuery(config, jsondata[jsdb][dbtableName], tableName.loopname, dbname.loopname);
                 if (createtable === null) {
                     console.error(cstyler.bold.red("Having problem creating table: ", tableName.loopname, " on Database: ", dbname.loopname, ". Please check database connection."));
                     return null;
@@ -199,15 +201,15 @@ async function createTableifNeeded(config, jsondata, separator) {
                         return null;
                     }
                     else if (addfk === true) {
-                        console.log(cstyler.green("Successfully added foreign key constraint on column: "), cstyler.blue(fkcol), cstyler.green(" on Table: "), cstyler.blue(tableName.loopname), cstyler.green(" on Database: "), cstyler.blue(dbname.loopname));
+                        console.log(cstyler.green("Successfully added foreign key constraint on column: "), cstyler.hex("#00d9ffff")(fkcol), cstyler.green(" on Table: "), cstyler.hex("#00d9ffff")(tableName.loopname), cstyler.green(" on Database: "), cstyler.hex("#00d9ffff")(dbname.loopname));
                     }
                     else if (addfk === false) {
-                        console.log(cstyler.yellow("Foreign key constraint on column: "), cstyler.blue(fkcol), cstyler.yellow(" on Table: "), cstyler.blue(tableName.loopname), cstyler.yellow(" on Database: "), cstyler.blue(dbname.loopname), cstyler.yellow(" already exists. So, skipping."));
+                        console.log(cstyler.blue("Foreign key constraint on column: "), cstyler.hex("#00d9ffff")(fkcol), cstyler.blue(" on Table: "), cstyler.hex("#00d9ffff")(tableName.loopname), cstyler.blue(" on Database: "), cstyler.hex("#00d9ffff")(dbname.loopname), cstyler.blue(" already exists. So, skipping."));
                     }
                 }
             }
-            return true;
         }
+        return true;
     } catch (err) {
         console.error(cstyler.bold.red("Error occurred in createTableifNeeded function of ", moduleName, " module. Error details: "), err);
         return null;
@@ -215,7 +217,7 @@ async function createTableifNeeded(config, jsondata, separator) {
 }
 async function dropTable(config, json_data, separator = "_") {
     try {
-        console.log("Starting dropping the table.");
+        console.log(cstyler.bold.yellow("Initiating drop table operation"));
         let count = 0;
         for (const jsondb of Object.keys(json_data)) {
             let dbname = fncs.perseDatabaseNameWithLoop(jsondb, separator);
@@ -224,29 +226,20 @@ async function dropTable(config, json_data, separator = "_") {
             }
             const alltables = await fncs.getTableNames(config, dbname.loopname);
             if (alltables === null) {
-                console.error("Having problem getting all the table name of the Database: ", cstyler.yellow(dbname.loopname), ". Please re-install the module.");
+                console.error("Having problem getting all the table name of the Database: ", cstyler.blue(dbname.loopname), ". Please re-install the module.");
                 return null;
             }
             for (const tableName of (alltables)) {
                 const revlpnm = fncs.reverseLoopName(tableName);
                 if (Array.isArray(revlpnm)) {
-                    if (revlpnm[0] && !Object.keys(json_data[jsondb]).includes(revlpnm[0])) {
+                    if (!Object.keys(json_data[jsondb]).includes(revlpnm[0]) && !Object.keys(json_data[jsondb]).includes(revlpnm[1]) && !Object.keys(json_data[jsondb]).includes(revlpnm[2]) && !Object.keys(json_data[jsondb]).includes(revlpnm[3])) {
                         const droptable = await fncs.dropTable(config, dbname.loopname, tableName);
                         if (droptable === null) {
                             console.error("Having problem dropping table. Please check database connection.");
                             return null;
                         } else if (droptable === true) {
                             count += 1;
-                            console.log(cstyler.purple("Database: "), cstyler.blue(dbname.loopname), cstyler.purple("Table: "), cstyler.blue(tableName), "- has dropped successfully.");
-                        }
-                    } else if (revlpnm[1] && !Object.keys(json_data[jsondb]).includes(revlpnm[1])) {
-                        const droptable = await fncs.dropTable(config, dbname.loopname, tableName);
-                        if (droptable === null) {
-                            console.error("Having problem dropping table. Please check database connection.");
-                            return null;
-                        } else if (droptable === true) {
-                            count += 1;
-                            console.log(cstyler.purple("Database: "), cstyler.blue(dbname.loopname), cstyler.purple("Table: "), cstyler.blue(tableName), "- has dropped successfully.");
+                            console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(dbname.loopname), cstyler.blue("Table: "), cstyler.hex("#00d9ffff")(tableName), "- has dropped successfully.");
                         }
                     }
                 } else if (!Object.keys(json_data[jsondb]).includes(revlpnm)) {
@@ -256,7 +249,7 @@ async function dropTable(config, json_data, separator = "_") {
                         return null;
                     } else if (droptable === true) {
                         count += 1;
-                        console.log(cstyler.purple("Database: "), cstyler.blue(dbname.loopname), cstyler.purple("Table: "), cstyler.blue(tableName), "- has dropped successfully.");
+                        console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(dbname.loopname), cstyler.blue("Table: "), cstyler.hex("#00d9ffff")(tableName), "- has dropped successfully.");
                     }
                 }
             }
@@ -265,8 +258,8 @@ async function dropTable(config, json_data, separator = "_") {
             } else {
                 console.log(cstyler.underline("No table found to be dropped"));
             }
-            return true;
         }
+        return true;
     } catch (err) {
         console.error(err.message);
         return null;

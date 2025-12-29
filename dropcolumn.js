@@ -4,84 +4,169 @@ const cstyler = require("cstyler");
 
 
 
-async function dropcolumn(config, table_json, forcedropcolumn, separator = "_") {
+
+
+async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
     try {
-        console.log(cstyler.bold.blue("Let's initiate drop column operation"));
-        if (!fncs.isJsonObject(table_json)) {
+        console.log(cstyler.bold.yellow("Initiating drop column operation"));
+
+        if (!fncs.isJsonObject(tableJson)) {
             return false;
         }
-        for (const jsdb of Object.keys(table_json)) {
-            const loopedName = fncs.perseDatabaseNameWithLoop(jsdb, separator);
-            if (loopedName === null || loopedName === false) {
-                console.error(cstyler.bold("There must be some function error. Please re-install the module and use it.", jsdb, loopedName));
+
+        for (const jsDb of Object.keys(tableJson)) {
+            const parsedDb = fncs.perseDatabaseNameWithLoop(jsDb, separator);
+            if (!parsedDb) {
+                console.error(
+                    cstyler.bold.red("Cannot parse database name."),
+                    jsDb,
+                    parsedDb
+                );
                 return null;
             }
-            const databaseName = loopedName.loopname;
+
+            const databaseName = parsedDb.loopname;
             config.database = databaseName;
-            for (const jstable of Object.keys(table_json[jsdb])) {
-                const loopedTableName = fncs.perseTableNameWithLoop(jstable, separator);
-                if (loopedTableName === null || loopedTableName === false) {
-                    console.error("There must be some function error. Please re-install the module and use it.");
+
+            for (const jsTable of Object.keys(tableJson[jsDb])) {
+                const tableDef = tableJson[jsDb][jsTable];
+                if (!fncs.isJsonObject(tableDef)) continue;
+
+                const parsedTable = fncs.perseTableNameWithLoop(jsTable, separator);
+                if (!parsedTable) {
+                    console.error(
+                        cstyler.bold.red("Cannot parse table name."),
+                        jsTable
+                    );
                     return null;
                 }
-                const createdTableName = loopedTableName.loopname;
-                const gettablcolumns = await fncs.getColumnNames(config, databaseName, createdTableName);
-                if (gettablcolumns === null) {
-                    console.error(cstyler.bold.red("Having problem getting columns of table: "), cstyler.blue(createdTableName), cstyler.bold.red(" from database: "), cstyler.blue(databaseName));
+
+                const tableName = parsedTable.loopname;
+
+                const existingColumns = await fncs.getColumnNames(
+                    config,
+                    databaseName,
+                    tableName
+                );
+
+                if (!existingColumns) {
+                    console.error(
+                        cstyler.bold.red("Failed to fetch columns for table:"),
+                        cstyler.hex("#00d9ffff")(tableName),
+                        cstyler.bold.red("from database:"),
+                        cstyler.hex("#00d9ffff")(databaseName)
+                    );
                     return null;
                 }
-                for (const col of gettablcolumns) {
-                    if (!Object.keys(table_json[jsdb][jstable]).includes(col)) {
-                        // drop column
-                        console.log(cstyler.bold.yellow("Dropping column: "), cstyler.blue(col), cstyler.bold.yellow(" from table: "), cstyler.blue(createdTableName), cstyler.bold.yellow(" of database: "), cstyler.blue(databaseName));
-                        (config, database, parentTable, parentColumn)
-                        // lets check referencing columns
-                        const getreferencingcolumns = await fncs.getReferencingColumns(config, databaseName, createdTableName, col);
-                        if (getreferencingcolumns === null) {
-                            console.error(cstyler.bold.red("Having problem getting referencing columns for column: "), cstyler.blue(col), cstyler.bold.red(" from table: "), cstyler.blue(createdTableName), cstyler.bold.red(" of database: "), cstyler.blue(databaseName));
-                            return null;
-                        }
-                        // drop foreign keys from referencing columns
-                        if (getreferencingcolumns.length > 0 && forcedropcolumn) {
-                            let deletedallreffk = true;
-                            for (const refcol of getreferencingcolumns) {
-                                const dropfk = await fncs.removeForeignKeyFromColumn(config, refcol.child_schema, refcol.child_table, refcol.child_columns[0]);
-                                if (dropfk === null) {
-                                    console.error(cstyler.bold.red("Having problem dropping foreign key from referencing column: "), cstyler.blue(refcol.child_columns[0]), cstyler.bold.red(" from table: "), cstyler.blue(refcol.child_table), cstyler.bold.red(" of database: "), cstyler.blue(refcol.child_schema));
-                                    deletedallreffk = false;
-                                }
-                            }
-                            if (!deletedallreffk) {
-                                console.error(cstyler.bold.red("Having problem dropping all foreign keys from referencing columns for column: "), cstyler.blue(col), cstyler.bold.red(" from table: "), cstyler.blue(createdTableName), cstyler.bold.red(" of database: "), cstyler.blue(databaseName), cstyler.bold.red(" So, cannot drop the column."));
-                                continue;
-                            }
-                            const dropcol = await fncs.dropColumn(config, databaseName, createdTableName, col);
-                            if (dropcol === null) {
-                                console.error(cstyler.bold.red("Having problem dropping column: "), cstyler.blue(col), cstyler.bold.red(" from table: "), cstyler.blue(createdTableName), cstyler.bold.red(" of database: "), cstyler.blue(databaseName));
-                                return null;
-                            }
-                            console.log(cstyler.bold.green("Successfully dropped column: "), cstyler.blue(col), cstyler.bold.green(" from table: "), cstyler.blue(createdTableName), cstyler.bold.green(" of database: "), cstyler.blue(databaseName));
-                        } else if (getreferencingcolumns.length > 0 && !forcedropcolumn) {
-                            console.error(cstyler.bold.red("Column: "), cstyler.blue(col), cstyler.bold.red(" from table: "), cstyler.blue(createdTableName), cstyler.bold.red(" of database: "), cstyler.blue(databaseName), cstyler.bold.red(" is referenced by other columns. To force drop the column along with its foreign keys, please set forcedropcolumn to true at your config."));
+
+                for (const column of existingColumns) {
+                    const definedInJson = Object.prototype.hasOwnProperty.call(
+                        tableDef,
+                        column
+                    );
+
+                    const isValidDefinition =
+                        definedInJson && fncs.isJsonObject(tableDef[column]);
+
+                    if (isValidDefinition) continue;
+
+                    console.log(
+                        cstyler.bold.purple("Database:"),
+                        cstyler.hex("#00d9ffff")(databaseName),
+                        cstyler.bold.purple("Table:"),
+                        cstyler.hex("#00d9ffff")(tableName),
+                        cstyler.bold.yellow("Dropping column:"),
+                        cstyler.yellow(column)
+                    );
+
+                    const referencingColumns =
+                        await fncs.findReferencingFromColumns(
+                            config,
+                            databaseName,
+                            tableName,
+                            column
+                        );
+
+                    if (referencingColumns === null) {
+                        console.error(
+                            cstyler.bold.red("Failed to resolve FK references for column:"),
+                            cstyler.hex("#00d9ffff")(column)
+                        );
+                        return null;
+                    }
+
+                    if (referencingColumns.length > 0) {
+                        if (!forceDropColumn) {
+                            console.error(
+                                cstyler.bold.red("Column is referenced by other tables:"),
+                                cstyler.hex("#00d9ffff")(column),
+                                cstyler.bold.red("Enable forceDropColumn to proceed.")
+                            );
                             continue;
-                        } else if (getreferencingcolumns.length === 0) {
-                            // lets drop the column
-                            const dropcol = await fncs.dropColumn(config, databaseName, createdTableName, col);
-                            if (dropcol === null) {
-                                console.error(cstyler.bold.red("Having problem dropping column: "), cstyler.blue(col), cstyler.bold.red(" from table: "), cstyler.blue(createdTableName), cstyler.bold.red(" of database: "), cstyler.blue(databaseName));
-                                return null;
+                        }
+
+                        let allFkRemoved = true;
+
+                        for (const ref of referencingColumns) {
+                            const removed = await fncs.removeForeignKeyFromColumn(
+                                config,
+                                ref.child_schema,
+                                ref.child_table,
+                                ref.child_columns[0]
+                            );
+
+                            if (removed === null) {
+                                console.error(
+                                    cstyler.bold.red("Failed to drop FK from:"),
+                                    cstyler.hex("#00d9ffff")(ref.child_table),
+                                    cstyler.bold.red("column:"),
+                                    cstyler.hex("#00d9ffff")(ref.child_columns[0])
+                                );
+                                allFkRemoved = false;
                             }
-                            console.log(cstyler.bold.green("Successfully dropped column: "), cstyler.blue(col), cstyler.bold.green(" from table: "), cstyler.blue(createdTableName), cstyler.bold.green(" of database: "), cstyler.blue(databaseName));
+                        }
+
+                        if (!allFkRemoved) {
+                            console.error(
+                                cstyler.bold.red("Aborting column drop due to FK failures:"),
+                                cstyler.hex("#00d9ffff")(column)
+                            );
+                            continue;
                         }
                     }
+
+                    const dropped = await fncs.dropColumn(
+                        config,
+                        databaseName,
+                        tableName,
+                        column
+                    );
+
+                    if (dropped === null) {
+                        console.error(
+                            cstyler.bold.red("Failed to drop column:"),
+                            cstyler.hex("#00d9ffff")(column)
+                        );
+                        return null;
+                    }
+
+                    console.log(
+                        cstyler.bold.green("Successfully dropped column:"),
+                        cstyler.hex("#00d9ffff")(column),
+                        cstyler.bold.green("from table:"),
+                        cstyler.hex("#00d9ffff")(tableName)
+                    );
                 }
             }
         }
+
+        return true;
     } catch (err) {
-        console.error(err.message);
+        console.error(err?.message || err);
         return null;
     }
 }
+
 
 
 module.exports = {

@@ -191,6 +191,19 @@ reserveddb, reserved_db
 donttouch: ["production_db", "legacy_db"]
 ```
 
+
+**Force Update Column**
+If you want to update column if it is referanced by another column as foreign key you can update it by adding another key to the config which is force update column which is turned on by default. You can turn it of if you think necessary.
+
+```js
+'forceupdatecol', 'forcemodifycol', 'forceupdatecolumn', 'forcemodifycolumn', 'force_update_col', 'force_modify_col', 'force_update_column', 'force_modify_column', 'forcealtercol', 'forcealtercolumn', 'force_alter_col', 'force_alter_column'
+```
+
+**Example:**
+```js
+forceupdatecol: true/1/\"1\"
+```
+
 ### Separator Option
 
 You can define a custom separator for internal operations:
@@ -456,7 +469,7 @@ foreign_key: {
 ## Foreign Key Aliases (Case-Insensitive)
 DBTASKER accepts:
 ```js
-"fk", "foreign_key", "foreignkey"
+"fk", "fuck", "foreign_key", "foreignkey"
 ```
 
 Foreign Key Properties & Aliases
