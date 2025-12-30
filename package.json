@@ -8,18 +8,27 @@
   "main": "index.js",
   "keywords": [
     "database",
+    "db",
     "mysql",
     "table",
     "create",
-    "mysql2",
     "alter",
     "modify",
     "mysql2",
     "dbtasker",
     "automation",
     "schema",
-    "dbtask"
-
+    "dbtask",
+    "database-automation",
+    "schema-sync",
+    "schema-builder",
+    "database-task",
+    "database-utility",
+    "database-tool",
+    "create-table",
+    "alter-table",
+    "drop-table",
+    "foreign-key"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
