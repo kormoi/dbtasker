@@ -1,17 +1,27 @@
 # 🗄️ DBTASKER
+
 The Intelligent MySQL Schema Automation Engine
 `dbtasker` is a powerful, engine-aware MySQL schema intelligence and query generation module. It allows developers to define database structures declaratively using JSON, providing automated validation, normalization, and SQL generation for tables, columns, indexes, and foreign keys.
+
+
+
 ## 🚀 Key Features
 - **Declarative Schema:** Define your entire database structure in a single JSON object.
 - **Engine Awareness:** Optimized for MySQL engines including InnoDB, MyISAM, RocksDB, and more.
 - **Validation First:** Validates and normalizes your schema before any SQL is executed.
 - **Intelligent Migration:** Safe handling of ALTER, DROP, and CREATE operations.
 - **Alias Flexibility:** Case-insensitive keys and multiple naming aliases (camelCase, snake_case, etc.).
+
+
+
 ## 📦 Installation
 `Bash`
 ```js
 npm install dbtasker
 ```
+
+
+
 ## 🛠️ Configurationd
 btasker requires a configuration object to manage connection credentials and safety behaviors.
 Property | Description
@@ -42,6 +52,9 @@ const config = {
   sep: "_" 
 };
 ```
+
+
+
 ## 📐 Schema Structure
 The schema follows a strict nested hierarchy:
 
@@ -72,6 +85,9 @@ const schema = {
   }
 };
 ```
+
+
+
 ## 🔗 Foreign Keys
 Foreign keys are defined inline within the column property to reference another table's column.
 `JavaScript`
@@ -95,6 +111,8 @@ ColumnTwo: {
 | `delete` | `ON DELETE` behavior (CASCADE, SET NULL, RESTRICT, NO ACTION) |
 | `update` | `ON UPDATE` behavior (CASCADE, SET NULL, RESTRICT, NO ACTION) |
 
+
+
 ## 📑 Property Aliases
 `dbtasker` is highly flexible and accepts multiple aliases for each column property. All keys are **case-insensitive.**
 
@@ -114,10 +132,14 @@ ColumnTwo: {
 | **Nullability** | `null, nulls, nullable, optional, isnulable, allownull, canbenull, notnull, not_null, nonnullable, notnullable, required, disallownull, non_nullable, not_nullable, disallow_null` |
 | **Comments** | `comment, comments, columncomment, column_comment, description, label, helptext, hint, note` |
 
+
+
 ## 🛡️ Compatibility & Engines
 - **Node.js:** 16.x or higher
 - **MySQL:** 5.7+ / 8.0+
 - **Engines:** InnoDB, MyISAM, MEMORY, RocksDB, TokuDB, and more.
+
+
 
 ## 🏁 Quick Start
 `JavaScript`
@@ -142,6 +164,9 @@ const schema = {
 // Connect, Validate, and Automate
 dbtasker(config, schema);
 ```
+
+
+
 ## 👨‍💻 Author
 **Md Nasiruddin Ahmed (Manik)** Designed for safe, flexible, and high-quality MySQL schema automation. 🌐 Visit us at: kormoi.com
 
