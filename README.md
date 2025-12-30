@@ -131,6 +131,7 @@ ColumnTwo: {
 | `SpatialKey` | `spatial, spatialindex, isspatialkey, spatialkey, spatial_key, isspatial` |
 | **Nullability** | `null, nulls, nullable, optional, isnulable, allownull, canbenull, notnull, not_null, nonnullable, notnullable, required, disallownull, non_nullable, not_nullable, disallow_null` |
 | **Comments** | `comment, comments, columncomment, column_comment, description, label, helptext, hint, note` |
+| **ForeignKey** | `fk, fuck, foreign_key, foreignkey` |
 
 
 
