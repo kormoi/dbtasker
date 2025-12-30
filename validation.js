@@ -1109,7 +1109,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
                                             `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
                                             `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
-                                            `${cstyler.blue('> foreign_key > -')} ${cstyler.red('must have a')} ${cstyler.yellow('reference table')} ${cstyler.red('and')} ${cstyler.yellow('reference column')} ${cstyler.red('property referancing to referance table column')}`
+                                            `${cstyler.blue('> foreign_key > -')} ${cstyler.red('must have a')} ${cstyler.yellow('reference table')} ${cstyler.red('and')} ${cstyler.yellow('reference column')} ${cstyler.red('property referancing to referance table > column')}`
                                         );
                                     }
 
