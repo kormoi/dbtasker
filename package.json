@@ -1,6 +1,6 @@
 {
   "name": "dbtasker",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "dbtasker is a powerful and developer-friendly MySQL schema automation tool that converts JSON-based definitions into validated SQL that allows developers to declaratively define databases, tables, columns, indexes, and foreign keys using a flexible, case-insensitive JSON schema.",
   "license": "ISC",
   "author": "Md Nasiruddin Ahmed",
