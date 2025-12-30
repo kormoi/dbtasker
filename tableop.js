@@ -152,7 +152,7 @@ async function createTableQuery(config, tabledata, tableName, dbname) {
         return null;
     }
 }
-async function createTableifNeeded(config, jsondata, separator) {
+async function createTableIfNeeded(config, jsondata, separator) {
     try {
         if (!fncs.isJsonObject(jsondata)) {
             return false;
@@ -209,9 +209,10 @@ async function createTableifNeeded(config, jsondata, separator) {
                 }
             }
         }
+        console.log(cstyler.bold.underline.hex("#b700ffff")("Create table if needed process completed successfully."));
         return true;
     } catch (err) {
-        console.error(cstyler.bold.red("Error occurred in createTableifNeeded function of ", moduleName, " module. Error details: "), err);
+        console.error(cstyler.bold.red("Error occurred in createTableIfNeeded function of ", moduleName, " module. Error details: "), err);
         return null;
     }
 }
@@ -268,6 +269,6 @@ async function dropTable(config, json_data, separator = "_") {
 
 
 module.exports = {
-    createTableifNeeded,
+    createTableIfNeeded,
     dropTable
 };

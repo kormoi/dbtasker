@@ -249,7 +249,7 @@ async function addColumnIfNeeded(config, jsondata, separator) {
                 }
             }
         }
-        console.log(cstyler.cyan("Adding Column to tables are completed successfully."));
+        console.log(cstyler.bold.underline.hex("#b700ffff")("Adding Column to tables are completed successfully."));
         return true;
     } catch (err) {
         console.error(err.message);

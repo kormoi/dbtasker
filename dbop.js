@@ -209,9 +209,9 @@ async function databaseAddDeleteAlter(allconfig, jsondata, dropdb = false, dontt
                 }
             }
             if (count > 0) {
-                console.log(cstyler.green("All useless database have dropped"));
+                console.log(cstyler.bold.underline.hex("#b700ffff")("All useless database have dropped"));
             } else {
-                console.log(cstyler.green("No database found to be dropped"));
+                console.log(cstyler.bold.underline.hex("#b700ffff")("No database found to be dropped"));
             }
         }
         return true;

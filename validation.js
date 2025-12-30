@@ -236,7 +236,7 @@ async function JSONchecker(table_json, config, separator = "_") {
         return null;
     }
     // get all mysql table engines
-    const mysqlEngines = await fncs.getMySQLEngines(config);
+    let mysqlEngines = await fncs.getMySQLEngines(config);
     if (!fncs.isJsonObject(mysqlEngines)) {
         console.error(cstyler.red.bold("There is a problem connecting to the database. Please check database info or connection."));
         return null;
@@ -1220,9 +1220,16 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     }
                                 } else if (enginekey.includes(columnName.toLowerCase())) {
                                     const engvalue = table_json[databaseName][tableName][columnName];
-                                    if (Object.keys(mysqlEngines).includes(engvalue)) {
-                                        if (mysqlEngines[engvalue].support === "YES") {
-                                            contentObj[databaseName][tableName]._engine_ = engvalue;
+                                    if (Object.keys(mysqlEngines).map(e => e.toUpperCase()).includes(fncs.stringifyAny(engvalue).toUpperCase())) {
+                                        let ifyes;
+                                        for(const key of Object.keys(mysqlEngines)) {
+                                            if(key.toUpperCase() === fncs.stringifyAny(engvalue).toUpperCase()) {
+                                                ifyes = key;
+                                                break;
+                                            }
+                                        }
+                                        if (mysqlEngines[ifyes].support === "YES") {
+                                            contentObj[databaseName][tableName]._engine_ = ifyes;
                                         } else {
                                             badengine.push(
                                                 `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Engine key:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.blue("Engine name: ")} ${cstyler.hex("#00d9ffff")(engvalue)} ${cstyler.red('- The storage engine exists in MySQL source code but is not available on this server.')}`
@@ -1230,7 +1237,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         }
                                     } else {
                                         badengine.push(
-                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Engine key:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.blue("Engine name:")} ${cstyler.hex("#00d9ffff")(engvalue)} ${cstyler.red('- must have a valid engine value')}`
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Engine key:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.blue("Engine name:")} ${cstyler.underline.bold.hex("#00d9ffff")(engvalue)} ${cstyler.bold.red('- is not a valid MySQL storage engine name.')}`
                                         );
                                     }
                                 } else if (commetnkey.includes(columnName.toLowerCase())) {

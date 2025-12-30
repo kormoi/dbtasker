@@ -157,7 +157,7 @@ module.exports = async function (allconfig, table_json) {
         }
         // lets create tables if needed
         const tableop = require("./tableop");
-        const createtable = await tableop.createTableifNeeded(config, jsondata, separator);
+        const createtable = await tableop.createTableIfNeeded(config, jsondata, separator);
         if (createtable === null) {
             console.log(cstyler.bold.underline.red("Error occurred during creating tables."));
             return;

@@ -582,7 +582,7 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                 }
             }
         }
-        console.log(cstyler.cyan("Altering Column to tables are completed successfully."));
+        console.log(cstyler.bold.underline.hex("#b700ffff")("Alter Column process to tables are completed successfully."));
         return true;
     } catch (err) {
         console.error(err.message);

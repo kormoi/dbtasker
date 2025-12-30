@@ -14,7 +14,12 @@
     "mysql2",
     "alter",
     "modify",
-    "mysql2"
+    "mysql2",
+    "dbtasker",
+    "automation",
+    "schema",
+    "dbtask"
+
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
