@@ -24,6 +24,8 @@ Property | Description
 | **droptable** | `Boolean`: If true, allows dropping tables. |
 | **dropcol** | `Boolean`: If true, allows dropping columns. |
 | **donttouch** | `Array`: List of database names protected from deletion. |
+| **forcedeletecolumn** | `Boolean`: If true, allow dropping column even if referanced by any other column. |
+| **forceupdatecolumn** | `Boolean`: If true, allow updating column even if referanced by any other column. `default: true` |
 
 ### Configuration Example
 `JavaScript`
@@ -42,6 +44,7 @@ const config = {
 ```
 ## 📐 Schema Structure
 The schema follows a strict nested hierarchy:
+
 ```Database ➔ Table ➔ Column ➔ Properties```
 
 `JavaScript`
@@ -99,11 +102,14 @@ ColumnTwo: {
 | :--- | :--- |
 | **Type** | `type, columntype, column_type, datatype, data_type, typename, type_name` |
 | **Length** | `length, size, scale, value, range, precision, maxlength, lengthvalue` |
-| **Identity** | `autoincrement, auto_increment, serial, identity` |
-| **Default** | `default, defaults, defaultvalue, sample` |
-| **Index** | `primarykey, unique_key, fulltext, spatial, index` |
-| **Nullability** | `notnull, required, disallownull (vs optional, nullable)` |
-| **Comments** | `comment, description, label, note, hint` |
+| **Zerofill** | `zerofill, zero_fill, iszerofill, zerofillup, zero, fillzero, fill_zero, iszero` |
+| **Unsigned** | `unsigned, signed, issigned, isunsigned, numericsigned, numericunsigned` |
+| **Identity** | `autoincrement, auto_increment, increment, generated, isidentity, serial, identity` |
+| **Default** | `default, defaults, defaultvalue, default_value, example, sample, columndefault, column_default` |
+| **Index** | `index, indexkey, index_key, indexing` |
+| | **PrimaryKey** | `primarykey, primary_key, primary, isprimary, isprimarykey` |
+| **Nullability** | `null, nulls, nullable, optional, isnulable, allownull, canbenull, notnull, not_null, nonnullable, notnullable, required, disallownull, non_nullable, not_nullable, disallow_null` |
+| **Comments** | `comment, comments, columncomment, column_comment, description, label, helptext, hint, note` |
 
 ## 🛡️ Compatibility & Engines
 - **Node.js:** 16.x or higher
@@ -135,4 +141,5 @@ dbtasker(config, schema);
 ```
 ## 👨‍💻 Author
 **Md Nasiruddin Ahmed (Manik)** Designed for safe, flexible, and high-quality MySQL schema automation. 🌐 Visit us at: kormoi.com
+
 **License:** MIT

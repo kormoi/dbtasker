@@ -496,7 +496,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 /**
                                  * ZEROFILL
                                  */
-                                const zerofkeys = ['zerofill', 'zero_fill', 'iszerofill', 'zerofillup'];
+                                const zerofkeys = ['zerofill', 'zero_fill', 'iszerofill', 'zerofillup', 'zero', 'fillzero', 'fill_zero', 'iszero'];
                                 for (const item of Object.keys(deepColumn)) {
                                     if (zerofkeys.includes(item.toLowerCase())) {
                                         zerofill = deepColumn[item];
