@@ -143,7 +143,7 @@ module.exports = async function (allconfig, table_json) {
         console.log(cstyler.bold.underline.yellow("Lets check if the table need an upgrade"))
         // lets check all table name and column name
         const checking = await checker.JSONchecker(table_json, config, separator);
-        if (checking.status === false) {
+        if (checking === false) {
             console.log(cstyler.bold.underline.red("Please correct those information and try again."))
             return;
         }
