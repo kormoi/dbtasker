@@ -107,10 +107,10 @@ ColumnTwo: {
 | **Identity** | `autoincrement, auto_increment, increment, generated, isidentity, serial, identity` |
 | **Default** | `default, defaults, defaultvalue, default_value, example, sample, columndefault, column_default` |
 | **Index** | `index, indexkey, index_key, indexing` |
-| PrimaryKey | `primarykey, primary_key, primary, isprimary, isprimarykey` |
-| UniqueKey | `unique, isunique, isuniquekey, uniqueindex, uniquekey, unique_index, unique_key` |
-| FulltextKey | `fulltext, fulltextindex, isfulltextkey, fulltextkey, fulltext_key, isfulltext` |
-| SpatialKey | `spatial, spatialindex, isspatialkey, spatialkey, spatial_key, isspatial` |
+| `PrimaryKey` | `primarykey, primary_key, primary, isprimary, isprimarykey` |
+| `UniqueKey` | `unique, isunique, isuniquekey, uniqueindex, uniquekey, unique_index, unique_key` |
+| `FulltextKey` | `fulltext, fulltextindex, isfulltextkey, fulltextkey, fulltext_key, isfulltext` |
+| `SpatialKey` | `spatial, spatialindex, isspatialkey, spatialkey, spatial_key, isspatial` |
 | **Nullability** | `null, nulls, nullable, optional, isnulable, allownull, canbenull, notnull, not_null, nonnullable, notnullable, required, disallownull, non_nullable, not_nullable, disallow_null` |
 | **Comments** | `comment, comments, columncomment, column_comment, description, label, helptext, hint, note` |
 
