@@ -1250,6 +1250,8 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             `${cstyler.red("- Invalid comment:")} ` +
                                             result.errors.map(e => cstyler.red(e)).join(", ")
                                         )
+                                    }else {
+                                        contentObj[databaseName][tableName].comment = commentval;
                                     }
                                 } else {
                                     badColumnNames.push(
