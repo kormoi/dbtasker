@@ -355,6 +355,19 @@ async function alterColumnQuery(dbConfig, columndata, columnName, tableName, dat
                     else actions.push(`ADD ${type}${namePart} (${colsSql})`);
                 }
             }
+        }  else {
+            const ifexist = await fncs.columnHasKey(dbConfig, database, tableName, columnName);
+            if (ifexist === null) {
+                console.error("Having problem checking column have key or not. Server connection problem.");
+                return null;
+            }
+            if (ifexist.hasKey === true) {
+                const rem = await fncs.removeForeignKeyConstraintFromColumn(dbConfig, database, tableName, columnName);
+                if (rem === null) {
+                    console.error("Having problem removing constraint name from the column.");
+                    return null;
+                }
+            }
         }
 
         // Return single ALTER TABLE statement (no multi-statement)
