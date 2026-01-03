@@ -554,7 +554,7 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                         console.log(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column Name:"), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.yellow("- Given column data and server data are same."));
                         // lets check if foreign key need update
                         if (fkdetails === false && !columndata.hasOwnProperty("foreign_key")) {
-                            console.log(cstyler.underline("No foreign key details given to column or exist previously. No changes needed."));
+                            console.log(cstyler.underline("No foreign key details given to column or existed previously. No changes needed."));
                             continue;
                         } else if (fkdetails === false && columndata.hasOwnProperty("foreign_key")) {
                             console.log(cstyler.yellow("Foreign key need to be added for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
