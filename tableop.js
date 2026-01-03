@@ -158,7 +158,7 @@ async function createTableIfNeeded(config, jsondata, separator) {
             return false;
         }
         let foreignkeys = {};
-        console.log(cstyler.bold.purple("Lets start creating unlisted tables if needed."));
+        console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets start creating unlisted tables if needed."));
         // Lets check config
         for (const jsdb of Object.keys(jsondata)) {
             let dbname = fncs.perseDatabaseNameWithLoop(jsdb, separator);
@@ -209,7 +209,7 @@ async function createTableIfNeeded(config, jsondata, separator) {
                 }
             }
         }
-        console.log(cstyler.bold.underline.hex("#b700ffff")("Create table if needed process completed successfully."));
+        console.log(cstyler.bold.underline.green("Create table if needed process completed successfully."));
         return true;
     } catch (err) {
         console.error(cstyler.bold.red("Error occurred in createTableIfNeeded function of ", moduleName, " module. Error details: "), err);
@@ -254,11 +254,11 @@ async function dropTable(config, json_data, separator = "_") {
                     }
                 }
             }
-            if (count > 0) {
-                console.log(cstyler.green("Successfully dropped ", count, " unlisted tables"));
-            } else {
-                console.log(cstyler.underline("No table found to be dropped"));
-            }
+        }
+        if (count > 0) {
+            console.log(cstyler.green("Successfully dropped ", count, " unlisted tables"));
+        } else {
+            console.log(cstyler.underline("No table found to be dropped"));
         }
         return true;
     } catch (err) {

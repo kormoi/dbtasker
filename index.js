@@ -148,7 +148,7 @@ module.exports = async function (allconfig, table_json) {
             return;
         }
         const jsondata = checking.data;
-        console.log(cstyler.bold.purple("Lets start operation on databases."));
+        console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets start operation on databases."));
         const dbop = require("./dbop");
         const databaseop = await dbop.databaseAddDeleteAlter(config, jsondata, dropdatabase, donttouchdb, separator);
         if (databaseop === null) {
@@ -164,18 +164,18 @@ module.exports = async function (allconfig, table_json) {
         }
         // Drop tables
         if (droptable) {
-            console.log(cstyler.bold.purple("Lets drop unlisted table if needed."));
+            console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets drop unlisted table if needed."));
             const droptableifneeded = await tableop.dropTable(config, jsondata, separator);
             if (droptableifneeded === null) {
                 console.log(cstyler.bold.underline.red("Error occurred during dropping tables."));
                 return;
             }
         }
-        console.log(cstyler.bold.purple("Lets start working on columns"));
+        console.log(cstyler.bold.underline.green("<<<Lets start working on columns>>>"));
         const colop = require("./dropcolumn");
 
         // lets drop columns if needed
-        console.log(cstyler.bold.purple("Lets drop unlisted columns if needed."));
+        console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets drop unlisted columns if needed."));
         if (dropcolumn) {
             const dropcolifneeded = await colop.dropcolumn(config, jsondata, forcedropcolumn, separator);
             if (dropcolifneeded === null) {
@@ -185,7 +185,7 @@ module.exports = async function (allconfig, table_json) {
         }
         // lets add columns if needed
         const addcolumn = require("./addcolumn");
-        console.log(cstyler.bold.purple("Lets add columns if needed."));
+        console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets add columns if needed."));
         const addcolifneeded = await addcolumn.addColumnIfNeeded(config, jsondata, separator);
         if (addcolifneeded === null) {
             console.log(cstyler.bold.underline.red("Error occurred during adding columns."));
@@ -193,16 +193,12 @@ module.exports = async function (allconfig, table_json) {
         }
         // lets alter columns if needed
         const altercolop = require("./altercolumn");
-        console.log(cstyler.bold.purple("Lets alter columns if needed."));
+        console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets alter columns if needed."));
         const altercolifneeded = await altercolop.alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separator);
         if (altercolifneeded === null) {
             console.log(cstyler.bold.underline.red("Error occurred during altering columns."));
             return;
         }
-
-
-
-
 
         console.log(cstyler.bold.underline.green("<<<All database work is done perfectly>>>"));
     } catch (err) {

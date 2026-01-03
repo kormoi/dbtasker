@@ -170,6 +170,7 @@ async function addColumnQuery(columndata, columnName, tableName, databaseName, c
 async function addColumnIfNeeded(config, jsondata, separator) {
     try {
         console.log(cstyler.bold.yellow("Let's initiate addColumn to table if needed..."));
+        let count = 0;
         for (const jsondb of Object.keys(jsondata)) {
             let remainfk = {};
             const loopdb = fncs.perseDatabaseNameWithLoop(jsondb, separator);
@@ -212,6 +213,8 @@ async function addColumnIfNeeded(config, jsondata, separator) {
                         console.error(cstyler.red(`Failed to add column ${jsoncolumn} to table ${tableName} in database ${databaseName}. Skipping...`));
                         return null;
                     }
+                    console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column: "), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.green("- added successfully."))
+                    count += 1;
                     // check for foreign key
                     if (columndata.hasOwnProperty("foreign_key")) {
                         const fk = columndata.foreign_key;
@@ -249,7 +252,11 @@ async function addColumnIfNeeded(config, jsondata, separator) {
                 }
             }
         }
-        console.log(cstyler.bold.underline.hex("#b700ffff")("Adding Column to tables are completed successfully."));
+        if(count > 0){
+            console.log(cstyler.green.bold("Successfully added " + count + " columns."));
+        } else {
+            console.log("No column found to be added. All the column are added already.");
+        }
         return true;
     } catch (err) {
         console.error(err.message);

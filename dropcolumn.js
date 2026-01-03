@@ -9,7 +9,7 @@ const cstyler = require("cstyler");
 async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
     try {
         console.log(cstyler.bold.yellow("Initiating drop column operation"));
-
+        let count = 0;
         if (!fncs.isJsonObject(tableJson)) {
             return false;
         }
@@ -149,7 +149,8 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
                         );
                         return null;
                     }
-
+                    console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column: "), cstyler.hex("#00d9ffff")(column), cstyler.green("- dropped successfully."))
+                    count += 1;
                     console.log(
                         cstyler.bold.green("Successfully dropped column:"),
                         cstyler.hex("#00d9ffff")(column),
@@ -159,7 +160,11 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
                 }
             }
         }
-
+        if (count > 0) {
+            console.log(cstyler.green("Successfully dropped ", count, " columns."));
+        } else {
+            console.log("There is not column found to be dropped.");
+        }
         return true;
     } catch (err) {
         console.error(err?.message || err);

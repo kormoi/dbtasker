@@ -146,7 +146,7 @@ async function isColumnDataSame(config, databaseName, tableName, columnName, col
     } else if (idxA !== idxB && !realfk) {
         console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
         console.log(cstyler.red("Index are not same"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.index), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.index),);
-        console.log("fk exist:", fkdetails)
+        console.log("Foreign key exist:", fkdetails)
         return false;
     }
 
@@ -355,6 +355,19 @@ async function alterColumnQuery(dbConfig, columndata, columnName, tableName, dat
                     else actions.push(`ADD ${type}${namePart} (${colsSql})`);
                 }
             }
+        } else {
+            const haveindex = await fncs.checkIndexExists(dbConfig, database, tableName, columnName);
+            if (haveindex === null) {
+                console.error("Having problem getting index value from database");
+                return null;
+            }
+            if (haveindex.found === true) {
+                const haveindex = await fncs.removeForeignKeyConstraintFromColumn(dbConfig, database, tableName, columnName);
+                if (haveindex === null) {
+                    console.error("Having problem getting index value from database");
+                    return null;
+                }
+            }
         }
 
         // Return single ALTER TABLE statement (no multi-statement)
@@ -392,6 +405,7 @@ async function addForeignKeyWithIndexQuery(config, databaseName, tableName, colu
 async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separator) {
     try {
         console.log(cstyler.bold.yellow("Let's initiate Alter Column to table if needed..."));
+        let count = 0;
         for (const jsondb of Object.keys(jsondata)) {
             const loopdb = fncs.perseTableNameWithLoop(jsondb, separator);
             if (loopdb === false) {
@@ -476,6 +490,7 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                                 console.error("There was an issue when creating alter column for", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
                                 return null;
                             }
+                            count += 1;
                             // now re add foreign key to the column if exist
                             if (columndata.hasOwnProperty("foreign_key")) {
                                 const fkdata = columndata.foreign_key;
@@ -521,6 +536,7 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                                     console.error(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.red("There was an issue when modifying column",));
                                     return null;
                                 }
+                                count += 1;
                                 if (columndata.hasOwnProperty("foreign_key")) {
                                     const fkdata = columndata.foreign_key;
                                     const fkquery = await addForeignKeyWithIndexQuery(config, databaseName, tableName, jsoncolumn, fkdata.table, fkdata.column, {
@@ -535,9 +551,10 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                             }
                         }
                     } else {
-                        console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.yellow("Given column data and server data are same."), "Let's check foreign key now.");
+                        console.log(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column Name:"), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.yellow("- Given column data and server data are same."));
                         // lets check if foreign key need update
                         if (fkdetails === false && !columndata.hasOwnProperty("foreign_key")) {
+                            console.log(cstyler.underline("No foreign key details given to column or exist previously. No changes needed."));
                             continue;
                         } else if (fkdetails === false && columndata.hasOwnProperty("foreign_key")) {
                             console.log(cstyler.yellow("Foreign key need to be added for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
@@ -551,17 +568,18 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                                 console.error("There was an issue when creating foreign key for", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
                                 return null;
                             }
+                            count += 1;
                         } else if (fncs.isJsonObject(fkdetails) && columndata.hasOwnProperty("foreign_key")) {
                             // need to check if foreign key details are same
                             const fkdt = columndata.foreign_key;
                             if (fkdetails.table === fkdt.table &&
                                 fkdetails.column === fkdt.column &&
                                 fkdetails.deleteOption === fkdt.deleteOption &&
-                                (fkdt.updateOption === undefined ||fkdetails.updateOption === fkdt.updateOption)) {
+                                (fkdt.updateOption === undefined || fkdetails.updateOption === fkdt.updateOption)) {
+                                console.log(cstyler.underline("Foreign key details are matched. No changes needed."))
                                 continue;
                             }
-                            console.log(cstyler.yellow("Foreign key need to be updated for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
-                            console.log(cstyler.yellow("Foreign key details are different, updating foreign key for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
+                            console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.yellow("- Foreign key details are different, updating foreign key."));
                             // need to update foreign key
                             const dropfk = await fncs.removeForeignKeyFromColumn(config, databaseName, tableName, jsoncolumn);
                             if (dropfk === null) {
@@ -577,12 +595,20 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                                 console.error("There was an issue when creating foreign key for", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
                                 return null;
                             }
+                            count += 1;
+                        } else {
+                            console.log(cstyler.bold.red("There must be some issue when checking foreignkey details. Please contact support or re-install the module."))
                         }
                     }
                 }
             }
         }
-        console.log(cstyler.bold.underline.hex("#b700ffff")("Alter Column process to tables are completed successfully."));
+        if(count > 0){
+            console.log(cstyler.bold.underline.green("Successfully altered " + count + " columns."))
+        } else {
+            console.log(cstyler.bold.underline("No column were altered at all."))
+        }
+        console.log(cstyler.bold.underline.hex("#00fff2ff")("Alter Column process to tables are completed successfully."));
         return true;
     } catch (err) {
         console.error(err.message);
