@@ -187,8 +187,9 @@ async function isMySQLDatabase(config) {
   }
 }
 async function checkDatabaseExists(config, dbName) {
+  let connection;
   try {
-    const connection = await mysql.createConnection({
+    connection = await mysql.createConnection({
       host: config.host,
       user: config.user,
       password: config.password,
@@ -202,6 +203,8 @@ async function checkDatabaseExists(config, dbName) {
   } catch (err) {
     console.error(err.message);
     return null;
+  } finally {
+    if (connection) await connection.end();
   }
 }
 async function dropDatabase(config, databaseName) {
@@ -1193,7 +1196,7 @@ async function inspectColumnConstraint(config, database, table, column, options 
     console.error(err.message);
     return null;
   } finally {
-    await conn.end();
+    if (conn) await conn.end();
   }
 }
 async function _fetchIndexes(conn, database, tableName) {
@@ -1280,7 +1283,7 @@ async function checkIndexExists(config, database, tableName, indexKey) {
     console.error("Error in checkIndexExists:", err.message);
     return null;
   } finally {
-    await conn.end();
+    if (conn) await conn.end();
   }
 }
 async function columnHasKey(config, databaseName, tableName, columnName) {
@@ -1527,7 +1530,7 @@ async function findReferencingFromColumns(config, database, parentTable, parentC
     console.error("Error in findReferencingColumns:", err.message);
     return null;
   } finally {
-    await conn.end();
+    if (conn) await conn.end();
   }
 }
 async function addForeignKeyWithIndex(config, dbName, tableName, columnName, refTable, refColumn, options = {}) {
