@@ -1,6 +1,6 @@
 {
   "name": "dbtasker",
-  "version": "3.0.9",
+  "version": "3.1.0",
   "funding": {
     "type": "patreon",
     "url": "https://www.patreon.com/kormoi/gift"
@@ -23,6 +23,9 @@
     "automation",
     "schema",
     "dbtask",
+    "dbt",
+    "dbta",
+    "dbtool",
     "database-automation",
     "schema-sync",
     "schema-builder",
