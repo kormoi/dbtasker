@@ -310,7 +310,7 @@ async function alterColumnQuery(dbConfig, columndata, columnName, tableName, dat
                 }
                 if (hasdupes === true) {
                     if (forceupdatecolumn) {
-                        console.log(cstyler.bold.yellow("Cleaning duplicate rows before adding UNIQUE index..."));
+                        console.log(cstyler.bold.underline.yellow("***Cleaning duplicate rows before adding UNIQUE index***"));
                         const cleancol = await fncs.cleanDuplicateRows(dbConfig, database, tableName, columnName);
                         if (cleancol === null) {
                             console.error("Having server connection problem cleaning duplicate rows from database");

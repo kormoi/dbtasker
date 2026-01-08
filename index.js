@@ -138,7 +138,7 @@ module.exports = async function (allconfig, table_json) {
         } else if (falsers.includes(forceupdatecolumn)) {
             forceupdatecolumn = false;
         } else {
-            forceupdatecolumn = true;
+            forceupdatecolumn = false;
         }
         console.log(cstyler.bold.underline.yellow("Lets check if the table need an upgrade"))
         // lets check all table name and column name
