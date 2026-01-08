@@ -30,12 +30,12 @@ Property | Description
 | **user** | Database Username |
 | **password** | Database Password |
 | **port** | Connection Port (Default: `3306`) |
-| **dropdb** | `Boolean`: If true, allows dropping databases. |
-| **droptable** | `Boolean`: If true, allows dropping tables. |
-| **dropcol** | `Boolean`: If true, allows dropping columns. |
-| **donttouch** | `Array`: List of database names protected from deletion. |
-| **forcedeletecolumn** | `Boolean`: If true, allow dropping column even if referanced by any other column. |
-| **forceupdatecolumn** | `Boolean`: It is set `default: false` If true, allow updating column even if referanced by any other column. This one is very powerful. If you turn it on it will remove any foreign key that is referanced to the column is being updated and if the column is set to `UNIQUE` it will remove all the column value that are simillar. |
+| **drop database** | `Boolean`: If true, allows dropping databases. |
+| **drop table** | `Boolean`: If true, allows dropping tables. |
+| **drop column** | `Boolean`: If true, allows dropping columns. |
+| **do not touch** | `Array`: List of database names protected from deletion. |
+| **force delete column** | `Boolean`: If true, allow dropping column even if referanced by any other column. |
+| **force update column** | `Boolean`: It is set `default: false` If true, allow updating column even if referanced by any other column. This one is very powerful. If you turn it on it will remove any foreign key that is referanced to the column is being updated then update the column then add the foreign key to those column again and if the column is set to `UNIQUE` it will remove all the column value that are simillar. |
 
 ### Configuration Example
 `JavaScript`
