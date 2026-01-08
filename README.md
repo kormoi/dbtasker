@@ -117,7 +117,8 @@ ColumnTwo: {
 `dbtasker` is highly flexible and accepts multiple aliases for each column property. All keys are **case-insensitive.**
 
 | Feature | Supported Aliases |
-| **Do not touch** | `'donttouch', 'donottouch', 'donttouchdb', 'donottouchdb', 'donttouchdatabase', 'donottouchdatabase', 'dontdelete', 'donotdelete', 'dontdeletedb', 'donotdeletedb', 'dontdeletedatabase', 'donotdeletedatabase', 'dont_touch', 'do_not_touch', 'dont_touch_db', 'do_not_touch_db', 'dont_touch_database', 'do_not_touch_database', 'dont_delete', 'do_not_delete', 'dont_delete_db', 'do_not_delete_db', 'dont_delete_database', 'do_not_delete_database', 'reserveddb', 'reserved_db'` |
+| :--- | :--- |
+| **Do not touch** | `'donttouch', 'donottouch', 'donttouchdb', 'donottouchdb', 'donttouchdatabase', donottouchdatabase', 'dontdelete', 'donotdelete', 'dontdeletedb', 'donotdeletedb', 'dontdeletedatabase', 'donotdeletedatabase', 'dont_touch', 'do_not_touch', 'dont_touch_db', 'do_not_touch_db', 'dont_touch_database', 'do_not_touch_database', 'dont_delete', 'do_not_delete', 'dont_delete_db', 'do_not_delete_db', 'dont_delete_database', 'do_not_delete_database', 'reserveddb', 'reserved_db'` |
 | **Drop Database** | `'dropdb', 'dropdatabase', 'deletedb', 'deletedatabase', 'drop_db', 'drop_database', 'delete_db', 'delete_database', 'removedb', 'removedatabase', 'remove_db', 'remove_database'` |
 | **Drop Table** | `'droptable', 'deletetable', 'drop_table', 'delete_table', 'removetable', 'remove_table', 'dropdbtable', 'deletedbtable', 'removedbtable', 'dropdatabasetable', 'deletedatabasetable', 'removedatabasetable', 'drop_db_table', 'delete_db_table', 'remove_db_table', 'drop_database_table', 'delete_database_table', 'remove_database_table'` |
 | **Drop Column** | `'dropcol', 'dropcolumn', 'deletecol', 'deletecolumn', 'removecol', 'removecolumn', 'drop_col', 'drop_column', 'delete_col', 'delete_column', 'remove_col', 'remove_column'` |
