@@ -29,7 +29,7 @@ Property | Description
 | **host** | MySQL Host (e.g., `localhost`) |
 | **user** | Database Username |
 | **password** | Database Password |
-| **port** | Connection Port (Default: `3306`) |
+| **port** | Connection Port (e.g., `3306`) |
 | **drop database** | `Boolean`: If true, allows dropping databases. |
 | **drop table** | `Boolean`: If true, allows dropping tables. |
 | **drop column** | `Boolean`: If true, allows dropping columns. |
