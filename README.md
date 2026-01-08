@@ -35,7 +35,7 @@ Property | Description
 | **dropcol** | `Boolean`: If true, allows dropping columns. |
 | **donttouch** | `Array`: List of database names protected from deletion. |
 | **forcedeletecolumn** | `Boolean`: If true, allow dropping column even if referanced by any other column. |
-| **forceupdatecolumn** | `Boolean`: If true, allow updating column even if referanced by any other column. This one is very powerful. If you turn it on it will remove any foreign key that is referanced to the column is being updat and will remove all the column value that are simillar from the table if the column is set to `UNIQUE`. It is set `default: false` |
+| **forceupdatecolumn** | `Boolean`: It is set `default: false` If true, allow updating column even if referanced by any other column. This one is very powerful. If you turn it on it will remove any foreign key that is referanced to the column is being updated and if the column is set to `UNIQUE` it will remove all the column value that are simillar. |
 
 ### Configuration Example
 `JavaScript`
