@@ -1,40 +1,22 @@
 const fncs = require("./function");
 const cstyler = require("cstyler");
+const crypto = require('crypto');
 
 
 
-function isValidToBeForeignkey(refColData, columnData) {
-    try {
-        if (refColData.columntype.toUpperCase() !== columnData.columntype.toUpperCase()) {
-            return false;
-        }
-        if (Array.isArray(refColData.length_values) !== Array.isArray(columnData.length_values)) {
-            return false;
-        } else if (Array.isArray(refColData.length_values) && Array.isArray(columnData.length_values)) {
-            if (!fncs.isSameArray(refColData.length_values, columnData.length_values)) {
-                return false;
-            }
-        } else {
-            if (refColData.length_values !== columnData.length_values) {
-                return false;
-            }
-        }
-        if ((refColData.unsigned || false) !== (columnData.unsigned || false)) {
-            return false;
-        }
-        if (["CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET"].includes(refColData.columntype.toUpperCase())) {
-            if ((refColData._charset_ || "") !== (columnData._charset_ || "")) {
-                return false;
-            }
-            if ((refColData._collate_ || "") !== (columnData._collate_ || "")) {
-                return false;
-            }
-        }
-        return true;
-    } catch (err) {
-        console.log(err);
-        return false;
-    }
+
+
+function generateSafeIndexName(prefix, table, column) {
+    const fullName = `${prefix}_${table}_${column}`;
+    
+    // If it fits, just return it
+    if (fullName.length <= 64) return fullName;
+
+    // If too long, hash the full string and append it to a slice
+    const hash = crypto.createHash('sha256').update(fullName).digest('hex').slice(0, 8);
+    
+    // 55 chars + 1 underscore + 8 chars hash = 64 chars total
+    return `${fullName.slice(0, 55)}_${hash}`;
 }
 async function isColumnDataSame(config, databaseName, tableName, columnName, columnData, columndetails, fkdetails,) {
     // 1. Column type
@@ -186,7 +168,7 @@ async function isColumnDataSame(config, databaseName, tableName, columnName, col
 }
 // Identifier validator (letters, digits, underscore, dollar, max 64 chars)
 const validIdent = name => typeof name === 'string' && /^[A-Za-z0-9$_]{1,64}$/.test(name);
-async function alterColumnQuery(dbConfig, columndata, columnName, tableName, database, options = {}) {
+async function alterColumnQuery(dbConfig, columndata, columnName, tableName, database, options = {}, forceupdatecolumn) {
     try {
         // Basic validation
         if (!validIdent(columnName)) throw new Error('Invalid columnName');
@@ -320,14 +302,36 @@ async function alterColumnQuery(dbConfig, columndata, columnName, tableName, dat
             };
 
             if (wantsUnique) {
-                if (columnHasConstraint) {
-                    // Skip adding UNIQUE because column already participates in a constraint/index
-                    if (options.log !== false) {
-                        console.info(`Skipping ADD UNIQUE for ${database}.${tableName}.${columnName} because it already has constraints/indexes.`);
+                // Lets check for duplicates first
+                const hasdupes = await fncs.checkDuplicates(dbConfig, database, tableName, columnName);
+                if (hasdupes === null) {
+                    console.error("Having problem getting duplicate value of column from database");
+                    return null;
+                }
+                if (hasdupes === true) {
+                    if (forceupdatecolumn) {
+                        console.log(cstyler.bold.yellow("Cleaning duplicate rows before adding UNIQUE index..."));
+                        const cleancol = await fncs.cleanDuplicateRows(dbConfig, database, tableName, columnName);
+                        if (cleancol === null) {
+                            console.error("Having server connection problem cleaning duplicate rows from database");
+                            return null;
+                        }
+                    } else {
+                        console.error(`${cstyler.blue("Database:")} ${cstyler.hex("#00d9ffff")(database)} ${cstyler.blue("Table:")} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue("Column:")} ${cstyler.hex("#00d9ffff")(columnName)} - Cannot add UNIQUE index because duplicate values exist. You need to turn on the ${cstyler.yellow("force_update_column")} option to true clean duplicates first.`);
+                        return false;
                     }
+                }
+                if (columnHasConstraint && info.constraints[0].constraintType === 'UNIQUE') {
+                    console.info(`Skipping: A Unique key already exists on ${columnName}.`);
                 } else {
+                    // Remove existing constraint/index first
+                    const remfkconstraint = await fncs.removeForeignKeyConstraintFromColumn(dbConfig, database, tableName, columnName);
+                    if (remfkconstraint === null) {
+                        console.error("Having problem removing constraint name from the column.");
+                        return null;
+                    }
                     // Add UNIQUE on the column (single-column unique)
-                    const idxName = (`uq_${tableName}_${columnName}`).slice(0, 64);
+                    const idxName = (`${generateSafeIndexName("un", tableName, columnName)}`).slice(0, 64);
                     actions.push(`ADD UNIQUE KEY ${quoteId(idxName)} (${quoteId(columnName)})`);
                 }
             } else {
@@ -356,15 +360,10 @@ async function alterColumnQuery(dbConfig, columndata, columnName, tableName, dat
                 }
             }
         } else {
-            const haveindex = await fncs.checkIndexExists(dbConfig, database, tableName, columnName);
-            if (haveindex === null) {
-                console.error("Having problem getting index value from database");
-                return null;
-            }
-            if (haveindex.found === true) {
-                const haveindex = await fncs.removeForeignKeyConstraintFromColumn(dbConfig, database, tableName, columnName);
-                if (haveindex === null) {
-                    console.error("Having problem getting index value from database");
+            if (columnHasConstraint) {
+                const rem = await fncs.removeForeignKeyConstraintFromColumn(dbConfig, database, tableName, columnName);
+                if (rem === null) {
+                    console.error("Having problem removing constraint name from the column.");
                     return null;
                 }
             }
@@ -485,7 +484,7 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                                 }
                             }
                             // now alter the column
-                            const alterquery = await alterColumnQuery(config, columndata, jsoncolumn, tableName, databaseName);
+                            const alterquery = await alterColumnQuery(config, columndata, jsoncolumn, tableName, databaseName, {}, forceupdatecolumn);
                             if (alterquery === null) {
                                 console.error("There was an issue when creating alter column for", cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn));
                                 return null;
@@ -531,7 +530,7 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                                         return null;
                                     }
                                 }
-                                const alterquery = await alterColumnQuery(config, columndata, jsoncolumn, tableName, databaseName);
+                                const alterquery = await alterColumnQuery(config, columndata, jsoncolumn, tableName, databaseName, {}, forceupdatecolumn);
                                 if (alterquery === null) {
                                     console.error(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.red("There was an issue when modifying column",));
                                     return null;
@@ -603,7 +602,7 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                 }
             }
         }
-        if(count > 0){
+        if (count > 0) {
             console.log(cstyler.bold.underline.green("Successfully altered " + count + " columns."))
         } else {
             console.log(cstyler.bold.underline("No column were altered at all."))

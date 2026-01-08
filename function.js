@@ -1854,8 +1854,64 @@ async function runQuery(config, databaseName, queryText) {
     if (connection) await connection.end();
   }
 }
+async function checkDuplicates(config, databaseName, tableName, columnName) {
+  let connection;
 
+  try {
+    connection = await mysql.createConnection({
+      ...config,
+      database: databaseName
+    });
 
+    const sql = `
+      SELECT COUNT(*) as duplicateCount 
+      FROM (
+        SELECT \`${columnName}\` 
+        FROM \`${tableName}\` 
+        GROUP BY \`${columnName}\` 
+        HAVING COUNT(\`${columnName}\`) > 1
+      ) AS dup_query`;
+
+    const [rows] = await connection.execute(sql);
+    
+    // Returns true if duplicates exist, false if not
+    return rows[0].duplicateCount > 0;
+
+  } catch (err) {
+    console.error(`Check Error: ${err.message}`);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
+async function cleanDuplicateRows(config, databaseName, tableName, columnName) {
+  let connection;
+
+  try {
+    connection = await mysql.createConnection({
+      ...config,
+      database: databaseName
+    });
+
+    // We use a self-join to find rows with matching values but higher IDs
+    const sql = `
+      DELETE t1 FROM \`${tableName}\` t1
+      INNER JOIN \`${tableName}\` t2 
+      ON t1.\`${columnName}\` = t2.\`${columnName}\` 
+      AND t1.id > t2.id`;
+
+    const [result] = await connection.execute(sql);
+    
+    // Returns the number of deleted rows
+    return result.affectedRows;
+
+  } catch (err) {
+    console.error(`Clean Error: ${err.message}`);
+    return null;
+  } finally {
+    if (connection) await connection.end();
+  }
+}
 
 
 module.exports = {
@@ -1906,4 +1962,6 @@ module.exports = {
   dropColumn,
   writeJsFile,
   runQuery,
+  checkDuplicates,
+  cleanDuplicateRows,
 }
