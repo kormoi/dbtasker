@@ -910,7 +910,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 let fktable = undefined;
                                 let fkcolumn = undefined;
                                 let foreign_key = {};
-                                const fk_variations = ["fk", "fuck", "foreign_key", "foreignkey"];
+                                const fk_variations = ["fk", "fuck", "foreign", "foreign_key", "foreignkey"];
                                 for (const item of Object.keys(deepColumn)) {
                                     if (fk_variations.includes(item.toLowerCase())) {
                                         foreign_key = deepColumn[item];
