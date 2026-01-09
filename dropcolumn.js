@@ -17,11 +17,7 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
         for (const jsDb of Object.keys(tableJson)) {
             const parsedDb = fncs.perseDatabaseNameWithLoop(jsDb, separator);
             if (!parsedDb) {
-                console.error(
-                    cstyler.bold.red("Cannot parse database name."),
-                    jsDb,
-                    parsedDb
-                );
+                console.error(cstyler.bold.red("Cannot parse database name."), jsDb, parsedDb);
                 return null;
             }
 
@@ -34,20 +30,13 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
 
                 const parsedTable = fncs.perseTableNameWithLoop(jsTable, separator);
                 if (!parsedTable) {
-                    console.error(
-                        cstyler.bold.red("Cannot parse table name."),
-                        jsTable
-                    );
+                    console.error(cstyler.bold.red("Cannot parse table name."), jsTable);
                     return null;
                 }
 
                 const tableName = parsedTable.loopname;
 
-                const existingColumns = await fncs.getColumnNames(
-                    config,
-                    databaseName,
-                    tableName
-                );
+                const existingColumns = await fncs.getColumnNames(config, databaseName, tableName);
 
                 if (!existingColumns) {
                     console.error(
@@ -60,14 +49,10 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
                 }
 
                 for (const column of existingColumns) {
-                    const definedInJson = Object.prototype.hasOwnProperty.call(
-                        tableDef,
-                        column
-                    );
+                    const definedInJson = Object.prototype.hasOwnProperty.call(tableDef, column);
 
-                    const isValidDefinition =
-                        definedInJson && fncs.isJsonObject(tableDef[column]);
-
+                    const isValidDefinition = definedInJson && fncs.isJsonObject(tableDef[column]);
+                    
                     if (isValidDefinition) continue;
 
                     console.log(
@@ -79,19 +64,10 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
                         cstyler.yellow(column)
                     );
 
-                    const referencingColumns =
-                        await fncs.findReferencingFromColumns(
-                            config,
-                            databaseName,
-                            tableName,
-                            column
-                        );
+                    const referencingColumns = await fncs.findReferencingFromColumns(config, databaseName, tableName, column);
 
                     if (referencingColumns === null) {
-                        console.error(
-                            cstyler.bold.red("Failed to resolve FK references for column:"),
-                            cstyler.hex("#00d9ffff")(column)
-                        );
+                        console.error(cstyler.bold.red("Failed to resolve FK references for column:"), cstyler.hex("#00d9ffff")(column));
                         return null;
                     }
 
@@ -108,12 +84,7 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
                         let allFkRemoved = true;
 
                         for (const ref of referencingColumns) {
-                            const removed = await fncs.removeForeignKeyFromColumn(
-                                config,
-                                ref.child_schema,
-                                ref.child_table,
-                                ref.child_columns[0]
-                            );
+                            const removed = await fncs.removeForeignKeyFromColumn(config, ref.child_schema, ref.child_table, ref.child_columns[0]);
 
                             if (removed === null) {
                                 console.error(
@@ -127,21 +98,12 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
                         }
 
                         if (!allFkRemoved) {
-                            console.error(
-                                cstyler.bold.red("Aborting column drop due to FK failures:"),
-                                cstyler.hex("#00d9ffff")(column)
-                            );
+                            console.error(cstyler.bold.red("Aborting column drop due to FK failures:"), cstyler.hex("#00d9ffff")(column));
                             continue;
                         }
                     }
 
-                    const dropped = await fncs.dropColumn(
-                        config,
-                        databaseName,
-                        tableName,
-                        column
-                    );
-
+                    const dropped = await fncs.dropColumn(config, databaseName, tableName, column);
                     if (dropped === null) {
                         console.error(
                             cstyler.bold.red("Failed to drop column:"),
@@ -151,17 +113,11 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
                     }
                     console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column: "), cstyler.hex("#00d9ffff")(column), cstyler.green("- dropped successfully."))
                     count += 1;
-                    console.log(
-                        cstyler.bold.green("Successfully dropped column:"),
-                        cstyler.hex("#00d9ffff")(column),
-                        cstyler.bold.green("from table:"),
-                        cstyler.hex("#00d9ffff")(tableName)
-                    );
                 }
             }
         }
         if (count > 0) {
-            console.log(cstyler.green("Successfully dropped ", count, " columns."));
+            console.log(cstyler.bold.green("Successfully dropped " + count + " columns."));
         } else {
             console.log("There is not column found to be dropped.");
         }

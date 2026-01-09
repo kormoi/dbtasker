@@ -310,7 +310,9 @@ async function alterColumnQuery(dbConfig, columndata, columnName, tableName, dat
                 }
                 if (hasdupes === true) {
                     if (forceupdatecolumn) {
+                        console.log(cstyler.bold.underline.yellow("********************************************************"));
                         console.log(cstyler.bold.underline.yellow("***Cleaning duplicate rows before adding UNIQUE index***"));
+                        console.log(cstyler.bold.underline.yellow("********************************************************"));
                         const cleancol = await fncs.cleanDuplicateRows(dbConfig, database, tableName, columnName);
                         if (cleancol === null) {
                             console.error("Having server connection problem cleaning duplicate rows from database");
@@ -404,6 +406,7 @@ async function addForeignKeyWithIndexQuery(config, databaseName, tableName, colu
 async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separator) {
     try {
         console.log(cstyler.bold.yellow("Let's initiate Alter Column to table if needed..."));
+        console.log(cstyler.bold.blue("Please wait..."));
         let count = 0;
         for (const jsondb of Object.keys(jsondata)) {
             const loopdb = fncs.perseTableNameWithLoop(jsondb, separator);
@@ -550,10 +553,8 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                             }
                         }
                     } else {
-                        console.log(cstyler.blue("Database:"), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column Name:"), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.yellow("- Given column data and server data are same."));
                         // lets check if foreign key need update
                         if (fkdetails === false && !columndata.hasOwnProperty("foreign_key")) {
-                            console.log(cstyler.underline("Column do not have foreign key."));
                             continue;
                         } else if (fkdetails === false && columndata.hasOwnProperty("foreign_key")) {
                             console.log(cstyler.yellow("Foreign key need to be added for "), cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn));
@@ -575,7 +576,6 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                                 fkdetails.column === fkdt.column &&
                                 fkdetails.deleteOption === fkdt.deleteOption &&
                                 (fkdt.updateOption === undefined || fkdetails.updateOption === fkdt.updateOption)) {
-                                console.log(cstyler.underline("Foreign key details are matched. No changes needed."))
                                 continue;
                             }
                             console.log(cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(databaseName), cstyler.blue(" Table: "), cstyler.hex("#00d9ffff")(tableName), cstyler.blue(" Column Name: "), cstyler.hex("#00d9ffff")(jsoncolumn), cstyler.yellow("- Foreign key details are different, updating foreign key."));

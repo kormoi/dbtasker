@@ -289,35 +289,33 @@ async function dropTable(config, databaseName, tableName) {
 async function dropColumn(config, databaseName, tableName, columnName) {
   let connection;
   try {
-    config.database = databaseName;
-    connection = await mysql.createConnection(config);
+    // Ensure the database is selected in the config
+    const dbConfig = { ...config, database: databaseName };
+    connection = await mysql.createConnection(dbConfig);
 
-    // 1️⃣ Check if column exists
+    // 1️⃣ Check if column exists and get its metadata
     const [columns] = await connection.query(
-      `SELECT COLUMN_NAME, COLUMN_KEY
-       FROM INFORMATION_SCHEMA.COLUMNS
+      `SELECT COLUMN_NAME, COLUMN_KEY, COLUMN_TYPE, EXTRA 
+       FROM INFORMATION_SCHEMA.COLUMNS 
        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
       [databaseName, tableName, columnName]
     );
 
-    // ❌ Column does not exist → return false
     if (columns.length === 0) {
-      console.log(
-        `Column '${columnName}' does not exist in ${databaseName}.${tableName}`
-      );
+      console.log(`Column '${columnName}' does not exist in ${tableName}.`);
       return false;
     }
 
-    const columnKey = columns[0].COLUMN_KEY;
+    const columnKey = columns[0].COLUMN_KEY; // "PRI", "UNI", or ""
+    const columnType = columns[0].COLUMN_TYPE; // e.g., "int(11)"
+    const isAutoIncrement = columns[0].EXTRA.toLowerCase().includes('auto_increment');
 
-    // 2️⃣ Drop foreign key constraints
+    // 2️⃣ Drop Foreign Key constraints first
     const [fkConstraints] = await connection.query(
       `SELECT CONSTRAINT_NAME
        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-       WHERE TABLE_SCHEMA = ?
-         AND TABLE_NAME = ?
-         AND COLUMN_NAME = ?
-         AND REFERENCED_TABLE_NAME IS NOT NULL`,
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+       AND REFERENCED_TABLE_NAME IS NOT NULL`,
       [databaseName, tableName, columnName]
     );
 
@@ -327,23 +325,28 @@ async function dropColumn(config, databaseName, tableName, columnName) {
       );
     }
 
-    // 3️⃣ Drop primary key if needed
-    if (columnKey === "PRI") {
+    // 3️⃣ Handle Primary Key and Auto-Increment Conflict
+    // If it's Auto-Increment, we MUST remove that attribute before dropping the key
+    if (isAutoIncrement) {
+      // Modifying without the 'AUTO_INCREMENT' keyword
       await connection.query(
-        `ALTER TABLE \`${tableName}\` DROP PRIMARY KEY`
+        `ALTER TABLE \`${tableName}\` MODIFY COLUMN \`${columnName}\` ${columnType}`
       );
     }
 
-    // 4️⃣ Drop column
+    // Now it is safe to drop the Primary Key constraint if it was one
+    if (columnKey === "PRI") {
+      await connection.query(`ALTER TABLE \`${tableName}\` DROP PRIMARY KEY`);
+    }
+
+    // 4️⃣ Final Step: Drop the column
     await connection.query(
       `ALTER TABLE \`${tableName}\` DROP COLUMN \`${columnName}\``
     );
 
-    console.log(
-      `Column '${columnName}' dropped successfully from ${databaseName}.${tableName}`
-    );
-
+    console.log(`Column '${columnName}' dropped successfully from ${tableName}`);
     return true;
+
   } catch (err) {
     console.error("Error dropping column:", err.message);
     return null;
@@ -1873,7 +1876,7 @@ async function checkDuplicates(config, databaseName, tableName, columnName) {
       ) AS dup_query`;
 
     const [rows] = await connection.execute(sql);
-    
+
     // Returns true if duplicates exist, false if not
     return rows[0].duplicateCount > 0;
 
@@ -1901,7 +1904,7 @@ async function cleanDuplicateRows(config, databaseName, tableName, columnName) {
       AND t1.id > t2.id`;
 
     const [result] = await connection.execute(sql);
-    
+
     // Returns the number of deleted rows
     return result.affectedRows;
 
