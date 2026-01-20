@@ -49,6 +49,8 @@ const config = {
   droptable: true,
   dropcol: false,
   donttouch: ["production_db", "analytics_db"],
+  forceupdatecolumn: true,
+  forcedeletecolumn: true,
   sep: "_" 
 };
 ```
@@ -82,10 +84,30 @@ const schema = {
         defaults: "CURRENT_TIMESTAMP"
       }
     }
+  },
+  web_db: {
+    "tableName(year)": {
+      id: {
+        type: "int",
+        primarykey: true,
+        autoincrement: true
+      }
+    }
   }
 };
 ```
 
+### The Amazing and powerful one
+When you use years, months or days as parameter when declering database name or in table name the system will generate date as extension of the name with a seperator. Such as:
+
+```js
+const sep = "_"
+if(name == "(year)name" || "name(year)") generated == "name_2026_";
+if(name == "(month)name" || "name(month)") generated == "name_2026_12_";
+if(name == "(day)name" || "name(day)") generated == "name_2026_12_26_";
+```
+
+Now if the schema have any of this kind of name then you must run the function after that particular periode. So that funciton can create that database or table each time for your particular need.
 
 
 ## 🔗 Foreign Keys
