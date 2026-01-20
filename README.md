@@ -26,10 +26,10 @@ npm install dbtasker
 btasker requires a configuration object to manage connection credentials and safety behaviors.
 Property | Description
 | :--- | :--- |
-| **host** | MySQL Host (e.g., `localhost`) |
-| **user** | Database Username |
-| **password** | Database Password |
-| **port** | Connection Port (e.g., `3306`) |
+| **host** | MySQL Host (e.g., `localhost`) `(required)`|
+| **user** | Database Username `(required)` |
+| **password** | Database Password `(required)` |
+| **port** | Connection Port (e.g., `3306`) `(required)` |
 | **drop database** | `Boolean`: If true, allows dropping databases. |
 | **drop table** | `Boolean`: If true, allows dropping tables. |
 | **drop column** | `Boolean`: If true, allows dropping columns. |
@@ -176,9 +176,10 @@ ColumnTwo: {
 const dbtasker = require("dbtasker");
 
 const config = { 
-  host: "localhost", 
+  host: "localhost",
+  port: 3306, 
   user: "root", 
-  password: "password" 
+  password: "password"
 };
 
 const schema = {
