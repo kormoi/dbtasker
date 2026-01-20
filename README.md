@@ -85,8 +85,8 @@ const schema = {
       }
     }
   },
-  web_db: {
-    "tableName(year)": {
+  "(year)web_db": {
+    "tableName(month)": {
       id: {
         type: "int",
         primarykey: true,
