@@ -1,6 +1,7 @@
 const fncs = require("./function");
 const cstyler = require("cstyler");
 const crypto = require('crypto');
+const addcolumn = require("./addcolumn");
 
 
 
@@ -8,13 +9,13 @@ const crypto = require('crypto');
 
 function generateSafeIndexName(prefix, table, column) {
     const fullName = `${prefix}_${table}_${column}`;
-    
+
     // If it fits, just return it
     if (fullName.length <= 64) return fullName;
 
     // If too long, hash the full string and append it to a slice
     const hash = crypto.createHash('sha256').update(fullName).digest('hex').slice(0, 8);
-    
+
     // 55 chars + 1 underscore + 8 chars hash = 64 chars total
     return `${fullName.slice(0, 55)}_${hash}`;
 }
@@ -442,7 +443,13 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
                     if (!fncs.isJsonObject(jsondata[jsondb][jsontable][jsoncolumn])) { continue; }
                     if (!allcols.includes(jsoncolumn)) {
                         // column does not exist, skip it
-                        console.error(cstyler.red(`Column ${jsoncolumn} does not exist in table ${tableName} of database ${databaseName}. Skipping...`));
+                        console.error(cstyler.red(`Column ${jsoncolumn} does not exist in table ${tableName} of database ${databaseName}. Adding the column...`));
+                        const addcol = await addcolumn.addColumnQuery(jsondata[jsondb][jsontable][jsoncolumn], jsoncolumn, tableName, databaseName, config);
+                        if (addcol === null) {
+                            console.error(cstyler.red(`Failed to add column ${jsoncolumn} to table ${tableName} in database ${databaseName}. Skipping...`));
+                        } else if (addcol === true) {
+                            console.log(cstyler.green(`Successfully added column ${jsoncolumn} to table ${tableName} in database ${databaseName}.`));
+                        }
                         continue;
                     }
                     // lets add the column

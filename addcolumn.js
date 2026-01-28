@@ -30,39 +30,31 @@ async function addForeignKeyWithIndexQuery(config, databaseName, tableName, colu
 async function addColumnQuery(columndata, columnName, tableName, databaseName, config) {
     try {
         if (!columndata || !columndata.columntype) {
-            throw new Error("columntype is required to add a column. Table: " + tableName + " Column name: " + columnName);
+            throw new Error(`columntype is required to add a column. Table: ${tableName} Column name: ${columnName}`);
         }
 
-        // Simple identifier escaping for MySQL identifiers
+        // Helper to escape backticks in names
         const escId = (s) => `\`${String(s).replace(/`/g, '``')}\``;
 
-        let queryText = `ALTER TABLE ${escId(tableName)} ADD COLUMN ${escId(columnName)}`;
+        // 1. Base query to add the column
+        let queryText = `ALTER TABLE ${escId(tableName)} ADD COLUMN ${escId(columnName)} ${columndata.columntype}`;
 
-        // column type
-        queryText += ` ${columndata.columntype}`;
-
-        // length / enum / set
+        // 2. Handle length / enum / set
         if (columndata.hasOwnProperty("length_value")) {
             const lengthval = columndata.length_value;
-
             if (typeof lengthval === "number") {
                 queryText += `(${lengthval})`;
-            } else if (
-                Array.isArray(lengthval) &&
-                lengthval.length === 2 &&
-                lengthval.every(v => typeof v === "number")
-            ) {
+            } else if (Array.isArray(lengthval) && lengthval.length === 2 && lengthval.every(v => typeof v === "number")) {
                 queryText += `(${lengthval[0]},${lengthval[1]})`;
-            } else if (
-                Array.isArray(lengthval) &&
-                lengthval.every(v => typeof v === "string")
-            ) {
+            } else if (Array.isArray(lengthval) && lengthval.every(v => typeof v === "string")) {
                 const escaped = lengthval.map(v => `'${v.replace(/'/g, "''")}'`);
                 queryText += `(${escaped.join(",")})`;
             }
         }
+
         queryText += " ";
 
+        // 3. Handle attributes
         if (columndata.unsigned === true) queryText += "UNSIGNED ";
         if (columndata.zerofill === true) queryText += "ZEROFILL ";
 
@@ -74,96 +66,66 @@ async function addColumnQuery(columndata, columnName, tableName, databaseName, c
             else queryText += `DEFAULT '${String(d).replace(/'/g, "''")}' `;
         }
 
-        if (columndata.autoincrement === true) {
-            queryText += "AUTO_INCREMENT ";
-        }
-
+        if (columndata.autoincrement === true) queryText += "AUTO_INCREMENT ";
         if (columndata._charset_) queryText += `CHARACTER SET ${columndata._charset_} `;
         if (columndata._collate_) queryText += `COLLATE ${columndata._collate_} `;
 
         if (columndata.hasOwnProperty("nulls")) {
             queryText += columndata.nulls ? "NULL " : "NOT NULL ";
         }
+
         if (columndata.comment) {
             queryText += `COMMENT '${String(columndata.comment).replace(/'/g, "''")}' `;
         }
 
-        // If no index specified, return the column add SQL
-        if (!columndata.hasOwnProperty("index") || columndata.index === undefined || columndata.index === null || columndata.index === '') {
-            return queryText.trim();
+        // 4. Handle Index (Optional)
+        const hasIndex = columndata.hasOwnProperty("index") && columndata.index !== undefined && columndata.index !== null && columndata.index !== '';
+
+        if (hasIndex) {
+            let rawIndex = String(columndata.index).trim().toUpperCase();
+            const idxNameRaw = columndata.index_name || columndata.indexName || null;
+            const idxName = idxNameRaw ? escId(idxNameRaw) : null;
+
+            let idxLength = null;
+            if (Number.isInteger(columndata.index_length) && columndata.index_length > 0) idxLength = columndata.index_length;
+            else if (Number.isInteger(columndata.indexLength) && columndata.indexLength > 0) idxLength = columndata.indexLength;
+
+            const colRef = idxLength ? `${escId(columnName)}(${idxLength})` : escId(columnName);
+
+            let idxType = 'INDEX';
+            if (rawIndex === 'PRIMARY' || rawIndex === 'PRIMARY KEY') idxType = 'PRIMARY';
+            else if (rawIndex.includes('UNIQUE')) idxType = 'UNIQUE';
+            else if (rawIndex.includes('FULLTEXT')) idxType = 'FULLTEXT';
+            else if (rawIndex.includes('SPATIAL')) idxType = 'SPATIAL';
+
+            switch (idxType) {
+                case 'PRIMARY':
+                    queryText += `, ADD PRIMARY KEY (${colRef})`;
+                    break;
+                case 'UNIQUE':
+                    queryText += `, ADD UNIQUE KEY ${idxName || escId(`uniq_${tableName}_${columnName}`)} (${colRef})`;
+                    break;
+                case 'FULLTEXT':
+                    queryText += `, ADD FULLTEXT KEY ${idxName || escId(`ft_${tableName}_${columnName}`)} (${colRef})`;
+                    break;
+                case 'SPATIAL':
+                    queryText += `, ADD SPATIAL KEY ${idxName || escId(`sp_${tableName}_${columnName}`)} (${colRef})`;
+                    break;
+                default:
+                    queryText += `, ADD INDEX ${idxName || escId(`idx_${tableName}_${columnName}`)} (${colRef})`;
+                    break;
+            }
         }
 
-        // index is provided — interpret it as a string describing index type
-        let rawIndex = columndata.index;
-        if (typeof rawIndex !== 'string') {
-            // defensively convert to string if possible
-            rawIndex = String(rawIndex);
-        }
-        const idxToken = rawIndex.trim().toUpperCase();
-
-        // Optional explicit index name
-        const idxNameRaw = columndata.index_name || columndata.indexName || null;
-        const idxName = idxNameRaw ? escId(idxNameRaw) : null;
-
-        // Optional prefix length for index (integer)
-        let idxLength = null;
-        if (Number.isInteger(columndata.index_length) && columndata.index_length > 0) {
-            idxLength = columndata.index_length;
-        } else if (Number.isInteger(columndata.indexLength) && columndata.indexLength > 0) {
-            idxLength = columndata.indexLength;
-        }
-
-        const colRef = idxLength ? `${escId(columnName)}(${idxLength})` : escId(columnName);
-
-        // normalize common variants to canonical type
-        let idxType = 'INDEX';
-        if (idxToken === 'PRIMARY' || idxToken === 'PRIMARY KEY') idxType = 'PRIMARY';
-        else if (idxToken === 'UNIQUE' || idxToken === 'UNIQUE KEY' || idxToken === 'UNIQUE INDEX') idxType = 'UNIQUE';
-        else if (idxToken === 'FULLTEXT' || idxToken === 'FULLTEXT KEY' || idxToken === 'FULLTEXT INDEX') idxType = 'FULLTEXT';
-        else if (idxToken === 'SPATIAL' || idxToken === 'SPATIAL KEY' || idxToken === 'SPATIAL INDEX') idxType = 'SPATIAL';
-        else idxType = 'INDEX'; // covers INDEX, KEY and others
-
-        // Build index clause. Prepend with comma because we already used ALTER TABLE ... ADD COLUMN ...
-        let indexClause = '';
-        switch (idxType) {
-            case 'PRIMARY':
-                // primary key doesn't accept a name
-                indexClause = `, ADD PRIMARY KEY (${colRef})`;
-                break;
-            case 'UNIQUE':
-                {
-                    const name = idxName || escId(`uniq_${String(tableName).replace(/\W+/g, '_')}_${String(columnName).replace(/\W+/g, '_')}`);
-                    indexClause = `, ADD UNIQUE KEY ${name} (${colRef})`;
-                }
-                break;
-            case 'FULLTEXT':
-                {
-                    const name = idxName || escId(`ft_${String(tableName).replace(/\W+/g, '_')}_${String(columnName).replace(/\W+/g, '_')}`);
-                    indexClause = `, ADD FULLTEXT KEY ${name} (${colRef})`;
-                }
-                break;
-            case 'SPATIAL':
-                {
-                    const name = idxName || escId(`sp_${String(tableName).replace(/\W+/g, '_')}_${String(columnName).replace(/\W+/g, '_')}`);
-                    indexClause = `, ADD SPATIAL KEY ${name} (${colRef})`;
-                }
-                break;
-            case 'INDEX':
-            default:
-                {
-                    const name = idxName || escId(`idx_${String(tableName).replace(/\W+/g, '_')}_${String(columnName).replace(/\W+/g, '_')}`);
-                    indexClause = `, ADD INDEX ${name} (${colRef})`;
-                }
-                break;
-        }
-
-        queryText += indexClause + ' ';
-
+        // 5. Final Execution (Happens every time)
         queryText = queryText.trim();
         const runquery = await fncs.runQuery(config, databaseName, queryText);
+
+        console.log(`Success: Added column ${columnName} to ${tableName}`);
         return runquery;
+
     } catch (err) {
-        console.error(err && err.message ? err.message : String(err));
+        console.error("Error in addColumnQuery:", err && err.message ? err.message : String(err));
         return null;
     }
 }
@@ -252,7 +214,7 @@ async function addColumnIfNeeded(config, jsondata, separator) {
                 }
             }
         }
-        if(count > 0){
+        if (count > 0) {
             console.log(cstyler.green.bold("Successfully added " + count + " columns."));
         } else {
             console.log("No column found to be added. All the column are added already.");
