@@ -1,5 +1,4 @@
 const fncs = require("./function");
-const recordedjson = require("./tableop");
 const cstyler = require("cstyler");
 const checker = require("./mysqlvalidation");
 
