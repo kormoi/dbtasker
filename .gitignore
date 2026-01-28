@@ -2,3 +2,5 @@ node_modules/
 check.js
 app.js
 user_tables.js
+pgvalidation.js
+pgfunction.js
