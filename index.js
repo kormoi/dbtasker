@@ -1,6 +1,11 @@
 const fncs = require("./function");
 const cstyler = require("cstyler");
 const checker = require("./mysqlvalidation");
+const dbop = require("./dbop");
+const tableop = require("./tableop");
+const colop = require("./dropcolumn");
+const addcolumn = require("./addcolumn");
+const altercolop = require("./altercolumn");
 
 
 
@@ -148,14 +153,12 @@ module.exports = async function (allconfig, table_json) {
         }
         const jsondata = checking.data;
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets start operation on databases."));
-        const dbop = require("./dbop");
         const databaseop = await dbop.databaseAddDeleteAlter(config, jsondata, dropdatabase, donttouchdb, separator);
         if (databaseop === null) {
             console.log(cstyler.bold.underline.red("Error occurred during database operation."));
             return;
         }
         // lets create tables if needed
-        const tableop = require("./tableop");
         const createtable = await tableop.createTableIfNeeded(config, jsondata, separator);
         if (createtable === null) {
             console.log(cstyler.bold.underline.red("Error occurred during creating tables."));
@@ -171,7 +174,6 @@ module.exports = async function (allconfig, table_json) {
             }
         }
         console.log(cstyler.bold.underline.green("<<<Lets start working on columns>>>"));
-        const colop = require("./dropcolumn");
 
         // lets drop columns if needed
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets drop unlisted columns if needed."));
@@ -183,7 +185,6 @@ module.exports = async function (allconfig, table_json) {
             }
         }
         // lets add columns if needed
-        const addcolumn = require("./addcolumn");
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets add columns if needed."));
         const addcolifneeded = await addcolumn.addColumnIfNeeded(config, jsondata, separator);
         if (addcolifneeded === null) {
@@ -191,7 +192,6 @@ module.exports = async function (allconfig, table_json) {
             return;
         }
         // lets alter columns if needed
-        const altercolop = require("./altercolumn");
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets alter columns if needed."));
         const altercolifneeded = await altercolop.alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separator);
         if (altercolifneeded === null) {

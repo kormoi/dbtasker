@@ -217,7 +217,7 @@ async function addColumnIfNeeded(config, jsondata, separator) {
         if (count > 0) {
             console.log(cstyler.green.bold("Successfully added " + count + " columns."));
         } else {
-            console.log("No column found to be added. All the column are added already.");
+            console.log(cstyler.bold.purple("No column found to be added. All the column are added already."));
         }
         return true;
     } catch (err) {

@@ -119,7 +119,7 @@ async function dropcolumn(config, tableJson, forceDropColumn, separator = "_") {
         if (count > 0) {
             console.log(cstyler.bold.green("Successfully dropped " + count + " columns."));
         } else {
-            console.log("There is not column found to be dropped.");
+            console.log(cstyler.bold.purple("There is no column found to be dropped."));
         }
         return true;
     } catch (err) {

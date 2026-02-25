@@ -56,6 +56,29 @@ function getDateTime(separator = "/") {
     datetime: formattedDateTime,
   };
 }
+async function detectDatabase(config) {
+    // 1. Try PostgreSQL first (Stricter handshakes)
+    if (config.connectionString?.startsWith('postgres') || config.port === 5432) {
+        try {
+            const pool = new Pool(config);
+            const client = await pool.connect();
+            client.release(); // Release back to pool
+            return { type: 'pg', connection: pool };
+        } catch (e) {
+            // If it failed but wasn't a "wrong driver" error, handle it
+        }
+    }
+
+    // 2. Try MySQL
+    try {
+        const connection = await mysql.createPool(config);
+        // Quick probe to ensure it's actually MySQL
+        await connection.query('SELECT 1');
+        return { type: 'mysql', connection: connection };
+    } catch (e) {
+        throw new Error("Could not connect or identify database type from config.");
+    }
+}
 async function getMySQLVersion(config) {
   const connection = await mysql.createConnection(config);
   try {
@@ -1922,6 +1945,7 @@ module.exports = {
   getDateTime,
   removefromarray,
   isSameArray,
+  detectDatabase,
   getMySQLVersion,
   isMySQL578OrAbove,
   isValidMySQLConfig,

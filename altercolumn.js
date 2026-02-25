@@ -612,7 +612,7 @@ async function alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separato
         if (count > 0) {
             console.log(cstyler.bold.underline.green("Successfully altered " + count + " columns."))
         } else {
-            console.log(cstyler.bold.underline("No column were altered at all."))
+            console.log(cstyler.bold.purple("Everything seems to be same. No column were altered or updated."))
         }
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Alter Column process to tables are completed successfully."));
         return true;

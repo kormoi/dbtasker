@@ -157,6 +157,7 @@ async function createTableIfNeeded(config, jsondata, separator) {
         if (!fncs.isJsonObject(jsondata)) {
             return false;
         }
+        let count = 0;
         let foreignkeys = {};
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets start creating unlisted tables if needed."));
         // Lets check config
@@ -188,6 +189,7 @@ async function createTableIfNeeded(config, jsondata, separator) {
                     console.error(cstyler.bold.red("Having problem creating table: ", tableName.loopname, " on Database: ", dbname.loopname, ". Please check database connection."));
                     return null;
                 }
+                count += 1;
                 if (createtable && Object.keys(createtable).length > 0) {
                     foreignkeys = fncs.JoinJsonObjects(foreignkeys, createtable);
                 }
@@ -209,7 +211,11 @@ async function createTableIfNeeded(config, jsondata, separator) {
                 }
             }
         }
-        console.log(cstyler.bold.underline.green("Create table if needed process completed successfully."));
+        if(count > 0) {
+            console.log(cstyler.bold.green("Successfully created ", count, " unlisted tables."));
+        } else {
+            console.log(cstyler.bold.purple("No table found to be created. All the tables are present already."));
+        }
         return true;
     } catch (err) {
         console.error(cstyler.bold.red("Error occurred in createTableIfNeeded function of ", moduleName, " module. Error details: "), err);
@@ -256,9 +262,9 @@ async function dropTable(config, json_data, separator = "_") {
             }
         }
         if (count > 0) {
-            console.log(cstyler.green("Successfully dropped ", count, " unlisted tables"));
+            console.log(cstyler.bold.green("Successfully dropped ", count, " unlisted tables"));
         } else {
-            console.log(cstyler.underline("No table found to be dropped"));
+            console.log(cstyler.bold.purple("No table found to be dropped"));
         }
         return true;
     } catch (err) {
