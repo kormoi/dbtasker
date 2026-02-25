@@ -1,5 +1,5 @@
 # Working on PG
-This module would download and install pg or Postgre module. Do not worry it will take a few kelo byte of space on your drive. It will not disturbe your system until you call pg module and work with it.
+This module would download and install pg or Postgre module. Do not worry. It will take a few kelo byte of space on your drive. It will not disturbe your system until you call pg module and work with it.
 
 # 🗄️ DBTASKER
 
