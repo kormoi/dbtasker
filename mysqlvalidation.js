@@ -132,12 +132,31 @@ function validateDefault(columnType, defaultValue, length_value, nullable = fals
         return { valid: false, message: "Invalid numeric default value" };
     }
 
+    // BIT type
+    if (type === "BIT") {
+        if (typeof defaultValue === "number" && (defaultValue === 0 || defaultValue === 1)) return { valid: true, message: null };
+        if (typeof defaultValue === "string" && (/^\d+$/.test(defaultValue) || /^0b[01]+$/i.test(defaultValue) || /^b'[01]+'$/i.test(defaultValue))) {
+            return { valid: true, message: null };
+        }
+        return { valid: false, message: "Invalid BIT default value. Use an integer, '0b0001', or 'b\'0001\'' format" };
+    }
+
     // ENUM / SET
     if (["ENUM", "SET"].includes(type)) {
         if (!length_value) return { valid: false, message: "Missing ENUM/SET options" };
+
+        // Correctly split options by stripping the single quotes wrapping each string element
         const options = length_value.split(",").map(s => s.trim().replace(/^'(.*)'$/, "$1"));
-        if (options.includes(defaultValue)) return { valid: true, message: null };
-        return { valid: false, message: `Default value not in ENUM/SET options [${options.join(", ")}]` };
+
+        if (type === "ENUM") {
+            if (options.includes(defaultValue)) return { valid: true, message: null };
+            return { valid: false, message: `Default value not in ENUM options [${options.join(", ")}]` };
+        } else { // SET allows multiple comma-separated values (e.g. "read,write")
+            const selectedValues = defaultValue.split(",").map(s => s.trim().replace(/^'(.*)'$/, "$1"));
+            const allValid = selectedValues.every(val => options.includes(val));
+            if (allValid) return { valid: true, message: null };
+            return { valid: false, message: `One or more defaults not in SET options [${options.join(", ")}]` };
+        }
     }
 
     // Character types
@@ -187,9 +206,9 @@ function validateDefault(columnType, defaultValue, length_value, nullable = fals
 
     // BOOLEAN
     if (type === "BOOLEAN") {
-        return defaultValue === 0 || defaultValue === 1
+        return defaultValue === 0 || defaultValue === 1 || defaultValue === "true" || defaultValue === "false"
             ? { valid: true, message: null }
-            : { valid: false, message: "BOOLEAN default must be 0 or 1" };
+            : { valid: false, message: "BOOLEAN default must be 0, 1, 'true', or 'false'" };
     }
 
     // JSON
@@ -197,6 +216,12 @@ function validateDefault(columnType, defaultValue, length_value, nullable = fals
         return defaultValue === null || defaultValue === '{}' || defaultValue === '[]'
             ? { valid: true, message: null }
             : { valid: false, message: "JSON columns cannot have this default" };
+    }
+
+    // Spatial / Geometry Types
+    if (["GEOMETRY", "POINT", "LINESTRING", "POLYGON", "MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION"].includes(type)) {
+        // Most DB engines don't support default inline literal values for spatial objects
+        return { valid: false, message: `${type} columns cannot have explicit literal default values` };
     }
 
     // Unknown types
@@ -895,6 +920,9 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     }
                                 }
                                 // lets check default fsp list none
+                                if (['TIMESTAMP', 'DATETIME'].includes(columntype.toUpperCase()) && ['TIME', 'TIMESTAMP', 'NOW', 'DATE', 'DATETIME'].includes(defaults)) {
+                                    defaults = 'CURRENT_TIMESTAMP';
+                                }
                                 const result = validateDefault(columntype, defaults, length_value, nulls);
 
                                 if (!result.valid) {
@@ -1222,8 +1250,8 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     const engvalue = table_json[databaseName][tableName][columnName];
                                     if (Object.keys(mysqlEngines).map(e => e.toUpperCase()).includes(fncs.stringifyAny(engvalue).toUpperCase())) {
                                         let ifyes;
-                                        for(const key of Object.keys(mysqlEngines)) {
-                                            if(key.toUpperCase() === fncs.stringifyAny(engvalue).toUpperCase()) {
+                                        for (const key of Object.keys(mysqlEngines)) {
+                                            if (key.toUpperCase() === fncs.stringifyAny(engvalue).toUpperCase()) {
                                                 ifyes = key;
                                                 break;
                                             }
@@ -1250,7 +1278,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             `${cstyler.red("- Invalid comment:")} ` +
                                             result.errors.map(e => cstyler.red(e)).join(", ")
                                         )
-                                    }else {
+                                    } else {
                                         contentObj[databaseName][tableName].comment = commentval;
                                     }
                                 } else {
