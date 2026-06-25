@@ -21,6 +21,7 @@ function generateSafeIndexName(prefix, table, column) {
 }
 async function isColumnDataSame(config, databaseName, tableName, columnName, columnData, columndetails, fkdetails,) {
     // 1. Column type
+    if (columndetails.columntype.toUpperCase() === "GEOMCOLLECTION") columndetails.columntype = "GEOMETRYCOLLECTION";
     if (columnData.columntype.toUpperCase() !== columndetails.columntype.toUpperCase()) {
         console.log(cstyler.blue("Table:"), cstyler.hex("#00d9ffff")(tableName), cstyler.blue("Column:"), cstyler.hex("#00d9ffff")(columnName));
         console.log(cstyler.red("Column type do not match"), cstyler.hex("#00b7ff")("Given data:"), cstyler.hex("#ffffff")(columnData.columntype), cstyler.hex("#00b7ff")("Server data:"), cstyler.hex("#ffffff")(columndetails.columntype));
