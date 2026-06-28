@@ -53,9 +53,12 @@ const mysqlTypeMetadata = {
     BIGINT: { lengthType: "int", required: false, query: "BIGINT(20)", supportsUnsigned: true, dataType: "numeric" },
     FLOAT: { lengthType: "two-int", required: false, query: "FLOAT(10,2)", supportsUnsigned: true, dataType: "numeric" },
     DOUBLE: { lengthType: "two-int", required: false, query: "DOUBLE(16,4)", supportsUnsigned: true, dataType: "numeric" },
+    "DOUBLE PRECISION": { lengthType: "two-int", required: false, query: "DOUBLE PRECISION(16,4)", supportsUnsigned: true, dataType: "numeric" },
     REAL: { lengthType: "two-int", required: false, query: "REAL(16,4)", supportsUnsigned: true, dataType: "numeric" },
     DECIMAL: { lengthType: "two-int", required: true, query: "DECIMAL(10,2)", supportsUnsigned: true, dataType: "numeric" },
+    DEC: { lengthType: "two-int", required: true, query: "DEC(10,2)", supportsUnsigned: true, dataType: "numeric" },
     NUMERIC: { lengthType: "two-int", required: true, query: "NUMERIC(10,2)", supportsUnsigned: true, dataType: "numeric" },
+    FIXED: { lengthType: "two-int", required: true, query: "FIXED(10,2)", supportsUnsigned: true, dataType: "numeric" },
 
     // Boolean types
     BOOLEAN: { lengthType: "none", required: false, query: "BOOLEAN", supportsUnsigned: false, dataType: "boolean" },
@@ -74,6 +77,10 @@ const mysqlTypeMetadata = {
     // String types
     CHAR: { lengthType: "int", required: true, query: "CHAR(1)", supportsUnsigned: false, dataType: "string" },
     VARCHAR: { lengthType: "int", required: true, query: "VARCHAR(255)", supportsUnsigned: false, dataType: "string" },
+    "NATIONAL CHAR": { lengthType: "int", required: true, query: "NATIONAL CHAR(1)", supportsUnsigned: false, dataType: "string" },
+    NCHAR: { lengthType: "int", required: true, query: "NCHAR(1)", supportsUnsigned: false, dataType: "string" },
+    "NATIONAL VARCHAR": { lengthType: "int", required: true, query: "NATIONAL VARCHAR(255)", supportsUnsigned: false, dataType: "string" },
+    NVARCHAR: { lengthType: "int", required: true, query: "NVARCHAR(255)", supportsUnsigned: false, dataType: "string" },
     TINYTEXT: { lengthType: "none", required: false, query: "TINYTEXT", supportsUnsigned: false, dataType: "string" },
     TEXT: { lengthType: "none", required: false, query: "TEXT", supportsUnsigned: false, dataType: "string" },
     MEDIUMTEXT: { lengthType: "none", required: false, query: "MEDIUMTEXT", supportsUnsigned: false, dataType: "string" },
@@ -83,6 +90,7 @@ const mysqlTypeMetadata = {
 
     // Binary types
     BINARY: { lengthType: "int", required: true, query: "BINARY(1)", supportsUnsigned: false, dataType: "binary" },
+    "CHAR BYTE": { lengthType: "int", required: true, query: "CHAR BYTE(1)", supportsUnsigned: false, dataType: "binary" },
     VARBINARY: { lengthType: "int", required: true, query: "VARBINARY(255)", supportsUnsigned: false, dataType: "binary" },
     TINYBLOB: { lengthType: "none", required: false, query: "TINYBLOB", supportsUnsigned: false, dataType: "binary" },
     BLOB: { lengthType: "none", required: false, query: "BLOB", supportsUnsigned: false, dataType: "binary" },
@@ -920,7 +928,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     }
                                 }
                                 // lets check default fsp list none
-                                if (['TIMESTAMP', 'DATETIME'].includes(columntype.toUpperCase()) && ['TIME', 'TIMESTAMP', 'NOW', 'DATE', 'DATETIME'].includes(defaults)) {
+                                if (['TIMESTAMP', 'DATETIME'].includes(columntype.toUpperCase()) && defaults === undefined && nulls === false) {
                                     defaults = 'CURRENT_TIMESTAMP';
                                 }
                                 const result = validateDefault(columntype, defaults, length_value, nulls);
