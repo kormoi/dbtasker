@@ -21,14 +21,14 @@ module.exports = async function (allconfig, table_json) {
         const databaseNames = Object.keys(table_json);
         if (databaseNames.length === 0) {
             console.error(cstyler.bold("No data in table information object. Please add some database and tables."));
-            return null;
+            return { success: false, message: "No data in table information object. Please add some database and tables." };
         }
         // Check config
         console.log("Lets check config");
         const isvalidconfig = fncs.isValidMySQLConfig(allconfig);
         if (isvalidconfig === false) {
             console.error("Please check your config object. It may requires more information...");
-            return null;
+            return { success: false, message: "Please check your config object. It may requires more information..." };
         }
         const config = {
             'host': allconfig.host,
@@ -39,13 +39,13 @@ module.exports = async function (allconfig, table_json) {
         // lets check database type
         const ifmysqldatabase = await fncs.isMySQLDatabase(config);
         if (ifmysqldatabase === false) {
-            console.error("My SQL database is required to run ", moduleName, " module. Please install mysql2 to use this module. To install run this code on the terminal > npm install mysql2");
-            return null;
+            console.error("My SQL database is required. Please install mysql2 to use this module. To install run this code on the terminal > npm install mysql2");
+            return { success: false, message: "My SQL database is required. Please install mysql2 to use this module. To install run this code on the terminal > npm install mysql2" };
         }
         const isvalidmysqlversion = await fncs.isMySQL578OrAbove(config);
         if (isvalidmysqlversion === false) {
             console.error("My SQL version 5.7.8 or above is required. Please check if you have installed mysql2. To install: npm install mysql2");
-            return null;
+            return { success: false, message: "My SQL version 5.7.8 or above is required. Please check if you have installed mysql2. To install: npm install mysql2" };
         }
         // Declare separator
         let separator = "_";
@@ -68,13 +68,13 @@ module.exports = async function (allconfig, table_json) {
                     for (const dbs of allconfig[item]) {
                         if (typeof dbs !== "string") {
                             console.error("Non deletable database names must be string. Please provide valid data type.");
-                            return null;
+                            return { success: false, message: "Non deletable database names must be string. Please provide valid data type." };
                         }
                     }
                     donttouchdb = allconfig[item];
                 } else {
                     console.error(cstyler.bold("Please provide database name as an array that can not be deleted."));
-                    return null;
+                    return { success: false, message: "Please provide database name as an array that can not be deleted." };
                 }
             }
         }
@@ -148,21 +148,21 @@ module.exports = async function (allconfig, table_json) {
         // lets check all table name and column name
         const checking = await checker.JSONchecker(table_json, config, separator);
         if (checking === false) {
-            console.log(cstyler.bold.underline.red("Please correct those information and try again."))
-            return null;
+            console.log(cstyler.bold.underline.red("Please correct those information printed on console/terminal and try again."))
+            return { success: false, message: "Please correct those information printed on console/terminal and try again." };
         }
         const jsondata = checking.data;
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets start operation on databases."));
         const databaseop = await dbop.databaseAddDeleteAlter(config, jsondata, dropdatabase, donttouchdb, separator);
         if (databaseop === null) {
             console.log(cstyler.bold.underline.red("Error occurred during database operation."));
-            return null;
+            return { success: null, message: "Error occurred during database operation." };
         }
         // lets create tables if needed
         const createtable = await tableop.createTableIfNeeded(config, jsondata, separator);
         if (createtable === null) {
             console.log(cstyler.bold.underline.red("Error occurred during creating tables."));
-            return null;
+            return { success: null, message: "Error occurred during creating tables." };
         }
         // Drop tables
         if (droptable) {
@@ -170,7 +170,7 @@ module.exports = async function (allconfig, table_json) {
             const droptableifneeded = await tableop.dropTable(config, jsondata, separator);
             if (droptableifneeded === null) {
                 console.log(cstyler.bold.underline.red("Error occurred during dropping tables."));
-                return null;
+                return { success: null, message: "Error occurred during dropping tables." };
             }
         }
         console.log(cstyler.bold.underline.green("<<<Lets start working on columns>>>"));
@@ -181,7 +181,7 @@ module.exports = async function (allconfig, table_json) {
             const dropcolifneeded = await colop.dropcolumn(config, jsondata, forcedropcolumn, separator);
             if (dropcolifneeded === null) {
                 console.log(cstyler.bold.underline.red("Error occurred during dropping columns."));
-                return null;
+                return { success: null, message: "Error occurred during dropping columns." };
             }
         }
         // lets add columns if needed
@@ -189,21 +189,21 @@ module.exports = async function (allconfig, table_json) {
         const addcolifneeded = await addcolumn.addColumnIfNeeded(config, jsondata, separator);
         if (addcolifneeded === null) {
             console.log(cstyler.bold.underline.red("Error occurred during adding columns."));
-            return null;
+            return { success: null, message: "Error occurred during adding columns." };
         }
         // lets alter columns if needed
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets alter columns if needed."));
         const altercolifneeded = await altercolop.alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separator);
         if (altercolifneeded === null) {
             console.log(cstyler.bold.underline.red("Error occurred during altering columns."));
-            return null;
+            return { success: null, message: "Error occurred during altering columns." };
         }
 
-        console.log(cstyler.bold.underline.green("<<<All database work is done perfectly>>>"));
-        return true;
+        console.log(cstyler.bold.underline.green("<<<All database configuration is done perfectly>>>"));
+        return { success: true, message: "All database configuration is done perfectly" };
     } catch (err) {
         console.error(err.message);
-        return null;
+        return { success: null, message: err.message };
     }
 }
 
