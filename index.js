@@ -156,13 +156,13 @@ module.exports = async function (allconfig, table_json) {
         const databaseop = await dbop.databaseAddDeleteAlter(config, jsondata, dropdatabase, donttouchdb, separator);
         if (databaseop === null) {
             console.log(cstyler.bold.underline.red("Error occurred during database operation."));
-            return { success: null, message: "Error occurred during database operation." };
+            return { success: false, message: "Error occurred during database operation." };
         }
         // lets create tables if needed
         const createtable = await tableop.createTableIfNeeded(config, jsondata, separator);
         if (createtable === null) {
             console.log(cstyler.bold.underline.red("Error occurred during creating tables."));
-            return { success: null, message: "Error occurred during creating tables." };
+            return { success: false, message: "Error occurred during creating tables." };
         }
         // Drop tables
         if (droptable) {
@@ -170,7 +170,7 @@ module.exports = async function (allconfig, table_json) {
             const droptableifneeded = await tableop.dropTable(config, jsondata, separator);
             if (droptableifneeded === null) {
                 console.log(cstyler.bold.underline.red("Error occurred during dropping tables."));
-                return { success: null, message: "Error occurred during dropping tables." };
+                return { success: false, message: "Error occurred during dropping tables." };
             }
         }
         console.log(cstyler.bold.underline.green("<<<Lets start working on columns>>>"));
@@ -181,29 +181,29 @@ module.exports = async function (allconfig, table_json) {
             const dropcolifneeded = await colop.dropcolumn(config, jsondata, forcedropcolumn, separator);
             if (dropcolifneeded === null) {
                 console.log(cstyler.bold.underline.red("Error occurred during dropping columns."));
-                return { success: null, message: "Error occurred during dropping columns." };
+                return { success: false, message: "Error occurred during dropping columns." };
             }
         }
         // lets add columns if needed
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets add columns if needed."));
         const addcolifneeded = await addcolumn.addColumnIfNeeded(config, jsondata, separator);
         if (addcolifneeded === null) {
-            console.log(cstyler.bold.underline.red("Error occurred during adding columns."));
-            return { success: null, message: "Error occurred during adding columns." };
+            console.log(cstyler.bold.underline.red("Error occurred during adding new columns to table."));
+            return { success: false, message: "Error occurred during adding new columns to table." };
         }
         // lets alter columns if needed
         console.log(cstyler.bold.underline.hex("#00fff2ff")("Lets alter columns if needed."));
         const altercolifneeded = await altercolop.alterColumnIfNeeded(config, jsondata, forceupdatecolumn, separator);
         if (altercolifneeded === null) {
             console.log(cstyler.bold.underline.red("Error occurred during altering columns."));
-            return { success: null, message: "Error occurred during altering columns." };
+            return { success: false, message: "Error occurred during altering columns." };
         }
 
         console.log(cstyler.bold.underline.green("<<<All database configuration is done perfectly>>>"));
         return { success: true, message: "All database configuration is done perfectly" };
     } catch (err) {
         console.error(err.message);
-        return { success: null, message: err.message };
+        return { success: false, message: err.message };
     }
 }
 

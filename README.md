@@ -7,6 +7,13 @@ The Intelligent MySQL Schema Automation Engine
 `dbtasker` is a powerful, engine-aware MySQL schema intelligence and query generation module. It allows developers to define database structures declaratively using JSON, providing automated validation, normalization, and SQL generation for tables, columns, indexes, and foreign keys.
 
 
+[![npm version](https://img.shields.io/badge/npm-v3.1.4-blue.svg)](https://www.npmjs.com/package/dbbackuper)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
+[![Facebook](https://img.shields.io/badge/Facebook-%231877F2.svg?logo=Facebook&logoColor=white)](https://facebook.com/kormoi)
+
+
 
 ## 🚀 Key Features
 - **Declarative Schema:** Define your entire database structure in a single JSON object.
