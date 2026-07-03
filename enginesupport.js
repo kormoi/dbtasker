@@ -116,7 +116,7 @@ function isColumnTypeAllowed(type, engine) {
     .replace(/\(.*?\)/g, "")  // remove length/precision
     .split(/\s+/)[0];
 
-  const types = ENGINE_COLUMN_TYPES[engine] || [];
+  const types = ENGINE_COLUMN_TYPES[engine.toUpperCase()] || [];
   return types.includes(baseType);
 }
 const ENGINE_CAPABILITIES = {

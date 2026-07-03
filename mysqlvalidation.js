@@ -51,7 +51,7 @@ const mysqlTypeMetadata = {
     INT: { lengthType: "int", required: false, query: "INT(11)", supportsUnsigned: true, dataType: "numeric" },
     INTEGER: { lengthType: "int", required: false, query: "INTEGER(11)", supportsUnsigned: true, dataType: "numeric" },
     BIGINT: { lengthType: "int", required: false, query: "BIGINT(20)", supportsUnsigned: true, dataType: "numeric" },
-    FLOAT: { lengthType: "two-int", required: false, query: "FLOAT(10,2)", supportsUnsigned: true, dataType: "numeric" },
+    FLOAT: { lengthType: "int", required: false, query: "FLOAT(10,2)", supportsUnsigned: true, dataType: "numeric" },
     DOUBLE: { lengthType: "two-int", required: false, query: "DOUBLE(16,4)", supportsUnsigned: true, dataType: "numeric" },
     "DOUBLE PRECISION": { lengthType: "two-int", required: false, query: "DOUBLE PRECISION(16,4)", supportsUnsigned: true, dataType: "numeric" },
     REAL: { lengthType: "two-int", required: false, query: "REAL(16,4)", supportsUnsigned: true, dataType: "numeric" },
@@ -106,6 +106,7 @@ const mysqlTypeMetadata = {
     MULTILINESTRING: { lengthType: "none", required: false, query: "MULTILINESTRING", supportsUnsigned: false, dataType: "geometry" },
     MULTIPOLYGON: { lengthType: "none", required: false, query: "MULTIPOLYGON", supportsUnsigned: false, dataType: "geometry" },
     GEOMETRYCOLLECTION: { lengthType: "none", required: false, query: "GEOMETRYCOLLECTION", supportsUnsigned: false, dataType: "geometry" },
+    GEOMCOLLECTION: { lengthType: "none", required: false, query: "GEOMCOLLECTION", supportsUnsigned: false, dataType: "geometry" },
 
     // JSON
     JSON: { lengthType: "none", required: false, query: "JSON", supportsUnsigned: false, dataType: "json" }
@@ -152,21 +153,36 @@ function validateDefault(columnType, defaultValue, length_value, nullable = fals
     // ENUM / SET
     if (["ENUM", "SET"].includes(type)) {
         if (!length_value) return { valid: false, message: "Missing ENUM/SET options" };
-
         // Correctly split options by stripping the single quotes wrapping each string element
-        const options = length_value.split(",").map(s => s.trim().replace(/^'(.*)'$/, "$1"));
-
+        let options = null;
+        if (Array.isArray(length_value)) {
+            options = length_value;
+        } else if (typeof length_value === "string") {
+            options = length_value.split(",").map(s => s.trim().replace(/^'(.*)'$/, "$1"));
+        } else {
+            return { valid: false, message: `length_value must be Array or Array string [${length_value}]` };
+        }
         if (type === "ENUM") {
             if (options.includes(defaultValue)) return { valid: true, message: null };
             return { valid: false, message: `Default value not in ENUM options [${options.join(", ")}]` };
         } else { // SET allows multiple comma-separated values (e.g. "read,write")
-            const selectedValues = defaultValue.split(",").map(s => s.trim().replace(/^'(.*)'$/, "$1"));
+            let selectedValues = [];
+            if (Array.isArray(defaultValue)) {
+                selectedValues = defaultValue;
+            } else if (typeof defaultValue === 'string') {
+                if (defaultValue.includes(",")) {
+                    selectedValues = defaultValue.split(",").map(s => s.trim().replace(/^'(.*)'$/, "$1"));
+                } else {
+                    selectedValues.push(defaultValue);
+                }
+            } else {
+                return { valid: false, message: "Valid default value required for SET column." }
+            }
             const allValid = selectedValues.every(val => options.includes(val));
             if (allValid) return { valid: true, message: null };
             return { valid: false, message: `One or more defaults not in SET options [${options.join(", ")}]` };
         }
     }
-
     // Character types
     if (["CHAR", "VARCHAR"].includes(type)) {
         return typeof defaultValue === "string"
@@ -418,13 +434,15 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         } else {
                                             indexes = undefined;
                                         }
-                                    } else if (['index'].includes(item.toLowerCase())) {
+                                    } else if ('index' === item.toLowerCase()) {
                                         if (truers.includes(deepColumn[item])) {
                                             indexes = "INDEX";
                                             break;
                                         } else {
                                             indexes = undefined;
                                         }
+                                    } else if (indexes === "") {
+                                        indexes = undefined;
                                     }
                                 }
                                 if (indexes !== undefined) { indexes = fncs.stringifyAny(indexes).toUpperCase(); }
@@ -523,6 +541,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 for (const item of Object.keys(deepColumn)) {
                                     if (defaultkeys.includes(item.toLowerCase())) {
                                         defaults = deepColumn[item];
+                                        if (defaults === null) { defaults = undefined; }
                                         break;
                                     }
                                 }
@@ -556,7 +575,6 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         _collate_ = deepColumn[item];
                                     }
                                 }
-
                                 /**
                                  * Getting variable is ended
                                  */
@@ -583,7 +601,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     columntype = null;
                                 } else {
                                     if (engine !== undefined) {
-                                        if (!eng.isColumnTypeAllowed(engine, columntype.toUpperCase())) {
+                                        if (!eng.isColumnTypeAllowed(columntype.toUpperCase(), engine)) {
                                             badengine.push(
                                                 `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
                                                 `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
@@ -618,7 +636,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             lenVals = Number(lenVals);
                                         }
                                         if (typeInfo.lengthType === "int") {
-                                            if (!Number.isInteger(lenVals)) {
+                                            if (!Number.isInteger(lenVals) && typeInfo.require === true) {
                                                 badlength.push(
                                                     `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red('should have a valid integer length')}`
                                                 );
@@ -649,71 +667,6 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             }
                                         }
                                     }
-                                }
-                                // check auto increment
-                                if (autoincrement === true && typeInfo.dataType === "numeric") {
-                                    if (typeof indexes === "string") {
-                                        if (typeInfo.dataType !== "numeric" || !['PRIMARY KEY', 'UNIQUE'].includes(indexes) || nulls === true || defaults !== undefined) {
-                                            badautoincrement.push(
-                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
-                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
-                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
-                                                `${cstyler.red('column must be')} ${cstyler.yellow('integer')} ${cstyler.red('type, should be')} ${cstyler.yellow('primary key')} ${cstyler.red('or')} ${cstyler.yellow('unique indexed')}, ` +
-                                                `${cstyler.red('should be')} ${cstyler.yellow('NOT NULL')}, ` +
-                                                `${cstyler.red('can not have a')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value.')}`
-                                            );
-                                        }
-                                    } else {
-                                        badautoincrement.push(
-                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
-                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
-                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
-                                            `${cstyler.red('a valid')} ${cstyler.yellow('index')} ${cstyler.red('value must be ')}` +
-                                            `${cstyler.yellow('PRIMARY KEY, UNIQUE')} ${cstyler.red('for autoincrement.')}`
-                                        );
-                                    }
-                                    if (engine !== undefined) {
-                                        if (!eng.isEngineFeatureAllowed(engine, 'AutoIncrement')) {
-                                            badengine.push(
-                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
-                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
-                                                `${cstyler.blue('> Engine:')} ${cstyler.hex("#00d9ffff")(engine)} ` +
-                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
-                                                `${cstyler.yellow("> Engine")} ${cstyler.red('does not support ')} ` +
-                                                `${cstyler.yellow('Autoincrement')}`
-                                            )
-                                        }
-                                    }
-                                    // check multi autoincrement
-                                    let autoincrementcolumnlist = [];
-                                    for (const column of Object.keys(table_json[databaseName][tableName])) {
-                                        const doubleDeepColumn = table_json[databaseName][tableName][column];
-                                        let allautoincrement = undefined;
-                                        for (const item of autoincrementkeys) {
-                                            if (doubleDeepColumn.hasOwnProperty(item)) {
-                                                allautoincrement = doubleDeepColumn[item];
-                                                break;
-                                            }
-                                        }
-                                        if (truers.includes(allautoincrement)) {
-                                            autoincrementcolumnlist.push(column);
-                                        }
-                                    }
-                                    if (autoincrementcolumnlist.length > 1) {
-                                        badautoincrement.push(
-                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
-                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
-                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
-                                            `${cstyler.red('- This table has more than one')} ${cstyler.yellow('auto increment')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('auto increment')} ${cstyler.red('column.')}`
-                                        );
-                                    }
-                                } else if (autoincrement === null) {
-                                    badautoincrement.push(
-                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
-                                        `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
-                                        `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
-                                        `${cstyler.red('- must true or false as valid autoincrement value')}`
-                                    );
                                 }
                                 // check unsigned
                                 if (typeof unsigned === "boolean") {
@@ -832,7 +785,6 @@ async function JSONchecker(table_json, config, separator = "_") {
                                                 `${cstyler.red(' - ')}${cstyler.yellow('FULLTEXT - index')} ${cstyler.red('can only be used with ')}${cstyler.yellow('CHAR, VARCHAR, TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT')} ${cstyler.red('column types which are string.')}`
                                             );
                                         } else if (!validIndexValues.includes(indexes)) {
-                                            console.log(indexes);
                                             badindex.push(
                                                 `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
                                                 `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
@@ -886,6 +838,71 @@ async function JSONchecker(table_json, config, separator = "_") {
                                             `${cstyler.red('- This table has more than one')} ${cstyler.yellow('PRIMARY KEY')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('PRIMARY KEY')} ${cstyler.red('column.')}`
                                         );
                                     }
+                                }
+                                // check auto increment
+                                if (autoincrement === true && typeInfo.dataType === "numeric") {
+                                    if (typeof indexes === "string") {
+                                        if (typeInfo.dataType !== "numeric" || !['PRIMARY KEY', 'UNIQUE'].includes(indexes) || nulls === true || defaults !== undefined) {
+                                            badautoincrement.push(
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                `${cstyler.red('column must be')} ${cstyler.yellow('integer')} ${cstyler.red('type, should be')} ${cstyler.yellow('primary key')} ${cstyler.red('or')} ${cstyler.yellow('unique indexed')} ` +
+                                                `${cstyler.red('should be')} ${cstyler.yellow('NOT NULL')} ` +
+                                                `${cstyler.red('can not have a')} ${cstyler.yellow('DEFAULT')} ${cstyler.red('value.')}`
+                                            );
+                                        }
+                                    } else {
+                                        badautoincrement.push(
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                            `${cstyler.red('a valid')} ${cstyler.yellow('index')} ${cstyler.red('value must be ')}` +
+                                            `${cstyler.yellow('PRIMARY KEY, UNIQUE')} ${cstyler.red('for autoincrement.')}`
+                                        );
+                                    }
+                                    if (engine !== undefined) {
+                                        if (!eng.isEngineFeatureAllowed(engine, 'AutoIncrement')) {
+                                            badengine.push(
+                                                `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                                `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                                `${cstyler.blue('> Engine:')} ${cstyler.hex("#00d9ffff")(engine)} ` +
+                                                `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                                `${cstyler.yellow("> Engine")} ${cstyler.red('does not support ')} ` +
+                                                `${cstyler.yellow('Autoincrement')}`
+                                            )
+                                        }
+                                    }
+                                    // check multi autoincrement
+                                    let autoincrementcolumnlist = [];
+                                    for (const column of Object.keys(table_json[databaseName][tableName])) {
+                                        const doubleDeepColumn = table_json[databaseName][tableName][column];
+                                        let allautoincrement = undefined;
+                                        for (const item of autoincrementkeys) {
+                                            if (doubleDeepColumn.hasOwnProperty(item)) {
+                                                allautoincrement = doubleDeepColumn[item];
+                                                break;
+                                            }
+                                        }
+                                        if (truers.includes(allautoincrement)) {
+                                            autoincrementcolumnlist.push(column);
+                                        }
+                                    }
+                                    if (autoincrementcolumnlist.length > 1) {
+                                        badautoincrement.push(
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                            `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                            `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                            `${cstyler.red('- This table has more than one')} ${cstyler.yellow('auto increment')} ${cstyler.red('column. A table can have only one')} ${cstyler.yellow('auto increment')} ${cstyler.red('column.')}`
+                                        );
+                                    }
+                                } else if (autoincrement === null) {
+                                    badautoincrement.push(
+                                        `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ` +
+                                        `${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ` +
+                                        `${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ` +
+                                        `${cstyler.red('- must true or false as valid autoincrement value')}`
+                                    );
                                 }
                                 // Lets work on character set and collat
                                 if (_charset_ !== undefined && typeInfo !== undefined) {
@@ -962,7 +979,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                      * RESTRICT:	    Prevents update if any matching child exists.
                                      * NO ACTION:	    Like RESTRICT (timing differences in some DB engines).
                                      */
-                                    const deleteVariations = ["delete", "ondelete", "on_delete", "when_Delete", "whenDelete", 'ifdelete', 'if_delete']
+                                    const deleteVariations = ["delete", "ondelete", "on_delete", "when_Delete", "whenDelete", 'ifdelete', 'if_delete', 'deleteOption']
                                     for (const item of Object.keys(foreign_key)) {
                                         if (deleteVariations.includes(item.toLowerCase())) {
                                             deleteOption = foreign_key[item];
@@ -973,7 +990,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         }
                                     }
                                     // Lets get update options
-                                    const onupdatevariations = ["update", "onupdate", "on_update", "ifupdate", "if_update", "when_update", "whenupdate"];
+                                    const onupdatevariations = ["update", "onupdate", "on_update", "ifupdate", "if_update", "when_update", "whenupdate", "updateOption"];
                                     for (const item of Object.keys(foreign_key)) {
                                         if (onupdatevariations.includes(item.toLowerCase())) {
                                             updateOption = foreign_key[item];
@@ -1054,7 +1071,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                     }
                                     // check reference table and column
                                     // lets add foreign key table to variable
-                                    const tableKeyVariation = ["table", "fktable", "fk_table", "foreignkeytable", "foreign_key_table"]
+                                    const tableKeyVariation = ["table", "fktable", "fk_table", "foreignkeytable", "foreign_key_table", "referencedtable", "referenced_table", "referencetable", "reference_table"]
                                     for (const item of Object.keys(foreign_key)) {
                                         if (tableKeyVariation.includes(item.toLowerCase())) {
                                             fktable = foreign_key[item];
@@ -1062,7 +1079,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                         }
                                     }
                                     // lets add foreign key column to variable
-                                    const columnKeyVariation = ["column", "fkcolumn", "fk_column", "foreignkeycolumn", "foreign_key_column"]
+                                    const columnKeyVariation = ["column", "fkcolumn", "fk_column", "foreignkeycolumn", "foreign_key_column", "referencedcolumn", "referenced_column", "referencecolumn", "reference_column"]
                                     for (const item of Object.keys(foreign_key)) {
                                         if (columnKeyVariation.includes(item.toLowerCase())) {
                                             fkcolumn = foreign_key[item];
@@ -1264,7 +1281,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                                 break;
                                             }
                                         }
-                                        if (mysqlEngines[ifyes].support === "YES") {
+                                        if (mysqlEngines[ifyes].support === "YES" || mysqlEngines[ifyes].support === "DEFAULT") {
                                             contentObj[databaseName][tableName]._engine_ = ifyes;
                                         } else {
                                             badengine.push(
