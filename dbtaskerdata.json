@@ -1,0 +1,2454 @@
+{
+  "fm": {
+    "_charset_": "utf8mb4",
+    "_collate_": "utf8mb4_0900_ai_ci",
+    "advanced_store": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "secure_token": {
+        "columntype": "BINARY",
+        "length_value": 16,
+        "nulls": false
+      },
+      "session_signature": {
+        "columntype": "VARBINARY",
+        "length_value": 255,
+        "nulls": true,
+        "defaults": null
+      },
+      "thumbnail_avatar": {
+        "columntype": "TINYBLOB",
+        "length_value": 255,
+        "nulls": true,
+        "defaults": null
+      },
+      "user_attachment": {
+        "columntype": "BLOB",
+        "length_value": 65535,
+        "nulls": true,
+        "defaults": null
+      },
+      "media_backup": {
+        "columntype": "MEDIUMBLOB",
+        "length_value": 16777215,
+        "nulls": true,
+        "defaults": null
+      },
+      "system_image_dump": {
+        "columntype": "LONGBLOB",
+        "length_value": 4294967295,
+        "nulls": true,
+        "defaults": null
+      },
+      "account_privileges": {
+        "columntype": "SET",
+        "length_value": [
+          "read",
+          "write",
+          "execute",
+          "admin"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "read"
+      },
+      "audit_metadata": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null
+      },
+      "generic_shape": {
+        "columntype": "GEOMETRY",
+        "length_value": null,
+        "nulls": true,
+        "comment": "Can store geometry values of any type",
+        "defaults": null
+      },
+      "location_coordinate": {
+        "columntype": "POINT",
+        "length_value": null,
+        "nulls": true,
+        "comment": "A single point in space (X, Y / Lat, Long)",
+        "defaults": null
+      },
+      "route_path": {
+        "columntype": "LINESTRING",
+        "length_value": null,
+        "nulls": true,
+        "comment": "A curve/line connecting multiple point coordinates",
+        "defaults": null
+      },
+      "boundary_zone": {
+        "columntype": "POLYGON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "A closed multi-sided planar surface area",
+        "defaults": null
+      },
+      "cluster_nodes": {
+        "columntype": "MULTIPOINT",
+        "length_value": null,
+        "nulls": true,
+        "comment": "A collection of distinct, non-connected points",
+        "defaults": null
+      },
+      "metro_transit_lines": {
+        "columntype": "MULTILINESTRING",
+        "length_value": null,
+        "nulls": true,
+        "comment": "A collection of multiple independent linestrings",
+        "defaults": null
+      },
+      "territory_regions": {
+        "columntype": "MULTIPOLYGON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "A collection of separate polygons (e.g., an island chain)",
+        "defaults": null
+      },
+      "spatial_aggregate": {
+        "columntype": "GEOMCOLLECTION",
+        "length_value": null,
+        "nulls": true,
+        "comment": "A mixed collection of points, lines, and polygons",
+        "defaults": null
+      }
+    },
+    "balance_2025_": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "currency": {
+        "columntype": "VARCHAR",
+        "length_value": 5,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "BDT"
+      },
+      "balance": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": true,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "total_earnings": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "total_withdraw": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "total_spent": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false,
+        "index": "UNIQUE"
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TEXT",
+        "length_value": 65535,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "Hi. Its me here."
+      }
+    },
+    "balance_2026_": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "currency": {
+        "columntype": "VARCHAR",
+        "length_value": 5,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "BDT"
+      },
+      "balance": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": true,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false,
+        "index": "UNIQUE"
+      },
+      "total_earnings": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "image": {
+        "columntype": "MEDIUMBLOB",
+        "length_value": 16777215,
+        "nulls": true,
+        "defaults": null
+      },
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      }
+    },
+    "fund_request": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "from_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "payment_type": {
+        "columntype": "ENUM",
+        "length_value": [
+          "deposit",
+          "withdraw",
+          "spent",
+          "earning"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "reason": {
+        "columntype": "ENUM",
+        "length_value": [
+          "none",
+          "deposit",
+          "withdrawal",
+          "project_payment",
+          "payout",
+          "platform_charge",
+          "subscription_fee",
+          "processing_fee",
+          "refund",
+          "challenge_payment",
+          "challenge_refund",
+          "dispute_adjustment",
+          "reversal",
+          "admin_adjustment",
+          "recruiter_payment",
+          "check_out"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "table_name": {
+        "columntype": "VARCHAR",
+        "length_value": 50,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": null
+      },
+      "row_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "job_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "request_date": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "transaction_hold_time": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": true,
+        "comment": "Transaction hold time in hours",
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "transaction_date": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null
+      },
+      "transaction_id": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "currency": {
+        "columntype": "VARCHAR",
+        "length_value": 3,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "BDT"
+      },
+      "amount": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "status": {
+        "columntype": "ENUM",
+        "length_value": [
+          "pending",
+          "completed",
+          "failed",
+          "cancelled",
+          "processing",
+          "reversed",
+          "on_hold",
+          "refunded",
+          "approved",
+          "rejected"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "pending"
+      },
+      "balance_updated": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "invoice_sent": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "remarks": {
+        "columntype": "TEXT",
+        "length_value": 65535,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": null
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "image_store": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "image": {
+        "columntype": "MEDIUMBLOB",
+        "length_value": 16777215,
+        "nulls": false
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "payment_method": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "payment_method": {
+        "columntype": "ENUM",
+        "length_value": [
+          "Bank Transfer",
+          "Mobile Payment",
+          "PayPal",
+          "Card"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "mobile_payNum": {
+        "columntype": "VARCHAR",
+        "length_value": 15,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "swift_code": {
+        "columntype": "CHAR",
+        "length_value": 8,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "comment": "SWIFT code with standard length"
+      },
+      "account_number": {
+        "columntype": "VARCHAR",
+        "length_value": 20,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "post_code": {
+        "columntype": "VARCHAR",
+        "length_value": 20,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "account_type": {
+        "columntype": "ENUM",
+        "length_value": [
+          "personal",
+          "company"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "branch_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "branch_address": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "ac_first_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "ac_last_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "ac_date_of_birth": {
+        "columntype": "DATE",
+        "length_value": null,
+        "nulls": false
+      },
+      "id_type": {
+        "columntype": "ENUM",
+        "length_value": [
+          "id",
+          "passport"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "comment": "ID number or Passport number"
+      },
+      "customer_id": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "name_on_account": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "ac_address": {
+        "columntype": "VARCHAR",
+        "length_value": 500,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "comment": "Physical address associated with this account"
+      },
+      "city_state": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "country": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "phone": {
+        "columntype": "VARCHAR",
+        "length_value": 15,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "is_authorized": {
+        "columntype": "ENUM",
+        "length_value": [
+          "yes",
+          "no"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "comment": "Flag indicating ownership and authorization of account",
+        "defaults": "no"
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "transaction": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "transaction_type": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "transaction_id": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "index": "UNIQUE"
+      },
+      "reference": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": null
+      },
+      "amount": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "customer_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "address": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "None"
+      },
+      "payment_method": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "None"
+      },
+      "email": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "None"
+      },
+      "phone": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "None"
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "users": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "comment": "Primary Key",
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "ac_status": {
+        "columntype": "ENUM",
+        "length_value": [
+          "registered",
+          "requested",
+          "approved",
+          "rejected",
+          "suspended",
+          "restricted",
+          "blocked",
+          "deleted"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "registered"
+      },
+      "user_role": {
+        "columntype": "ENUM",
+        "length_value": [
+          "admin",
+          "back_end_dev",
+          "app_dev",
+          "front_end_dev",
+          "employee",
+          "marketer",
+          "support",
+          "higher_support",
+          "advocate",
+          "user"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "user"
+      },
+      "first_name": {
+        "columntype": "VARCHAR",
+        "length_value": 60,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "last_name": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "display_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "bio": {
+        "columntype": "TEXT",
+        "length_value": 65535,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "profile_title": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "description": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": false
+      },
+      "skills": {
+        "columntype": "TEXT",
+        "length_value": 65535,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci"
+      },
+      "languages": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": false
+      },
+      "profile_picture": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": null
+      },
+      "cover_picture": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": null
+      },
+      "seller_level": {
+        "columntype": "ENUM",
+        "length_value": [
+          "none",
+          "starter",
+          "bronze",
+          "silver",
+          "gold",
+          "platinum",
+          "diamond",
+          "ruby",
+          "sapphire",
+          "emerald",
+          "obsidian"
+        ],
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "none"
+      },
+      "accoutn_badges": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "List of badges",
+        "defaults": null
+      },
+      "avg_response_time": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "comment": "Average response time in hours.",
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "review_count": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "follow_count": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "following_count": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "ideator_level": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": null
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "balance(year)": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "currency": {
+        "columntype": "VARCHAR",
+        "length_value": 5,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "BDT"
+      },
+      "balance": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": true,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false,
+        "index": "UNIQUE"
+      },
+      "total_earnings": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "image": {
+        "columntype": "MEDIUMBLOB",
+        "length_value": 16777215,
+        "nulls": true,
+        "defaults": null
+      },
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      }
+    }
+  },
+  "main": {
+    "_charset_": "utf8mb4",
+    "_collate_": "utf8mb4_zh_0900_as_cs",
+    "ac_preferance": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "ac_preferance_ibfk_1",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "comment": "Foreign key referencing users table",
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "ac_preferance_ibfk_1"
+        }
+      },
+      "work_preferance": {
+        "columntype": "ENUM",
+        "length_value": [
+          "none",
+          "short",
+          "long",
+          "both"
+        ],
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "Short, long, both",
+        "defaults": null
+      },
+      "freelancing_experience": {
+        "columntype": "ENUM",
+        "length_value": [
+          "beginner",
+          "intermediate",
+          "expert",
+          "some experience"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": "beginner"
+      },
+      "working_goal": {
+        "columntype": "ENUM",
+        "length_value": [
+          "main income",
+          "side income",
+          "get some experience",
+          "just exploring"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "per_hour_rate": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "consultation_time": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": true,
+        "comment": "Give minimum amount of time that you will be consulting in minutes. e.g. 60 min which means 1 hour.",
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "consultation_charge": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "hours_perWeek": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "comment": "How many hours do you plan to spend per week",
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "on_time": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "on_budget": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "job_accept_rate": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "repeat_hire_rate": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "job_release_rate": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "category": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_0900_ai_ci",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": true,
+        "foreignKey": {
+          "constraint": "category_ibfk_27",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "SET NULL"
+        },
+        "comment": "Foreign key referencing users table",
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "SET NULL",
+          "updateOption": "RESTRICT",
+          "constraintName": "category_ibfk_27"
+        }
+      },
+      "parent_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": true,
+        "foreignKey": {
+          "constraint": "category_ibfk_28",
+          "referencedTable": "category",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "SET NULL"
+        },
+        "comment": "Nullable. references category_id for subcategories. NULL for top-level categories.",
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "category",
+          "column": "id",
+          "deleteOption": "SET NULL",
+          "updateOption": "RESTRICT",
+          "constraintName": "category_ibfk_28"
+        }
+      },
+      "slug": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "comment": "Optional. A URL-friendly identifier for the category.",
+        "defaults": null,
+        "index": "UNIQUE"
+      },
+      "category_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "Name of the category or subcategory."
+      },
+      "category_type": {
+        "columntype": "ENUM",
+        "length_value": [
+          "none",
+          "skills",
+          "freelance",
+          "office_job",
+          "server"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "defaults": "none"
+      },
+      "status": {
+        "columntype": "ENUM",
+        "length_value": [
+          "active",
+          "inactive",
+          "requested",
+          "deleted",
+          "cancel"
+        ],
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_0900_ai_ci",
+        "comment": "Defines whether the category is currently active or not.",
+        "defaults": null
+      },
+      "available_jobs": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": true,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "popularity_score": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "comment": "Score depends on how many project, deal, challenges posted on this skill.",
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "client_interest": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "client_interest_ibfk_1",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "comment": "Foreign key referencing users table",
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "client_interest_ibfk_1"
+        }
+      },
+      "is_seller": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "is_buyer": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "is_job_seeker": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "is_company_owner": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "is_investor": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "freelancer_countries": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "e.g. {country_name: count}",
+        "defaults": null
+      },
+      "freelancer_price": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All prices list that clicked and worked with.",
+        "defaults": null
+      },
+      "freelancer_job_types": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All job list that clicked and worked with.",
+        "defaults": null
+      },
+      "client_countries": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "e.g. {country_name: count}",
+        "defaults": null
+      },
+      "client_price": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All prices list that clicked and worked with.",
+        "defaults": null
+      },
+      "client_job_types": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All job list that clicked and worked with.",
+        "defaults": null
+      },
+      "seller_level_interest": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All job list that clicked and worked with.",
+        "defaults": null
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "freelancer_interest": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "freelancer_interest_ibfk_1",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "comment": "Foreign key referencing users table",
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "freelancer_interest_ibfk_1"
+        }
+      },
+      "is_seller": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "is_buyer": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "is_job_seeker": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "is_company_owner": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "is_investor": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "freelancer_countries": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "e.g. {country_name: count}",
+        "defaults": null
+      },
+      "freelancer_price": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All prices list that clicked and worked with.",
+        "defaults": null
+      },
+      "freelancer_job_types": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All job list that clicked and worked with.",
+        "defaults": null
+      },
+      "client_countries": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "e.g. {country_name: count}",
+        "defaults": null
+      },
+      "client_price": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All prices list that clicked and worked with.",
+        "defaults": null
+      },
+      "client_job_types": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All job list that clicked and worked with.",
+        "defaults": null
+      },
+      "seller_level_interest": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All job list that clicked and worked with.",
+        "defaults": null
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "investor_interest": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "investor_interest_ibfk_1",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "comment": "Foreign key referencing users table",
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "investor_interest_ibfk_1"
+        }
+      },
+      "prices": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "All prices list that clicked and worked with.",
+        "defaults": null
+      },
+      "idea_neash": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "Ideas types that you like e.g. technology, agriculture, etc.",
+        "defaults": null
+      },
+      "user_countries": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "e.g. {country_name: count}",
+        "defaults": null
+      },
+      "ideator_levels": {
+        "columntype": "TEXT",
+        "length_value": 65535,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "Ids of the level of ids",
+        "defaults": null
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "investor_preferance": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "investor_preferance_ibfk_1",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "comment": "Foreign key referencing users table",
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "investor_preferance_ibfk_1"
+        }
+      },
+      "investor_level": {
+        "columntype": "ENUM",
+        "length_value": [
+          "none",
+          "short",
+          "long",
+          "both"
+        ],
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "Short, long, both",
+        "defaults": null
+      },
+      "contact_email": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "country_code": {
+        "columntype": "VARCHAR",
+        "length_value": 5,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "Alpha 2",
+        "defaults": null
+      },
+      "phone_number": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "office_address": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "Only if available",
+        "defaults": null
+      },
+      "company_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "company_address": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": false
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "linked_account": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "linked_account_ibfk_1",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "comment": "Foreign key referencing users table",
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "linked_account_ibfk_1"
+        }
+      },
+      "provider": {
+        "columntype": "VARCHAR",
+        "length_value": 50,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "The platform name (google, facebook, github etc.)"
+      },
+      "provider_user_id": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "The platform user id"
+      },
+      "token": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "The platform provided token"
+      },
+      "full_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "date_of_birth": {
+        "columntype": "DATE",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "platform_charge": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "payment_type": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "comment": "deposit, withdrawal, payment, payout, platform_charge, subscription_fee, processing_fee, refund, admin_adjustment, challenge_payment, challenge_refund, bonus, reward transfer, dispute_adjustment, penalty, reversal, admin_adjustment, recruiter_payment",
+        "defaults": null
+      },
+      "charge_percentage": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "15",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "currency": {
+        "columntype": "VARCHAR",
+        "length_value": 3,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": "BDT"
+      },
+      "amount": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "transaction_id": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "balance_after_transaction": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "reset_password": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "reset_password_ibfk_1",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "comment": "Foreign key referencing users table",
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "reset_password_ibfk_1"
+        }
+      },
+      "email": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "code": {
+        "columntype": "VARCHAR",
+        "length_value": 10,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "token": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null,
+        "index": "UNIQUE"
+      },
+      "expires_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null
+      },
+      "email_sent": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "setting": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "setting_ibfk_27",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "setting_ibfk_27"
+        }
+      },
+      "user_identity": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "index": "UNIQUE"
+      },
+      "username": {
+        "columntype": "VARCHAR",
+        "length_value": 50,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null,
+        "index": "UNIQUE"
+      },
+      "privacy": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "comment": "3 = public, 2 = only registered users, 1 = private",
+        "defaults": "3",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "password": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "primary_email": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "primary_phone": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": true,
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "two_step_verify": {
+        "columntype": "TINYINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "two_step_verify_method": {
+        "columntype": "ENUM",
+        "length_value": [
+          "none",
+          "email",
+          "phone"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": "none"
+      },
+      "relationship_status": {
+        "columntype": "ENUM",
+        "length_value": [
+          "single",
+          "married",
+          "divorced",
+          "widowed",
+          "separated"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": "single"
+      },
+      "time_zone": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "state": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "zip": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "p_user_id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "foreignKey": {
+          "constraint": "setting_ibfk_28",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onUpdate": "RESTRICT",
+          "onDelete": "CASCADE"
+        },
+        "unsigned": false,
+        "zerofill": false,
+        "foreign_key": {
+          "table": "users",
+          "column": "id",
+          "deleteOption": "CASCADE",
+          "updateOption": "RESTRICT",
+          "constraintName": "setting_ibfk_28"
+        }
+      },
+      "custom_url": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null,
+        "index": "UNIQUE"
+      },
+      "blood_group": {
+        "columntype": "ENUM",
+        "length_value": [
+          "A+",
+          "A-",
+          "B+",
+          "B-",
+          "AB+",
+          "AB-",
+          "O+",
+          "O-"
+        ],
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "gender": {
+        "columntype": "ENUM",
+        "length_value": [
+          "male",
+          "female",
+          "other"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "date_of_birth": {
+        "columntype": "DATE",
+        "length_value": null,
+        "nulls": false
+      },
+      "currency": {
+        "columntype": "VARCHAR",
+        "length_value": 5,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "country": {
+        "columntype": "VARCHAR",
+        "length_value": 50,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "city": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "addressline1": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "addressline2": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    },
+    "users": {
+      "engine": "InnoDB",
+      "_charset_": "utf8mb4",
+      "_collate_": "utf8mb4_zh_0900_as_cs",
+      "id": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "comment": "Primary Key",
+        "autoincrement": true,
+        "unsigned": false,
+        "zerofill": false,
+        "index": "PRIMARY KEY"
+      },
+      "ac_status": {
+        "columntype": "ENUM",
+        "length_value": [
+          "registered",
+          "requested",
+          "approved",
+          "rejected",
+          "suspended",
+          "restricted",
+          "blocked",
+          "deleted"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": "registered"
+      },
+      "user_role": {
+        "columntype": "ENUM",
+        "length_value": [
+          "admin",
+          "back_end_dev",
+          "app_dev",
+          "front_end_dev",
+          "employee",
+          "marketer",
+          "support",
+          "higher_support",
+          "advocate",
+          "user"
+        ],
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": "user"
+      },
+      "first_name": {
+        "columntype": "VARCHAR",
+        "length_value": 60,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "last_name": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "display_name": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "bio": {
+        "columntype": "TEXT",
+        "length_value": 65535,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "profile_title": {
+        "columntype": "VARCHAR",
+        "length_value": 100,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "description": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": false
+      },
+      "skills": {
+        "columntype": "TEXT",
+        "length_value": 65535,
+        "nulls": false,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs"
+      },
+      "languages": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": false
+      },
+      "profile_picture": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "cover_picture": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "seller_level": {
+        "columntype": "ENUM",
+        "length_value": [
+          "none",
+          "starter",
+          "bronze",
+          "silver",
+          "gold",
+          "platinum",
+          "diamond",
+          "ruby",
+          "sapphire",
+          "emerald",
+          "obsidian"
+        ],
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": "none"
+      },
+      "accoutn_badges": {
+        "columntype": "JSON",
+        "length_value": null,
+        "nulls": true,
+        "comment": "List of badges",
+        "defaults": null
+      },
+      "overall_rating": {
+        "columntype": "FLOAT",
+        "length_value": 12,
+        "nulls": true,
+        "defaults": null,
+        "unsigned": false,
+        "zerofill": false
+      },
+      "avg_response_time": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "comment": "Average response time in hours.",
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "review_count": {
+        "columntype": "INT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "follow_count": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "following_count": {
+        "columntype": "BIGINT",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "0",
+        "unsigned": false,
+        "zerofill": false
+      },
+      "ideator_level": {
+        "columntype": "VARCHAR",
+        "length_value": 255,
+        "nulls": true,
+        "_charset_": "utf8mb4",
+        "_collate_": "utf8mb4_zh_0900_as_cs",
+        "defaults": null
+      },
+      "created_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      },
+      "updated_at": {
+        "columntype": "TIMESTAMP",
+        "length_value": null,
+        "nulls": false,
+        "defaults": "CURRENT_TIMESTAMP"
+      }
+    }
+  }
+}

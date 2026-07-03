@@ -626,7 +626,16 @@ async function JSONchecker(table_json, config, separator = "_") {
                                 if (typeInfo !== undefined) {
 
                                     // Check if length is required but missing
-                                    if (typeInfo.required && length_value === undefined) {
+                                    if (length_value && [
+                                        "json", "tinyblob", "blob", "mediumblob", "longblob",
+                                        "geometry", "point", "linestring", "polygon",
+                                        "multipoint", "multilinestring", "multipolygon",
+                                        "geometrycollection", "geomcollection"
+                                    ].includes(columntype.toLowerCase())) {
+                                        badlength.push(
+                                            `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)}  ${cstyler.blue('> Column Type:')} ${cstyler.hex("#00d9ffff")(columntype)} ${cstyler.red('can not have any length value.')}`
+                                        );
+                                    } else if (typeInfo.required && length_value === undefined) {
                                         badlength.push(
                                             `${cstyler.blue('Database:')} ${cstyler.hex("#00d9ffff")(databaseName)} ${cstyler.blue('> Table:')} ${cstyler.hex("#00d9ffff")(tableName)} ${cstyler.blue('> Column:')} ${cstyler.hex("#00d9ffff")(columnName)} ${cstyler.red('requires length but none provided.')}`
                                         );
