@@ -455,7 +455,7 @@ async function JSONchecker(table_json, config, separator = "_") {
                                  * NULL
                                  * Null
                                  */
-                                const nullkeys = ['null', 'nulls', 'nullable', 'optional', 'isnulable', 'allownull', 'canbenull'];
+                                const nullkeys = ['null', 'nulls', 'nulable', 'nullable', 'optional', 'isnulable', 'isnullable', 'allownull', 'canbenull'];
                                 const notnullkeys = ['notnull', 'not_null', 'nonnullable', 'notnullable', 'required', 'disallownull', 'non_nullable', 'not_nullable', 'disallow_null'];
                                 for (const item of Object.keys(deepColumn)) {
                                     if (nullkeys.includes(item.toLowerCase())) {

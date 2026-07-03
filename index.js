@@ -17,6 +17,8 @@ const falsers = [false, 0, "0", "false", "False", "FALSE"];
 module.exports = async function (allconfig, table_json) {
     try {
         console.log(cstyler.hex("#00d9ffff")("Initializing DBTASKER..."))
+        const version = require("./package.json").version;
+        console.log(cstyler.hex("#00d9ffff")(`DBTASKER Version: ${cstyler.green(version)}`));
         // check if enough database available on table json
         const databaseNames = Object.keys(table_json);
         if (databaseNames.length === 0) {
