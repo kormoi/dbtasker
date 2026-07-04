@@ -9,148 +9,186 @@ const falsers = [false, 0, "0", "false", "False", "FALSE"];
 
 
 
+
 async function createTableQuery(config, tabledata, tableName, dbname) {
-    try {
-        //let queryText = `CREATE TABLE ${tableName} ( `;
-        let quries = [];
-        let foreignkeys = {};
-        for (const columnName of Object.keys(tabledata)) {
-            let queryText = "";
-            if (["_engine_", "_charset_", "_collate_"].includes(columnName)) {
-                continue;
-            }
-            queryText += `\`${columnName}\``;
-            if (tabledata[columnName].hasOwnProperty("columntype")) {
-                queryText += ` ${tabledata[columnName].columntype}`
-            }
-            if (tabledata[columnName].hasOwnProperty("length_value")) {
-                const lengthval = tabledata[columnName].length_value;
+  try {
+    let quries = [];
+    let foreignkeys = {};
 
-                // INT, VARCHAR, CHAR, BIT, etc.
-                if (typeof lengthval === "number") {
-                    queryText += `(${lengthval})`;
-                }
+    for (const columnName of Object.keys(tabledata)) {
+      let queryText = "";
+      if (["_engine_", "_charset_", "_collate_", "_comment_"].includes(columnName)) {
+        continue;
+      }
+      
+      queryText += `\`${columnName}\``;
+      
+      if (tabledata[columnName].hasOwnProperty("columntype")) {
+        queryText += ` ${tabledata[columnName].columntype}`;
+      }
+      
+      if (tabledata[columnName].hasOwnProperty("length_value")) {
+        const lengthval = tabledata[columnName].length_value;
 
-                // DECIMAL, FLOAT, DOUBLE → [precision, scale]
-                else if (
-                    Array.isArray(lengthval) &&
-                    lengthval.length === 2 &&
-                    lengthval.every(v => typeof v === "number")
-                ) {
-                    queryText += `(${lengthval[0]},${lengthval[1]})`;
-                }
+        // INT, VARCHAR, CHAR, BIT, etc.
+        if (typeof lengthval === "number") {
+          queryText += `(${lengthval})`;
+        }
+        // DECIMAL, FLOAT, DOUBLE → [precision, scale]
+        else if (
+          Array.isArray(lengthval) &&
+          lengthval.length === 2 &&
+          lengthval.every(v => typeof v === "number")
+        ) {
+          queryText += `(${lengthval[0]},${lengthval[1]})`;
+        }
+        // ENUM / SET → ['a','b','c']
+        else if (
+          Array.isArray(lengthval) &&
+          lengthval.every(v => typeof v === "string")
+        ) {
+          const escaped = lengthval.map(v => `'${v.replace(/'/g, "''")}'`);
+          queryText += `(${escaped.join(",")})`;
+        }
+      }
 
-                // ENUM / SET → ['a','b','c']
-                else if (
-                    Array.isArray(lengthval) &&
-                    lengthval.every(v => typeof v === "string")
-                ) {
-                    const escaped = lengthval.map(v => `'${v.replace(/'/g, "''")}'`);
-                    queryText += `(${escaped.join(",")})`;
-                }
-            }
-            queryText += " ";
-            if (tabledata[columnName].hasOwnProperty("unsigned") && tabledata[columnName].unsigned === true) {
-                queryText += `UNSIGNED `
-            }
-            if (tabledata[columnName].zerofill === true) {
-                queryText += `ZEROFILL `
-            }
-            if (tabledata[columnName].autoincrement === true) {
-                queryText += `AUTO_INCREMENT `
-            }
-            if (tabledata[columnName].hasOwnProperty("index")) {
-                queryText += `${tabledata[columnName].index} `
-            }
-            if (tabledata[columnName].hasOwnProperty("_charset_")) {
-                queryText += `CHARACTER SET ${tabledata[columnName]._charset_} `
-            }
-            if (tabledata[columnName].hasOwnProperty("_collate_")) {
-                queryText += `COLLATE ${tabledata[columnName]._collate_} `
-            }
-            if (tabledata[columnName].hasOwnProperty("nulls")) {
-                if (tabledata[columnName].nulls === true) {
-                    queryText += `NULL `
-                } else {
-                    queryText += `NOT NULL `
-                }
-            }
-            if (tabledata[columnName].hasOwnProperty("defaults")) {
-                const d = tabledata[columnName].defaults;
-                if (d === null) queryText += "DEFAULT NULL ";
-                else if (typeof d === "number") queryText += `DEFAULT ${d} `;
-                else if (/^CURRENT_TIMESTAMP$/i.test(d)) queryText += `DEFAULT ${d} `;
-                else queryText += `DEFAULT '${d.replace(/'/g, "''")}' `;
-            }
-            if (tabledata[columnName].hasOwnProperty("comment")) {
-                queryText += `COMMENT '${tabledata[columnName].comment}' `
-            }
-            quries.push(queryText);
-            // lets sotore foreing keys
-            if (tabledata[columnName].hasOwnProperty("foreign_key")) {
-                foreignkeys[columnName] = tabledata[columnName].foreign_key;
-            }
-        }
-        // foreign keys
-        let fkquery = [];
-        let keyidx = [];
-        if (Object.keys(foreignkeys).length > 0) {
-            for (const fks in foreignkeys) {
-                const ifexist = await fncs.columnExists(config, dbname, tabledata[fks].foreign_key.table, tabledata[fks].foreign_key.column);
-                if (ifexist === false) {
-                    console.log(cstyler.red("Foreign key column do not exist."));
-                } else if (ifexist === true) {
-                    let fktext = "";
-                    fktext +=
-                        `CONSTRAINT fk_${tableName}_${foreignkeys[fks].table}_${foreignkeys[fks].column} ` +
-                        `FOREIGN KEY (\`${fks}\`) REFERENCES \`${foreignkeys[fks].table}\`(\`${foreignkeys[fks].column}\`) `;
+      // --- CRITICAL ATTR ORDERING CORRECTION ---
+      
+      // 1. Character Sets and Collations must come directly after data type definitions
+      if (tabledata[columnName].hasOwnProperty("_charset_")) {
+        queryText += ` CHARACTER SET ${tabledata[columnName]._charset_}`;
+      }
+      if (tabledata[columnName].hasOwnProperty("_collate_")) {
+        queryText += ` COLLATE ${tabledata[columnName]._collate_}`;
+      }
 
-                    if (foreignkeys[fks].hasOwnProperty("deleteOption")) {
-                        fktext += `ON DELETE ${foreignkeys[fks].deleteOption} `
-                    }
-                    if (foreignkeys[fks].hasOwnProperty("updateOption")) {
-                        console.log(cstyler.red("has update option"), foreignkeys[fks].updateOption)
-                        fktext += `ON UPDATE ${foreignkeys[fks].updateOption} `
-                    }
-                    fkquery.push(fktext);
-                    keyidx.push(`KEY \`idx_${tableName}_${fks}\` (\`${fks}\`)`);
-                    // lets delete used item from the foreign key
-                    delete foreignkeys[fks];
-                } else {
-                    console.error("Having problem connecting to database.");
-                    return null;
-                }
-            }
+      // 2. Numerical modifiers
+      if (tabledata[columnName].hasOwnProperty("unsigned") && tabledata[columnName].unsigned === true) {
+        queryText += " UNSIGNED";
+      }
+      if (tabledata[columnName].zerofill === true) {
+        queryText += " ZEROFILL";
+      }
+
+      // 3. Nullability profiles
+      if (tabledata[columnName].hasOwnProperty("nulls")) {
+        if (tabledata[columnName].nulls === true) {
+          queryText += " NULL";
+        } else {
+          queryText += " NOT NULL";
         }
-        let lastqueryText = ``;
-        if (tabledata.hasOwnProperty("_engine_")) {
-            lastqueryText += `ENGINE=${tabledata._engine_}\n`;
-        }
-        if (tabledata.hasOwnProperty("_charset_")) {
-            lastqueryText += `DEFAULT CHARSET=${tabledata._charset_}\n`;
-        }
-        if (tabledata.hasOwnProperty("_collate_")) {
-            lastqueryText += `COLLATE=${tabledata._collate_}\n`;
-        }
-        if (tabledata.hasOwnProperty("_comment_")) {
-            lastqueryText += `COMMENT=${tabledata._comment_}\n`;
-        }
-        const fullqueryText = `
-            CREATE TABLE IF NOT EXISTS \`${tableName}\` (
-            ${[...quries, ...keyidx, ...fkquery].join(",\n  ")}
-            ) ${lastqueryText};
-            `;
-        console.log("Running query: ", cstyler.green(fullqueryText));
-        const runquery = await fncs.runQuery(config, dbname, fullqueryText);
-        if (runquery === null) {
-            return null;
-        }
-        console.log(cstyler.green("Successfully created "), cstyler.blue("Table: "), cstyler.hex("#00d9ffff")(tableName), " on ", cstyler.blue("Database: "), cstyler.hex("#00d9ffff")(dbname));
-        return foreignkeys;
-    } catch (err) {
-        console.error(err.message);
-        return null;
+      }
+
+      // 4. Default expressions
+      if (tabledata[columnName].hasOwnProperty("defaults")) {
+        const d = tabledata[columnName].defaults;
+        if (d === null) queryText += " DEFAULT NULL";
+        else if (typeof d === "number") queryText += ` DEFAULT ${d}`;
+        else if (/^CURRENT_TIMESTAMP$/i.test(d)) queryText += ` DEFAULT ${d}`;
+        else queryText += ` DEFAULT '${d.replace(/'/g, "''")}'`;
+      }
+
+      // 5. System structural increments
+      if (tabledata[columnName].autoincrement === true) {
+        queryText += " AUTO_INCREMENT";
+      }
+
+      // 6. Keys / Structural indexes must come at the very end of inline attributes
+      if (tabledata[columnName].hasOwnProperty("index")) {
+        queryText += ` ${tabledata[columnName].index}`;
+      }
+
+      // 7. Context comments
+      if (tabledata[columnName].hasOwnProperty("comment")) {
+        queryText += ` COMMENT '${tabledata[columnName].comment.replace(/'/g, "''")}'`;
+      }
+
+      quries.push(queryText);
+
+      // Map to correct metadata object properties outputted by getColumnDetails
+      if (tabledata[columnName].hasOwnProperty("foreignKey")) {
+        foreignkeys[columnName] = tabledata[columnName].foreignKey;
+      }
     }
+
+    // Foreign keys processing
+    let fkquery = [];
+    let keyidx = [];
+    
+    if (Object.keys(foreignkeys).length > 0) {
+      for (const fks in foreignkeys) {
+        const targetTable = foreignkeys[fks].referencedTable;
+        const targetColumn = foreignkeys[fks].referencedColumn;
+
+        const ifexist = await fncs.columnExists(config, dbname, targetTable, targetColumn);
+        
+        if (ifexist === false) {
+          console.log(cstyler.red(`Foreign key column ${targetTable}.${targetColumn} does not exist.`));
+        } else if (ifexist === true) {
+          let fktext = "";
+          fktext +=
+            `CONSTRAINT \`fk_${tableName}_${fks}\` ` +
+            `FOREIGN KEY (\`${fks}\`) REFERENCES \`${targetTable}\`(\`${targetColumn}\`)`;
+
+          if (foreignkeys[fks].hasOwnProperty("onDelete")) {
+            fktext += ` ON DELETE ${foreignkeys[fks].onDelete}`;
+          }
+          if (foreignkeys[fks].hasOwnProperty("onUpdate")) {
+            fktext += ` ON UPDATE ${foreignkeys[fks].onUpdate}`;
+          }
+          
+          fkquery.push(fktext);
+          keyidx.push(`KEY \`idx_${tableName}_${fks}\` (\`${fks}\`)`);
+          
+          delete foreignkeys[fks];
+        } else {
+          console.error("Having problem connecting to database.");
+          return null;
+        }
+      }
+    }
+
+    let lastqueryText = "";
+    if (tabledata.hasOwnProperty("_engine_")) {
+      lastqueryText += ` ENGINE=${tabledata._engine_}`;
+    }
+    if (tabledata.hasOwnProperty("_charset_")) {
+      lastqueryText += ` DEFAULT CHARSET=${tabledata._charset_}`;
+    }
+    if (tabledata.hasOwnProperty("_collate_")) {
+      lastqueryText += ` COLLATE=${tabledata._collate_}`;
+    }
+    if (tabledata.hasOwnProperty("_comment_")) {
+      lastqueryText += ` COMMENT='${tabledata._comment_.replace(/'/g, "''")}'`;
+    }
+
+    const fullqueryText = `
+CREATE TABLE IF NOT EXISTS \`${tableName}\` (
+  ${[...quries, ...keyidx, ...fkquery].join(",\n  ")}
+)${lastqueryText};
+`.trim();
+
+    console.log("Running query:\n", cstyler.green(fullqueryText));
+    
+    const runquery = await fncs.runQuery(config, dbname, fullqueryText);
+    if (runquery === null) {
+      return null;
+    }
+    
+    console.log(
+      cstyler.green("Successfully created "), 
+      cstyler.blue("Table: "), 
+      cstyler.hex("#00d9ffff")(tableName), 
+      " on ", 
+      cstyler.blue("Database: "), 
+      cstyler.hex("#00d9ffff")(dbname)
+    );
+    
+    return foreignkeys;
+  } catch (err) {
+    console.error(err.message);
+    return null;
+  }
 }
 async function createTableIfNeeded(config, jsondata, separator) {
     try {
